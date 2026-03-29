@@ -53,4 +53,23 @@ class Fonoaudiologo(models.Model):
         ordering = ['-data_cadastro']
 
     def __str__(self):
-        return f"{self.nome} - {self.cpf}"
+        return self.nome
+
+
+class Responsavel(models.Model):
+
+    id = models.AutoField(primary_key=True, verbose_name="ID")
+    nome = models.CharField(max_length=255, verbose_name="Nome Completo")
+    cpf = models.CharField(max_length=14, unique=True, verbose_name="CPF")
+    email = models.EmailField(
+        max_length=255, unique=True, verbose_name="Email"
+    )
+    telefone = models.CharField(max_length=20, verbose_name="Telefone")
+
+    class Meta:
+        verbose_name = "Responsável"
+        verbose_name_plural = "Responsáveis"
+        ordering = ['-id']
+
+    def __str__(self):
+        return self.nome
