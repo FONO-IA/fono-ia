@@ -320,6 +320,22 @@ export function EntryPortal() {
                     Entrar
                     <ChevronRight size={18} />
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/cadastro-fono")}
+                    className="flex items-center justify-center gap-2 py-4 rounded-2xl transition-all duration-200 active:scale-95"
+                    style={{
+                      background: "#F4F7FF",
+                      color: "#0052CC",
+                      fontFamily: "'Poppins', sans-serif",
+                      fontSize: 14,
+                      fontWeight: 600,
+                      border: "2px solid #DBEAFE",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Fazer cadastro
+                </button>
                 </form>
               </div>
             )}
