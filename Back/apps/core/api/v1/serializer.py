@@ -12,6 +12,7 @@ class FonoaudiologoSerializer(serializers.ModelSerializer):
             'cpf',
             'crfa',
             'telefone',
+            'email',
             'data_cadastro'
         ]
         read_only_fields = ['id', 'data_cadastro']
