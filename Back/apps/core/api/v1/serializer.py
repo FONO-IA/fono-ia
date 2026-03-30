@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from apps.core.models import Fonoaudiologo, Responsavel
+from apps.core.models import Fonoaudiologo, Responsavel, Paciente
 
 
 class FonoaudiologoSerializer(serializers.ModelSerializer):
@@ -56,4 +56,22 @@ class ResponsavelSerializer(serializers.ModelSerializer):
         cpf = ''.join(filter(str.isdigit, value))
         if len(cpf) != 11:
             raise serializers.ValidationError("CPF deve ter 11 dígitos")
+        return value
+
+
+class PacienteSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Paciente
+        fields = [
+            'id',
+            'nome',
+            'data_nascimento',
+            'observacoes',
+        ]
+        read_only_fields = ['id']
+
+    def validate_nome(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError("Nome é obrigatório")
         return value

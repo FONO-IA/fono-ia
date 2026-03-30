@@ -1,5 +1,5 @@
 from django.contrib import admin
-from apps.core.models import Fonoaudiologo, Responsavel
+from apps.core.models import Fonoaudiologo, Responsavel, Paciente
 
 
 @admin.register(Fonoaudiologo)
@@ -37,6 +37,26 @@ class ResponsavelAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Informações Pessoais', {
             'fields': ('nome', 'cpf', 'email', 'telefone')
+        }),
+        ('Informações do Sistema', {
+            'fields': ('id',),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(Paciente)
+class PacienteAdmin(admin.ModelAdmin):
+
+    list_display = ['id', 'nome', 'data_nascimento', 'observacoes']
+    list_filter = ['data_nascimento']
+    search_fields = ['nome', 'data_nascimento', 'observacoes']
+    readonly_fields = ['id']
+    ordering = ['-id']
+
+    fieldsets = (
+        ('Informações Pessoais', {
+            'fields': ('nome', 'data_nascimento', 'observacoes')
         }),
         ('Informações do Sistema', {
             'fields': ('id',),
