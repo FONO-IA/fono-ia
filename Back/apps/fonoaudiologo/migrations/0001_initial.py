@@ -10,13 +10,43 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Fonoaudiologo',
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False, verbose_name='ID')),
-                ('nome', models.CharField(max_length=255, verbose_name='Nome completo')),
-                ('cpf', models.CharField(max_length=14, unique=True, verbose_name='CPF')),
-                ('crfa', models.CharField(max_length=20, unique=True, verbose_name='CRFa')),
-                ('telefone', models.CharField(max_length=20, verbose_name='Telefone')),
-                ('email', models.EmailField(default='default@email.com', max_length=255, unique=True, verbose_name='Email')),
-                ('data_cadastro', models.DateTimeField(auto_now_add=True, verbose_name='Data de cadastro')),
+                (
+                    'id', models.AutoField(
+                        primary_key=True, serialize=False, verbose_name='ID'
+                    )
+                ),
+                (
+                    'nome', models.CharField(
+                        max_length=255, verbose_name='Nome completo'
+                    )
+                ),
+                (
+                    'cpf', models.CharField(
+                        max_length=14, unique=True, verbose_name='CPF'
+                    )
+                ),
+                (
+                    'crfa', models.CharField(
+                        max_length=20, unique=True, verbose_name='CRFa'
+                    )
+                ),
+                (
+                    'telefone', models.CharField(
+                        max_length=20, verbose_name='Telefone'
+                    )
+                ),
+                (
+                    'email', models.EmailField(
+                        default='default@email.com',
+                        max_length=255, unique=True,
+                        verbose_name='Email'
+                    )
+                ),
+                (
+                    'data_cadastro', models.DateTimeField(
+                        auto_now_add=True, verbose_name='Data de cadastro'
+                    )
+                ),
             ],
             options={
                 'verbose_name': 'Fonoaudiólogo',

@@ -10,10 +10,26 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Paciente',
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False, verbose_name='ID')),
-                ('nome', models.CharField(max_length=255, verbose_name='Nome completo')),
-                ('data_nascimento', models.DateField(verbose_name='Data de nascimento')),
-                ('observacoes', models.TextField(blank=True, null=True, verbose_name='Observações')),
+                (
+                    'id', models.AutoField(
+                        primary_key=True, serialize=False, verbose_name='ID'
+                    )
+                ),
+                (
+                    'nome', models.CharField(
+                        max_length=255, verbose_name='Nome completo'
+                    )
+                ),
+                (
+                    'data_nascimento', models.DateField(
+                        verbose_name='Data de nascimento'
+                    )
+                ),
+                (
+                    'observacoes', models.TextField(
+                        blank=True, null=True, verbose_name='Observações'
+                    )
+                ),
             ],
             options={
                 'verbose_name': 'Paciente',

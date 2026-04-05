@@ -10,11 +10,31 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Responsavel',
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False, verbose_name='ID')),
-                ('nome', models.CharField(max_length=255, verbose_name='Nome Completo')),
-                ('cpf', models.CharField(max_length=14, unique=True, verbose_name='CPF')),
-                ('email', models.EmailField(max_length=255, unique=True, verbose_name='Email')),
-                ('telefone', models.CharField(max_length=20, verbose_name='Telefone')),
+                (
+                    'id', models.AutoField(
+                        primary_key=True, serialize=False, verbose_name='ID'
+                    )
+                ),
+                (
+                    'nome', models.CharField(
+                        max_length=255, verbose_name='Nome Completo'
+                    )
+                ),
+                (
+                    'cpf', models.CharField(
+                        max_length=14, unique=True, verbose_name='CPF'
+                    )
+                ),
+                (
+                    'email', models.EmailField(
+                        max_length=255, unique=True, verbose_name='Email'
+                    )
+                ),
+                (
+                    'telefone', models.CharField(
+                        max_length=20, verbose_name='Telefone'
+                    )
+                ),
             ],
             options={
                 'verbose_name': 'Responsável',
