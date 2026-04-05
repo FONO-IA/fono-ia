@@ -43,6 +43,9 @@ class Fonoaudiologo(models.Model):
     cpf = models.CharField(max_length=14, unique=True, verbose_name="CPF")
     crfa = models.CharField(max_length=20, unique=True, verbose_name="CRFa")
     telefone = models.CharField(max_length=20, verbose_name="Telefone")
+    email = models.EmailField(
+        max_length=255, unique=True, verbose_name="Email"
+    )
     data_cadastro = models.DateTimeField(
         auto_now_add=True, verbose_name="Data de cadastro"
     )
