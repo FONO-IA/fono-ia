@@ -1,5 +1,7 @@
 from django.contrib import admin
-from apps.core.models import Fonoaudiologo, Responsavel, Paciente
+from apps.fonoaudiologo.models import Fonoaudiologo
+from apps.responsavel.models import Responsavel
+from apps.paciente.models import Paciente
 
 
 @admin.register(Fonoaudiologo)

@@ -1,6 +1,8 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
-from apps.core.models import Fonoaudiologo, Responsavel, Paciente
+from apps.fonoaudiologo.models import Fonoaudiologo
+from apps.responsavel.models import Responsavel
+from apps.paciente.models import Paciente
 from apps.core.api.v1.serializer import (
     FonoaudiologoSerializer,
     ResponsavelSerializer,
@@ -13,12 +15,10 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
     queryset = Fonoaudiologo.objects.all()
     serializer_class = FonoaudiologoSerializer
 
-    # Thiago deixo assim mesmo a permissão?
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
 
-        # Thiago eu deuxo a filtragem opcional por nome/cpf ou só cpf?
         queryset = Fonoaudiologo.objects.all()
         nome = self.request.query_params.get('nome', None)
         cpf = self.request.query_params.get('cpf', None)
@@ -71,7 +71,7 @@ class ResponsavelViewSet(viewsets.ModelViewSet):
 
     queryset = Responsavel.objects.all()
     serializer_class = ResponsavelSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         queryset = Responsavel.objects.all()
@@ -123,7 +123,7 @@ class PacienteViewSet(viewsets.ModelViewSet):
 
     queryset = Paciente.objects.all()
     serializer_class = PacienteSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         queryset = Paciente.objects.all()

@@ -1,5 +1,7 @@
 from rest_framework import serializers
-from apps.core.models import Fonoaudiologo, Responsavel, Paciente
+from apps.fonoaudiologo.models import Fonoaudiologo
+from apps.responsavel.models import Responsavel
+from apps.paciente.models import Paciente
 
 
 class FonoaudiologoSerializer(serializers.ModelSerializer):
@@ -22,14 +24,12 @@ class FonoaudiologoSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError("CPF é obrigatório")
 
-        # Remove caracteres não numéricos
         cpf = ''.join(filter(str.isdigit, value))
         if len(cpf) != 11:
             raise serializers.ValidationError("CPF deve ter 11 dígitos")
         return value
 
     def validate_crfa(self, value):
-        # Validação básica do CRFa
         if not value:
             raise serializers.ValidationError("CRFa é obrigatório")
         return value
@@ -53,7 +53,6 @@ class ResponsavelSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError("CPF é obrigatório")
 
-        # Remove caracteres não numéricos
         cpf = ''.join(filter(str.isdigit, value))
         if len(cpf) != 11:
             raise serializers.ValidationError("CPF deve ter 11 dígitos")

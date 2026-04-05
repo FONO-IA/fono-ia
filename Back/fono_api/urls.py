@@ -1,16 +1,13 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import RedirectView
-
-# Imports do Swagger
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
-# Configuração do Swagger
 schema_view = get_schema_view(
     openapi.Info(
-        title="Taxonomia de Avaliação API",
+        title="FONO-IA API",
         default_version='v1',
     ),
     public=True,
@@ -21,7 +18,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', include('apps.core.api.v1.router')),
 
-    # Swagger URLs
     path('docs/', schema_view.with_ui(
         'swagger',
         cache_timeout=0
@@ -35,7 +31,6 @@ urlpatterns = [
         name='schema-redoc'
     ),
 
-    # Redirecionamentos para documentação
     path('swagger/', RedirectView.as_view(url='/docs/', permanent=True)),
     path('doc/', RedirectView.as_view(url='/docs/', permanent=True)),
     path('documentation/', RedirectView.as_view(url='/docs/', permanent=True)),
