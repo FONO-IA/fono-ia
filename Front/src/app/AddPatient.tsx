@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
-import { ArrowLeft, User, FileText, Phone, Save } from "lucide-react";
+import { ArrowLeft, User, Phone, Save } from "lucide-react";
 
 export function AddPatient() {
   const navigate = useNavigate();
@@ -9,12 +9,11 @@ export function AddPatient() {
     name: "",
     birthDate: "",
     age: "",
-    diagnosis: "",
+    observations: "",
     parentName: "",
     phone: "",
     email: "",
-    address: "",
-    notes: "",
+    cpf: "",
   });
 
   const handleChange = (field: string, value: string) => {
@@ -283,16 +282,16 @@ export function AddPatient() {
                           display: "block",
                         }}
                       >
-                        Diagnóstico
+                        Observações
                       </label>
-                      <input
-                        type="text"
-                        value={formData.diagnosis}
+                      <textarea
+                        value={formData.observations}
                         onChange={(e) =>
-                          handleChange("diagnosis", e.target.value)
+                          handleChange("observations", e.target.value)
                         }
-                        placeholder="Ex: Dislalia Funcional"
-                        className="w-full px-4 py-3 rounded-2xl"
+                        placeholder="Informações adicionais sobre o paciente..."
+                        rows={3}
+                        className="w-full px-4 py-3 rounded-2xl resize-none"
                         style={{
                           border: "1.5px solid #DBEAFE",
                           fontSize: 14,
@@ -415,15 +414,15 @@ export function AddPatient() {
                           display: "block",
                         }}
                       >
-                        Endereço
+                        CPF do Responsável
                       </label>
                       <input
                         type="text"
-                        value={formData.address}
+                        value={formData.cpf}
                         onChange={(e) =>
-                          handleChange("address", e.target.value)
+                          handleChange("cpf", e.target.value)
                         }
-                        placeholder="Rua, número, bairro, cidade"
+                        placeholder="000.000.000-00"
                         className="w-full px-4 py-3 rounded-2xl"
                         style={{
                           border: "1.5px solid #DBEAFE",
@@ -434,37 +433,6 @@ export function AddPatient() {
                       />
                     </div>
                   </div>
-                </div>
-
-                {/* Observações */}
-                <div
-                  className="rounded-3xl p-6 mb-6"
-                  style={{ background: "#fff", border: "1.5px solid #DBEAFE" }}
-                >
-                  <h3
-                    className="flex items-center gap-2 mb-6"
-                    style={{
-                      fontSize: 18,
-                      fontWeight: 600,
-                      color: "#1A2B5F",
-                    }}
-                  >
-                    <FileText size={20} color="#0052CC" />
-                    Observações
-                  </h3>
-                  <textarea
-                    value={formData.notes}
-                    onChange={(e) => handleChange("notes", e.target.value)}
-                    placeholder="Informações adicionais sobre o paciente..."
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-2xl resize-none"
-                    style={{
-                      border: "1.5px solid #DBEAFE",
-                      fontSize: 14,
-                      outline: "none",
-                      fontFamily: "'Poppins', sans-serif",
-                    }}
-                  />
                 </div>
 
                 {/* Actions */}
@@ -679,16 +647,16 @@ export function AddPatient() {
                         display: "block",
                       }}
                     >
-                      Diagnóstico
+                      Observações
                     </label>
-                    <input
-                      type="text"
-                      value={formData.diagnosis}
+                    <textarea
+                      value={formData.observations}
                       onChange={(e) =>
-                        handleChange("diagnosis", e.target.value)
+                        handleChange("observations", e.target.value)
                       }
-                      placeholder="Ex: Dislalia Funcional"
-                      className="w-full px-4 py-3 rounded-2xl"
+                      placeholder="Informações adicionais sobre o paciente..."
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-2xl resize-none"
                       style={{
                         border: "1.5px solid #DBEAFE",
                         fontSize: 14,
@@ -811,15 +779,15 @@ export function AddPatient() {
                         display: "block",
                       }}
                     >
-                      Endereço
+                      CPF do Responsável
                     </label>
                     <input
                       type="text"
-                      value={formData.address}
+                      value={formData.cpf}
                       onChange={(e) =>
-                        handleChange("address", e.target.value)
+                        handleChange("cpf", e.target.value)
                       }
-                      placeholder="Rua, número, bairro"
+                      placeholder="000.000.000-00"
                       className="w-full px-4 py-3 rounded-2xl"
                       style={{
                         border: "1.5px solid #DBEAFE",
@@ -830,38 +798,6 @@ export function AddPatient() {
                     />
                   </div>
                 </div>
-              </div>
-
-              {/* Observações */}
-              <div
-                className="rounded-3xl p-5 mb-4"
-                style={{ background: "#fff", border: "1.5px solid #DBEAFE" }}
-              >
-                <h3
-                  className="flex items-center gap-2 mb-4"
-                  style={{
-                    fontSize: 15,
-                    fontWeight: 600,
-                    color: "#1A2B5F",
-                  }}
-                >
-                  <FileText size={18} color="#0052CC" />
-                  Observações
-                </h3>
-
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => handleChange("notes", e.target.value)}
-                  placeholder="Informações adicionais..."
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-2xl resize-none"
-                  style={{
-                    border: "1.5px solid #DBEAFE",
-                    fontSize: 14,
-                    outline: "none",
-                    fontFamily: "'Poppins', sans-serif",
-                  }}
-                />
               </div>
 
               {/* Actions */}
