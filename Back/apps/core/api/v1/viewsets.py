@@ -123,6 +123,10 @@ class PacienteViewSet(viewsets.ModelViewSet):
 
     queryset = Paciente.objects.all()
     serializer_class = PacienteSerializer
+<<<<<<< Updated upstream
+=======
+    # permission_classes = [permissions.IsAuthenticated]
+>>>>>>> Stashed changes
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
