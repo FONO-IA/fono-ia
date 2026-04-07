@@ -10,6 +10,7 @@ import {
   Calendar,
   Award,
   Mic,
+  Plus,
 } from "lucide-react";
 import {
   LineChart,
@@ -162,21 +163,42 @@ export function PatientProgress() {
 
             {/* Action buttons */}
             <div className="mt-8 space-y-3">
-              <button
-                onClick={() => navigate("/exercise")}
-                className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:opacity-90"
-                style={{
-                  background: "#fff",
-                  color: "#0052CC",
-                  fontSize: 15,
-                  fontWeight: 600,
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                <Mic size={20} />
-                Iniciar Nova Sessão
-              </button>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => navigate("/exercise")}
+                  className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:opacity-90"
+                  style={{
+                    background: "#fff",
+                    color: "#0052CC",
+                    fontSize: 15,
+                    fontWeight: 700,
+                    border: "none",
+                    cursor: "pointer",
+                    boxShadow: "0 10px 24px rgba(255,255,255,0.18)",
+                  }}
+                >
+                  <Mic size={20} />
+                  Iniciar Sessão
+                </button>
+
+                <button
+                  onClick={() => navigate("/add-exercise")}
+                  className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:opacity-90"
+                  style={{
+                    background: "linear-gradient(135deg, #36B37E, #57D9A3)",
+                    color: "#fff",
+                    fontSize: 15,
+                    fontWeight: 700,
+                    border: "none",
+                    cursor: "pointer",
+                    boxShadow: "0 12px 28px rgba(54,179,126,0.28)",
+                  }}
+                >
+                  <Plus size={20} />
+                  Criar Exercício
+                </button>
+              </div>
+
               <button
                 className="w-full px-5 py-3.5 rounded-2xl transition-all hover:bg-white/10"
                 style={{
@@ -581,26 +603,47 @@ export function PatientProgress() {
           </div>
 
           {/* Action buttons */}
-          <div className="flex gap-3 mt-5">
+          <div className="flex flex-col gap-3 mt-5">
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => navigate("/exercise")}
+                className="py-4 rounded-2xl flex items-center justify-center gap-2"
+                style={{
+                  background: "linear-gradient(135deg, #0052CC, #0065FF)",
+                  color: "#fff",
+                  fontFamily: "'Poppins', sans-serif",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  border: "none",
+                  cursor: "pointer",
+                  boxShadow: "0 4px 12px rgba(0,82,204,0.3)",
+                }}
+              >
+                <Mic size={18} />
+                Iniciar
+              </button>
+
+              <button
+                onClick={() => navigate("/add-exercise")}
+                className="py-4 rounded-2xl flex items-center justify-center gap-2"
+                style={{
+                  background: "linear-gradient(135deg, #36B37E, #57D9A3)",
+                  color: "#fff",
+                  fontFamily: "'Poppins', sans-serif",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  border: "none",
+                  cursor: "pointer",
+                  boxShadow: "0 6px 16px rgba(54,179,126,0.28)",
+                }}
+              >
+                <Plus size={18} />
+                Criar
+              </button>
+            </div>
+
             <button
-              onClick={() => navigate("/exercise")}
-              className="flex-1 py-4 rounded-2xl flex items-center justify-center gap-2"
-              style={{
-                background: "linear-gradient(135deg, #0052CC, #0065FF)",
-                color: "#fff",
-                fontFamily: "'Poppins', sans-serif",
-                fontSize: 14,
-                fontWeight: 600,
-                border: "none",
-                cursor: "pointer",
-                boxShadow: "0 4px 12px rgba(0,82,204,0.3)",
-              }}
-            >
-              <Mic size={18} />
-              Iniciar Sessão
-            </button>
-            <button
-              className="px-5 py-4 rounded-2xl"
+              className="w-full px-5 py-4 rounded-2xl"
               style={{
                 background: "#ffffff",
                 border: "2px solid #DBEAFE",
