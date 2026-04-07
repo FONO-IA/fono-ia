@@ -6,6 +6,7 @@ import { AdminDashboard } from "./app/AdminDashboard";
 import { AddPatient } from "./app/AddPatient";
 import { PatientProgress } from "./app/PatientProgress";
 import { ChildExercise } from "./app/ChildExercise";
+import { AddExercise } from "./app/AddExercise";
 import { ChildExerciseList } from "./app/ChildExerciseList";
 import { GamifiedFeedback } from "./app/GamifiedFeedback";
 
@@ -35,6 +36,10 @@ export const router = createBrowserRouter([
   {
     path: "/add-patient",
     Component: AddPatient,
+  },
+  {
+    path: "/add-exercise",
+    Component: AddExercise,
   },
   {
     path: "/patient/:id",
