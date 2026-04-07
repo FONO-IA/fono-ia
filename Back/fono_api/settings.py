@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'apps.fonoaudiologo',
     'apps.responsavel',
     'apps.paciente',
+    'apps.exercicio',
+    'apps.resultado',
 ]
 
 MIDDLEWARE = [

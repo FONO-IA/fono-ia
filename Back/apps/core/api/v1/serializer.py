@@ -2,6 +2,8 @@ from rest_framework import serializers
 from apps.fonoaudiologo.models import Fonoaudiologo
 from apps.responsavel.models import Responsavel
 from apps.paciente.models import Paciente
+from apps.exercicio.models import Exercicio
+from apps.resultado.models import Resultado
 
 
 class FonoaudiologoSerializer(serializers.ModelSerializer):
@@ -75,3 +77,15 @@ class PacienteSerializer(serializers.ModelSerializer):
         if not value or not value.strip():
             raise serializers.ValidationError("Nome é obrigatório")
         return value
+
+
+class ExercicioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Exercicio
+        fields = '__all__'
+
+
+class ResultadoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Resultado
+        fields = '__all__'
