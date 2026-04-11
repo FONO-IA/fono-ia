@@ -1,17 +1,13 @@
 from django.db import models
 from apps.core.models import BaseModel
+from apps.exercicio.enums import NivelEnum
 
 
 class Exercicio(BaseModel):
-
-    NIVEIS = [
-        ('facil', 'Fácil'),
-        ('medio', 'Médio'),
-        ('dificil', 'Difícil'),
-    ]
-
     nivel = models.CharField(
-        max_length=10, choices=NIVEIS, verbose_name="Nível"
+        max_length=3,
+        choices=NivelEnum.choices(),
+        verbose_name="Nível"
     )
     categoria = models.CharField(max_length=50, verbose_name="Categoria")
     conteudo = models.TextField(verbose_name="Conteúdo")
