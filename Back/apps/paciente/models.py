@@ -1,9 +1,9 @@
 from django.db import models
+from apps.core.models import BaseModel
 
 
-class Paciente(models.Model):
+class Paciente(BaseModel):
 
-    id = models.AutoField(primary_key=True, verbose_name="ID")
     nome = models.CharField(max_length=255, verbose_name="Nome completo")
     data_nascimento = models.DateField(verbose_name="Data de nascimento")
     observacoes = models.TextField(
@@ -13,7 +13,7 @@ class Paciente(models.Model):
     class Meta:
         verbose_name = "Paciente"
         verbose_name_plural = "Pacientes"
-        ordering = ['-id']
+        ordering = ['-updated_at']
 
     def __str__(self):
         return self.nome
