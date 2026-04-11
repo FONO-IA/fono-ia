@@ -1,15 +1,27 @@
 from django.db import models
+from apps.core.models import BaseModel
 
 
-class Responsavel(models.Model):
+class Responsavel(BaseModel):
 
-    id = models.AutoField(primary_key=True, verbose_name="ID")
-    nome = models.CharField(max_length=255, verbose_name="Nome Completo")
-    cpf = models.CharField(max_length=14, unique=True, verbose_name="CPF")
-    email = models.EmailField(
-        max_length=255, unique=True, verbose_name="Email"
+    nome = models.CharField(
+        max_length=255,
+        verbose_name="Nome Completo"
     )
-    telefone = models.CharField(max_length=20, verbose_name="Telefone")
+    cpf = models.CharField(
+        max_length=14,
+        unique=True,
+        verbose_name="CPF"
+    )
+    email = models.EmailField(
+        max_length=255,
+        unique=True,
+        verbose_name="Email"
+    )
+    telefone = models.CharField(
+        max_length=20,
+        verbose_name="Telefone"
+    )
 
     class Meta:
         verbose_name = "Responsável"
