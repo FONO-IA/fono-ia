@@ -17,6 +17,8 @@ type FormData = {
   crfa: string;
   telefone: string;
   email: string;
+  senha: string;
+  confirmacaoSenha: string;
 };
 
 type FormErrors = Partial<Record<keyof FormData, string>>;
@@ -48,7 +50,10 @@ function maskPhone(value: string) {
 }
 
 function normalizeCrfa(value: string) {
-  return value.toUpperCase().replace(/[^A-Z0-9/-]/g, "").slice(0, 20);
+  return value
+    .toUpperCase()
+    .replace(/[^A-Z0-9/-]/g, "")
+    .slice(0, 20);
 }
 
 export function CadastroFonoPage() {
@@ -60,6 +65,8 @@ export function CadastroFonoPage() {
     crfa: "",
     telefone: "",
     email: "",
+    senha: "",
+    confirmacaoSenha: "",
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -70,13 +77,18 @@ export function CadastroFonoPage() {
     const cpfDigits = onlyDigits(form.cpf);
     const phoneDigits = onlyDigits(form.telefone);
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
+    const senhaOk = form.senha.length >= 6;
+    const confirmacaoOk =
+      form.senha === form.confirmacaoSenha && form.senha.length >= 6;
 
     return (
       form.nome.trim().length >= 3 &&
       cpfDigits.length === 11 &&
       form.crfa.trim().length >= 4 &&
       (phoneDigits.length === 10 || phoneDigits.length === 11) &&
-      emailOk
+      emailOk &&
+      senhaOk &&
+      confirmacaoOk
     );
   }, [form]);
 
@@ -115,6 +127,18 @@ export function CadastroFonoPage() {
       nextErrors.email = "Informe um e-mail válido.";
     }
 
+    if (!data.senha) {
+      nextErrors.senha = "Informe a senha.";
+    } else if (data.senha.length < 6) {
+      nextErrors.senha = "A senha deve ter pelo menos 6 caracteres.";
+    }
+
+    if (!data.confirmacaoSenha) {
+      nextErrors.confirmacaoSenha = "Confirme a senha.";
+    } else if (data.senha !== data.confirmacaoSenha) {
+      nextErrors.confirmacaoSenha = "As senhas não coincidem.";
+    }
+
     return nextErrors;
   }
 
@@ -142,6 +166,8 @@ export function CadastroFonoPage() {
         crfa: "",
         telefone: "",
         email: "",
+        senha: "",
+        confirmacaoSenha: "",
       });
       setErrors({});
     }, 600);
@@ -476,7 +502,10 @@ export function CadastroFonoPage() {
                           }}
                         />
                         {errors.nome && (
-                          <p className="mt-2 text-sm" style={{ color: "#D14343" }}>
+                          <p
+                            className="mt-2 text-sm"
+                            style={{ color: "#D14343" }}
+                          >
                             {errors.nome}
                           </p>
                         )}
@@ -503,7 +532,10 @@ export function CadastroFonoPage() {
                           }}
                         />
                         {errors.cpf && (
-                          <p className="mt-2 text-sm" style={{ color: "#D14343" }}>
+                          <p
+                            className="mt-2 text-sm"
+                            style={{ color: "#D14343" }}
+                          >
                             {errors.cpf}
                           </p>
                         )}
@@ -530,7 +562,10 @@ export function CadastroFonoPage() {
                           }}
                         />
                         {errors.crfa && (
-                          <p className="mt-2 text-sm" style={{ color: "#D14343" }}>
+                          <p
+                            className="mt-2 text-sm"
+                            style={{ color: "#D14343" }}
+                          >
                             {errors.crfa}
                           </p>
                         )}
@@ -557,7 +592,10 @@ export function CadastroFonoPage() {
                           }}
                         />
                         {errors.telefone && (
-                          <p className="mt-2 text-sm" style={{ color: "#D14343" }}>
+                          <p
+                            className="mt-2 text-sm"
+                            style={{ color: "#D14343" }}
+                          >
                             {errors.telefone}
                           </p>
                         )}
@@ -582,8 +620,71 @@ export function CadastroFonoPage() {
                           }}
                         />
                         {errors.email && (
-                          <p className="mt-2 text-sm" style={{ color: "#D14343" }}>
+                          <p
+                            className="mt-2 text-sm"
+                            style={{ color: "#D14343" }}
+                          >
                             {errors.email}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label style={labelStyle}>Senha</label>
+                        <input
+                          type="password"
+                          placeholder="********"
+                          value={form.senha}
+                          onChange={(e) => updateField("senha", e.target.value)}
+                          style={inputStyle}
+                          autoComplete="new-password"
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = "#0052CC";
+                            e.currentTarget.style.boxShadow =
+                              "0 0 0 4px rgba(0,82,204,0.08)";
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.borderColor = "#DBEAFE";
+                            e.currentTarget.style.boxShadow = "none";
+                          }}
+                        />
+                        {errors.senha && (
+                          <p
+                            className="mt-2 text-sm"
+                            style={{ color: "#D14343" }}
+                          >
+                            {errors.senha}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label style={labelStyle}>Confirmação de Senha</label>
+                        <input
+                          type="password"
+                          placeholder="********"
+                          value={form.confirmacaoSenha}
+                          onChange={(e) =>
+                            updateField("confirmacaoSenha", e.target.value)
+                          }
+                          style={inputStyle}
+                          autoComplete="new-password"
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = "#0052CC";
+                            e.currentTarget.style.boxShadow =
+                              "0 0 0 4px rgba(0,82,204,0.08)";
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.borderColor = "#DBEAFE";
+                            e.currentTarget.style.boxShadow = "none";
+                          }}
+                        />
+                        {errors.confirmacaoSenha && (
+                          <p
+                            className="mt-2 text-sm"
+                            style={{ color: "#D14343" }}
+                          >
+                            {errors.confirmacaoSenha}
                           </p>
                         )}
                       </div>
@@ -663,9 +764,18 @@ export function CadastroFonoPage() {
             {!showConfirmation && (
               <div className="xl:hidden mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
-                  { icon: <UserRound size={18} color="#0052CC" />, label: "Nome" },
-                  { icon: <BadgeCheck size={18} color="#0052CC" />, label: "CRFa" },
-                  { icon: <Phone size={18} color="#0052CC" />, label: "Telefone" },
+                  {
+                    icon: <UserRound size={18} color="#0052CC" />,
+                    label: "Nome",
+                  },
+                  {
+                    icon: <BadgeCheck size={18} color="#0052CC" />,
+                    label: "CRFa",
+                  },
+                  {
+                    icon: <Phone size={18} color="#0052CC" />,
+                    label: "Telefone",
+                  },
                   { icon: <Mail size={18} color="#0052CC" />, label: "E-mail" },
                 ].map((item) => (
                   <div
