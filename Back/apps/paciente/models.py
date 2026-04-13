@@ -1,5 +1,6 @@
 from django.db import models
 from apps.core.models import BaseModel
+from apps.responsavel.models import Responsavel
 
 
 class Paciente(BaseModel):
@@ -8,6 +9,11 @@ class Paciente(BaseModel):
     data_nascimento = models.DateField(verbose_name="Data de nascimento")
     observacoes = models.TextField(
         blank=True, null=True, verbose_name="Observações"
+    )
+    responsavel = models.ForeignKey(
+        Responsavel,
+        on_delete=models.PROTECT,
+        verbose_name="Responsável"
     )
 
     class Meta:

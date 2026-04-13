@@ -6,7 +6,9 @@ from apps.exercicio.models import Exercicio
 class Resultado(BaseModel):
     feedback = models.JSONField()
     exercicio = models.ForeignKey(
-        Exercicio, on_delete=models.PROTECT, related_name='resultados'
+        Exercicio,
+        on_delete=models.PROTECT,
+        related_name='resultados'
     )
 
     def __str__(self):

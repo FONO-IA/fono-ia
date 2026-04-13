@@ -6,7 +6,7 @@ from apps.exercicio.enums import NivelEnum
 class Exercicio(BaseModel):
     nivel = models.CharField(
         max_length=3,
-        choices=NivelEnum.choices(),
+        choices=NivelEnum.choices,
         verbose_name="Nível"
     )
     categoria = models.CharField(max_length=50, verbose_name="Categoria")

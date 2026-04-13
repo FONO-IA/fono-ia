@@ -26,7 +26,7 @@ class Responsavel(BaseModel):
     class Meta:
         verbose_name = "Responsável"
         verbose_name_plural = "Responsáveis"
-        ordering = ['-id']
+        ordering = ['-updated_at']
 
     def __str__(self):
         return self.nome

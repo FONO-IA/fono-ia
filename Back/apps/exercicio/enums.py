@@ -1,4 +1,7 @@
-class NivelEnum:
-    FAC = 'Fácil'
-    MED = 'Médio'
-    DIF = 'Difícil'
+from django.db import models
+
+
+class NivelEnum(models.TextChoices):
+    FAC = 'FAC', 'Fácil'
+    MED = 'MED', 'Médio'
+    DIF = 'DIF', 'Difícil'
