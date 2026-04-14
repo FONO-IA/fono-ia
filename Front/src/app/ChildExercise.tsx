@@ -982,8 +982,8 @@ export function ChildExercise() {
                       className="absolute rounded-full"
                       style={{
                         background: `${exercise.color}15`,
-                        width: 120,
-                        height: 120,
+                        width: 80,
+                        height: 80,
                       }}
                       animate={{
                         scale: [1, 1.18, 1],
@@ -999,8 +999,8 @@ export function ChildExercise() {
                       className="absolute rounded-full"
                       style={{
                         background: `${exercise.color}10`,
-                        width: 120,
-                        height: 120,
+                        width: 80,
+                        height: 80,
                       }}
                       animate={{
                         scale: [1, 1.35, 1],

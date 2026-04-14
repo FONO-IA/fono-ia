@@ -195,7 +195,7 @@ export function AddPatient() {
                         style={{
                           fontSize: 13,
                           fontWeight: 500,
-                          color: "#6B7A99",
+                          color: "#000073",
                           marginBottom: 8,
                           display: "block",
                         }}
@@ -222,7 +222,7 @@ export function AddPatient() {
                         style={{
                           fontSize: 13,
                           fontWeight: 500,
-                          color: "#6B7A99",
+                          color: "#000073",
                           marginBottom: 8,
                           display: "block",
                         }}
@@ -250,7 +250,7 @@ export function AddPatient() {
                         style={{
                           fontSize: 13,
                           fontWeight: 500,
-                          color: "#6B7A99",
+                          color: "#000073",
                           marginBottom: 8,
                           display: "block",
                         }}
@@ -277,7 +277,7 @@ export function AddPatient() {
                         style={{
                           fontSize: 13,
                           fontWeight: 500,
-                          color: "#6B7A99",
+                          color: "#000073",
                           marginBottom: 8,
                           display: "block",
                         }}
@@ -326,7 +326,7 @@ export function AddPatient() {
                         style={{
                           fontSize: 13,
                           fontWeight: 500,
-                          color: "#6B7A99",
+                          color: "#000073",
                           marginBottom: 8,
                           display: "block",
                         }}
@@ -355,7 +355,7 @@ export function AddPatient() {
                         style={{
                           fontSize: 13,
                           fontWeight: 500,
-                          color: "#6B7A99",
+                          color: "#000073",
                           marginBottom: 8,
                           display: "block",
                         }}
@@ -382,7 +382,7 @@ export function AddPatient() {
                         style={{
                           fontSize: 13,
                           fontWeight: 500,
-                          color: "#6B7A99",
+                          color: "#000073",
                           marginBottom: 8,
                           display: "block",
                         }}
@@ -409,7 +409,7 @@ export function AddPatient() {
                         style={{
                           fontSize: 13,
                           fontWeight: 500,
-                          color: "#6B7A99",
+                          color: "#000073",
                           marginBottom: 8,
                           display: "block",
                         }}
@@ -441,11 +441,11 @@ export function AddPatient() {
                     onClick={() => navigate("/admin")}
                     className="px-8 py-3.5 rounded-2xl transition-all hover:bg-gray-100"
                     style={{
-                      background: "#fff",
+                      background: "#B90000",
                       border: "2px solid #DBEAFE",
                       fontSize: 15,
                       fontWeight: 600,
-                      color: "#6B7A99",
+                      color: "#fff",
                       cursor: "pointer",
                     }}
                   >
@@ -453,10 +453,9 @@ export function AddPatient() {
                   </button>
                   <button
                     onClick={handleSave}
-                    className="flex-1 px-8 py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all hover:opacity-90"
+                    className="px-8 py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all hover:opacity-90"
                     style={{
-                      background:
-                        "linear-gradient(135deg, #0052CC, #0065FF)",
+                      background:"#007200",
                       fontSize: 15,
                       fontWeight: 600,
                       color: "#fff",
@@ -465,7 +464,7 @@ export function AddPatient() {
                     }}
                   >
                     <Save size={20} />
-                    Salvar e Gerar Código
+                    Salvar
                   </button>
                 </div>
               </div>
@@ -558,7 +557,7 @@ export function AddPatient() {
                       style={{
                         fontSize: 12,
                         fontWeight: 500,
-                        color: "#6B7A99",
+                        color: "#000073",
                         marginBottom: 6,
                         display: "block",
                       }}

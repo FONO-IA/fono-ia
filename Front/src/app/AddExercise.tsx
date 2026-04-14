@@ -282,7 +282,7 @@ I
               <div className="flex items-center justify-between mb-8">
                 <div>
                   <h2 style={{ fontSize: 30, fontWeight: 700, color: "#1A2B5F" }}>
-                    Configurar exercício
+                    Cadastrar Exercício
                   </h2>
                   <p style={{ fontSize: 15, color: "#6B7A99", marginTop: 8 }}>
                     Preencha os dados ou use a IA para montar tudo automaticamente
@@ -390,16 +390,30 @@ I
                       </Field>
 
                       <Field label="Nível" icon={<CheckCircle2 size={16} color="#0052CC" />}>
-                        <select
-                          value={form.nivel}
-                          onChange={(e) => updateField("nivel", e.target.value)}
-                          className="w-full"
-                          style={inputStyle}
-                        >
-                          <option>Fácil</option>
-                          <option>Médio</option>
-                          <option>Avançado</option>
-                        </select>
+
+                      <div className="flex gap-2">
+                        {(["Fácil", "Médio", "Avançado"] as Level[]).map((nivel) => {
+                          const isActive = form.nivel === nivel;
+                          return (
+                            <button
+                              key={nivel}
+                              type="button"
+                              onClick={() => updateField("nivel", nivel)}
+                              className="flex-1 py-3 rounded-2xl transition-all"
+                              style={{
+                                border: isActive ? "2px solid #0052CC" : "1.5px solid #DBEAFE",
+                                background: isActive ? "#EBF3FF" : "#F8FBFF",
+                                color: isActive ? "#0052CC" : "#6B7A99",
+                                fontSize: 13,
+                                fontWeight: 700,
+                                cursor: "pointer",
+                              }}
+                            >
+                              {nivel}
+                            </button>
+                          );
+                        })}
+                      </div>
                       </Field>
 
                       <div className="col-span-2">
