@@ -11,29 +11,31 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
+        ('exercicio', '0001_initial'),
+        ('fonoaudiologo', '0001_initial'),
+        ('paciente', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Exercicio',
+            name='Atendimento',
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Criado em')),
                 ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Modificado em')),
                 ('is_deleted', models.BooleanField(default=False, verbose_name='Foi deletado?')),
                 ('deleted_at', models.DateTimeField(blank=True, null=True, verbose_name='Deletado em')),
-                ('nivel', models.CharField(choices=[('FAC', 'Fácil'), ('MED', 'Médio'), ('DIF', 'Difícil')], max_length=3, verbose_name='Nível')),
-                ('categoria', models.CharField(max_length=50, verbose_name='Categoria')),
-                ('conteudo', models.TextField(verbose_name='Conteúdo')),
-                ('objetivo', models.TextField(verbose_name='Objetivo')),
-                ('instrucao', models.TextField(verbose_name='Instrução')),
+                ('observacoes', models.TextField(blank=True, null=True, verbose_name='Observações')),
                 ('deleted_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='deleted_%(class)s_set', to=settings.AUTH_USER_MODEL, verbose_name='Deletado por')),
+                ('exercicio', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='atendimentos', to='exercicio.exercicio', verbose_name='Exercício')),
+                ('fonoaudiologo', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='atendimentos', to='fonoaudiologo.fonoaudiologo', verbose_name='Fonoaudiólogo')),
+                ('paciente', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='atendimentos', to='paciente.paciente', verbose_name='Paciente')),
             ],
             options={
-                'verbose_name': 'Exercício',
-                'verbose_name_plural': 'Exercícios',
-                'ordering': ['-created_at'],
+                'verbose_name': 'Atendimento',
+                'verbose_name_plural': 'Atendimentos',
+                'ordering': ['-updated_at'],
             },
         ),
     ]

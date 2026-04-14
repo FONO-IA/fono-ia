@@ -6,13 +6,12 @@ from apps.exercicio.api.v1.serializer import ExercicioSerializer
 
 class ExercicioViewSet(viewsets.ModelViewSet):
 
-    queryset = Exercicio.objects.all()
     serializer_class = ExercicioSerializer
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
 
-        queryset = Exercicio.objects.all()
+        queryset = Exercicio.objects.actives()
         nivel = self.request.query_params.get('nivel', None)
         categoria = self.request.query_params.get('categoria', None)
 
@@ -49,6 +48,9 @@ class ExercicioViewSet(viewsets.ModelViewSet):
             instance._prefetched_objects_cache = {}
 
         return Response(serializer.data)
+
+    def perform_destroy(self, instance):
+        instance.soft_delete(self.request.user)
 
     def destroy(self, request, *args, **kwargs):
 
