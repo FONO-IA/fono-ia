@@ -26,10 +26,10 @@ export const exerciseSets: ExerciseSet[] = [
     difficulty: 1,
     description: "As 5 vogais do alfabeto",
     phases: [
-      { word: "A", emoji: "🍎", hint: "Como em ABACATE", instruction: "Diga a vogal!" },
+      { word: "A", emoji: "🐝", hint: "Como em ABELHA", instruction: "Diga a vogal!" },
       { word: "E", emoji: "🐘", hint: "Como em ELEFANTE", instruction: "Diga a vogal!" },
-      { word: "I", emoji: "🌈", hint: "Como em IGUANA", instruction: "Diga a vogal!" },
-      { word: "O", emoji: "🌙", hint: "Como em ONÇA", instruction: "Diga a vogal!" },
+      { word: "I", emoji: "⛪️", hint: "Como em IGREJA", instruction: "Diga a vogal!" },
+      { word: "O", emoji: "👓", hint: "Como em ÓCULOS", instruction: "Diga a vogal!" },
       { word: "U", emoji: "🍇", hint: "Como em UVA", instruction: "Diga a vogal!" },
     ],
   },
@@ -42,10 +42,10 @@ export const exerciseSets: ExerciseSet[] = [
     difficulty: 1,
     description: "Nomeie as cores do arco-íris",
     phases: [
-      { word: "AZUL", emoji: "🔵", hint: "A cor do céu", instruction: "Diga a cor!" },
-      { word: "VERMELHO", emoji: "🔴", hint: "A cor do fogo", instruction: "Diga a cor!" },
-      { word: "VERDE", emoji: "🟢", hint: "A cor das plantas", instruction: "Diga a cor!" },
-      { word: "AMARELO", emoji: "🌟", hint: "A cor do sol", instruction: "Diga a cor!" },
+      { word: "AZUL", emoji: "🌊", hint: "A cor do mar", instruction: "Diga a cor!" },
+      { word: "VERMELHO", emoji: "🍎", hint: "A cor da maçã", instruction: "Diga a cor!" },
+      { word: "VERDE", emoji: "🌿", hint: "A cor das plantas", instruction: "Diga a cor!" },
+      { word: "AMARELO", emoji: "☀️", hint: "A cor do sol", instruction: "Diga a cor!" },
     ],
   },
   {

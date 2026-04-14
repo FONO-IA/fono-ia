@@ -1,12 +1,15 @@
 import { createBrowserRouter } from "react-router";
 import { EntryPortal } from "./app/EntryPortal";
+import { CadastroFonoPage } from "./app/CadastroFonoPage";
 import { ChildLogin } from "./app/ChildLogin";
 import { AdminDashboard } from "./app/AdminDashboard";
 import { AddPatient } from "./app/AddPatient";
 import { PatientProgress } from "./app/PatientProgress";
 import { ChildExercise } from "./app/ChildExercise";
+import { AddExercise } from "./app/AddExercise";
 import { ChildExerciseList } from "./app/ChildExerciseList";
 import { GamifiedFeedback } from "./app/GamifiedFeedback";
+
 
 import { SettingsPerfil } from "./app/components/settings/SettingsPerfil";
 import { SettingsNotificacoes } from "./app/components/settings/SettingsNotificacoes";
@@ -27,8 +30,16 @@ export const router = createBrowserRouter([
     Component: AdminDashboard,
   },
   {
+    path: "/cadastro-fono",
+    Component: CadastroFonoPage,
+  },
+  {
     path: "/add-patient",
     Component: AddPatient,
+  },
+  {
+    path: "/add-exercise",
+    Component: AddExercise,
   },
   {
     path: "/patient/:id",

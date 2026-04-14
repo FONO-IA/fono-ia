@@ -429,10 +429,10 @@ export function ChildExercise() {
 
           {/* Main Exercise Area Desktop */}
           <div className="flex-1 overflow-y-auto min-h-0 px-8 lg:px-12 xl:px-16 py-8">
-            <div className="w-full max-w-6xl mx-auto grid grid-cols-1 xl:grid-cols-[minmax(280px,360px)_minmax(520px,760px)] gap-8 items-start">
+            <div className="w-full max-w-6xl mx-auto grid grid-cols-1 xl:grid-cols-[minmax(300px,360px)_minmax(420px,1fr)] gap-8 items-stretch">
               {/* Left info panel */}
               <div
-                className="rounded-[32px] p-6 xl:sticky xl:top-8"
+                className="rounded-[32px] p-6 xl:sticky xl:top-8 h-full flex flex-col"
                 style={{
                   background: "#fff",
                   border: "1.5px solid #DBEAFE",
@@ -501,7 +501,7 @@ export function ChildExercise() {
                   </div>
                 )}
 
-                <div className="space-y-3">
+                <div className="space-y-3 mt-auto">
                   <div
                     className="rounded-2xl p-4"
                     style={{
@@ -555,7 +555,7 @@ export function ChildExercise() {
               </div>
 
               {/* Main card */}
-              <div className="w-full">
+              <div className="w-full h-full">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={phaseIndex}
@@ -563,7 +563,7 @@ export function ChildExercise() {
                     animate={{ opacity: 1, x: 0, scale: 1 }}
                     exit={{ opacity: 0, x: -50, scale: 0.95 }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
-                    className="relative rounded-[40px] overflow-hidden shadow-2xl"
+                    className="relative rounded-[40px] overflow-hidden shadow-2xl h-full flex flex-col"
                     style={{
                       background: "#ffffff",
                       border: `3px solid ${exercise.color}30`,
@@ -573,8 +573,8 @@ export function ChildExercise() {
                       className="flex items-center justify-center"
                       style={{
                         background: exercise.bgColor,
-                        minHeight: 280,
-                        height: "clamp(280px, 38vh, 420px)",
+                        minHeight: 180,
+                        height: "clamp(180px, 24vh, 240px)",
                       }}
                     >
                       <motion.span
@@ -585,7 +585,7 @@ export function ChildExercise() {
                           ease: "easeInOut",
                         }}
                         style={{
-                          fontSize: "clamp(110px, 14vw, 180px)",
+                          fontSize: "clamp(82px, 10vw, 130px)",
                           lineHeight: 1,
                         }}
                       >
@@ -622,7 +622,7 @@ export function ChildExercise() {
                       </motion.p>
                     </div>
 
-                    <div className="px-6 lg:px-8 pb-8 flex flex-col items-center gap-5">
+                    <div className="px-6 lg:px-8 pb-8 flex flex-col items-center justify-end gap-5 flex-1">
                       <button
                         onClick={handleMicPress}
                         disabled={isRecording || phaseResult !== null}
@@ -852,83 +852,100 @@ export function ChildExercise() {
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-center px-5 gap-4 min-h-0">
+          <div className="flex-1 w-full px-5 pt-4 pb-2 flex flex-col justify-start gap-4 min-h-0">
+            {/* Card superior: dica / exercício */}
             <AnimatePresence mode="wait">
               <motion.div
                 key={phaseIndex}
-                initial={{ opacity: 0, x: 50, scale: 0.95 }}
+                initial={{ opacity: 0, x: 40, scale: 0.97 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: -50, scale: 0.95 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-                className="relative w-full rounded-3xl overflow-hidden shadow-lg"
+                exit={{ opacity: 0, x: -40, scale: 0.97 }}
+                transition={{ duration: 0.28, ease: "easeOut" }}
+                className="relative w-full rounded-3xl overflow-hidden shadow-lg flex-shrink-0"
                 style={{
                   background: "#ffffff",
-                  border: `2.5px solid ${exercise.color}30`,
-                  maxWidth: 340,
+                  border: `2px solid ${exercise.color}25`,
                 }}
               >
                 <div
                   className="flex items-center justify-center"
-                  style={{ background: exercise.bgColor, height: 220 }}
+                  style={{
+                    background: exercise.bgColor,
+                    height: 150,
+                  }}
                 >
                   <motion.span
-                    animate={{ scale: [1, 1.06, 1] }}
+                    animate={{ scale: [1, 1.05, 1] }}
                     transition={{
-                      duration: 2.5,
+                      duration: 2.4,
                       repeat: Infinity,
                       ease: "easeInOut",
                     }}
-                    style={{ fontSize: 110 }}
+                    style={{ fontSize: 86, lineHeight: 1 }}
                   >
                     {phase.emoji}
                   </motion.span>
                 </div>
 
-                {phase.hint && (
-                  <div
-                    className="absolute top-3 left-3 px-3 py-1.5 rounded-xl"
-                    style={{
-                      background: "rgba(255,255,255,0.9)",
-                      backdropFilter: "blur(6px)",
-                    }}
-                  >
-                    <p
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 500,
-                        color: "#6B7A99",
-                      }}
-                    >
-                      💡 {phase.hint}
-                    </p>
-                  </div>
-                )}
-
-                <div className="px-5 py-4 text-center">
+                <div className="px-4 py-4">
                   <p
                     style={{
-                      fontSize: 12,
+                      fontSize: 11,
+                      color: "#6B7A99",
+                      fontWeight: 700,
+                      marginBottom: 6,
+                    }}
+                  >
+                    EXERCÍCIO ATUAL
+                  </p>
+
+                  <p
+                    style={{
+                      fontSize: 13,
                       color: "#B0BAD3",
-                      fontWeight: 400,
-                      marginBottom: 4,
+                      fontWeight: 500,
+                      marginBottom: 6,
                     }}
                   >
                     {phase.instruction}
                   </p>
+
                   <motion.p
                     key={phase.word}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      fontSize: 46,
+                      fontSize: 34,
                       fontWeight: 900,
                       color: exercise.color,
-                      letterSpacing: 5,
+                      letterSpacing: 3,
                       lineHeight: 1.05,
+                      marginBottom: 10,
                     }}
                   >
                     {phase.word}
                   </motion.p>
+
+                  {phase.hint && (
+                    <div
+                      className="rounded-2xl px-3.5 py-3"
+                      style={{
+                        background: `${exercise.color}10`,
+                        border: `1.5px solid ${exercise.color}20`,
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "#4F5D7A",
+                          lineHeight: 1.45,
+                        }}
+                      >
+                        💡 {phase.hint}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <AnimatePresence>
@@ -938,170 +955,132 @@ export function ChildExercise() {
                 </AnimatePresence>
               </motion.div>
             </AnimatePresence>
-          </div>
 
-          <AnimatePresence>
-            {isRecording && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="px-10 flex-shrink-0"
-              >
-                <div
-                  className="rounded-full overflow-hidden"
-                  style={{ height: 8, background: "#DBEAFE" }}
-                >
-                  <motion.div
-                    className="h-full rounded-full"
-                    animate={{ width: `${recordProgress}%` }}
-                    transition={{ duration: 0.06 }}
-                    style={{
-                      background: `linear-gradient(90deg, ${exercise.color}, ${exercise.color}BB)`,
-                    }}
-                  />
-                </div>
-                <p
-                  className="text-center mt-2"
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: exercise.color,
-                  }}
-                >
-                  🎙️ Gravando... fale agora!
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="flex flex-col items-center pb-10 pt-4 gap-3 flex-shrink-0">
-            <div className="relative flex items-center justify-center">
-              {!isRecording && !phaseResult && (
-                <>
-                  <motion.div
-                    className="absolute rounded-full"
-                    style={{
-                      background: `${exercise.color}15`,
-                      width: 130,
-                      height: 130,
-                    }}
-                    animate={{
-                      scale: [1, 1.18, 1],
-                      opacity: [0.6, 0.15, 0.6],
-                    }}
-                    transition={{
-                      duration: 2.2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                  />
-                  <motion.div
-                    className="absolute rounded-full"
-                    style={{
-                      background: `${exercise.color}10`,
-                      width: 130,
-                      height: 130,
-                    }}
-                    animate={{
-                      scale: [1, 1.35, 1],
-                      opacity: [0.4, 0, 0.4],
-                    }}
-                    transition={{
-                      duration: 2.2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      delay: 0.4,
-                    }}
-                  />
-                </>
-              )}
-
-              {isRecording && (
-                <>
-                  <motion.div
-                    className="absolute rounded-full"
-                    style={{
-                      background: `${exercise.color}20`,
-                      width: 130,
-                      height: 130,
-                    }}
-                    animate={{
-                      scale: [1, 1.4, 1],
-                      opacity: [0.7, 0, 0.7],
-                    }}
-                    transition={{
-                      duration: 1.2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                  />
-                  <motion.div
-                    className="absolute rounded-full"
-                    style={{
-                      background: `${exercise.color}15`,
-                      width: 130,
-                      height: 130,
-                    }}
-                    animate={{
-                      scale: [1, 1.65, 1],
-                      opacity: [0.5, 0, 0.5],
-                    }}
-                    transition={{
-                      duration: 1.2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      delay: 0.2,
-                    }}
-                  />
-                </>
-              )}
-
-              <motion.button
-                onClick={handleMicPress}
-                whileTap={{ scale: 0.88 }}
-                disabled={isRecording || phaseResult !== null}
-                className="relative flex items-center justify-center rounded-full"
-                style={{
-                  width: 100,
-                  height: 100,
-                  background: isRecording
-                    ? "linear-gradient(135deg, #FF5630, #FF7452)"
-                    : phaseResult
-                    ? "#D1D9E8"
-                    : `linear-gradient(135deg, ${exercise.color}, ${exercise.color}BB)`,
-                  border: "none",
-                  cursor: isRecording || phaseResult ? "default" : "pointer",
-                  boxShadow: isRecording
-                    ? "0 8px 32px rgba(255,86,48,0.5)"
-                    : `0 8px 32px ${exercise.color}50`,
-                  transition: "all 0.3s ease",
-                }}
-              >
-                <Mic size={42} color="white" strokeWidth={1.8} />
-              </motion.button>
-            </div>
-
-            <p
+            {/* Card inferior: gravar resposta */}
+            <div
+              className="w-full rounded-3xl shadow-lg flex flex-col items-center justify-center px-5 py-6"
               style={{
-                fontSize: 14,
-                fontWeight: 600,
-                color: isRecording
-                  ? "#FF5630"
-                  : phaseResult
-                  ? "#B0BAD3"
-                  : "#6B7A99",
-                transition: "color 0.3s",
+                background: "#ffffff",
+                border: "2px solid #DBEAFE",
               }}
             >
-              {isRecording
-                ? "Gravando... 🎙️"
-                : phaseResult === "success"
-                ? "Indo para próxima fase... ✨"
-                : phaseResult === "error"
-                ? "Tente de novo! 💪"
-                : "Toque para gravar"}
-            </p>
+              <p
+                style={{
+                  fontSize: 12,
+                  color: "#6B7A99",
+                  fontWeight: 700,
+                  marginBottom: 10,
+                }}
+              >
+                GRAVE SUA RESPOSTA
+              </p>
+
+              <div className="relative flex items-center justify-center mb-3">
+                {!isRecording && !phaseResult && (
+                  <>
+                    <motion.div
+                      className="absolute rounded-full"
+                      style={{
+                        background: `${exercise.color}15`,
+                        width: 120,
+                        height: 120,
+                      }}
+                      animate={{
+                        scale: [1, 1.18, 1],
+                        opacity: [0.6, 0.15, 0.6],
+                      }}
+                      transition={{
+                        duration: 2.2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    />
+                    <motion.div
+                      className="absolute rounded-full"
+                      style={{
+                        background: `${exercise.color}10`,
+                        width: 120,
+                        height: 120,
+                      }}
+                      animate={{
+                        scale: [1, 1.35, 1],
+                        opacity: [0.4, 0, 0.4],
+                      }}
+                      transition={{
+                        duration: 2.2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: 0.4,
+                      }}
+                    />
+                  </>
+                )}
+
+                <motion.button
+                  onClick={handleMicPress}
+                  whileTap={{ scale: 0.88 }}
+                  disabled={isRecording || phaseResult !== null}
+                  className="relative flex items-center justify-center rounded-full"
+                  style={{
+                    width: 92,
+                    height: 92,
+                    background: isRecording
+                      ? "linear-gradient(135deg, #FF5630, #FF7452)"
+                      : phaseResult
+                      ? "#D1D9E8"
+                      : `linear-gradient(135deg, ${exercise.color}, ${exercise.color}BB)`,
+                    border: "none",
+                    cursor: isRecording || phaseResult ? "default" : "pointer",
+                    boxShadow: isRecording
+                      ? "0 8px 32px rgba(255,86,48,0.5)"
+                      : `0 8px 32px ${exercise.color}45`,
+                    transition: "all 0.3s ease",
+                  }}
+                >
+                  <Mic size={38} color="white" strokeWidth={1.8} />
+                </motion.button>
+              </div>
+
+              <p
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: isRecording
+                    ? "#FF5630"
+                    : phaseResult
+                    ? "#B0BAD3"
+                    : "#6B7A99",
+                  transition: "color 0.3s",
+                  textAlign: "center",
+                }}
+              >
+                {isRecording
+                  ? "Gravando... 🎙️"
+                  : phaseResult === "success"
+                  ? "Indo para próxima fase... ✨"
+                  : phaseResult === "error"
+                  ? "Tente de novo! 💪"
+                  : "Toque para gravar"}
+              </p>
+
+              {isRecording && (
+                <div className="w-full mt-4">
+                  <div
+                    className="rounded-full overflow-hidden"
+                    style={{ height: 8, background: "#DBEAFE" }}
+                  >
+                    <motion.div
+                      className="h-full rounded-full"
+                      animate={{ width: `${recordProgress}%` }}
+                      transition={{ duration: 0.06 }}
+                      style={{
+                        background: `linear-gradient(90deg, ${exercise.color}, ${exercise.color}BB)`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <AnimatePresence>
