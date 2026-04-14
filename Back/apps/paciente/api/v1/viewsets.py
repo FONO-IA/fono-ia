@@ -6,12 +6,11 @@ from apps.paciente.api.v1.serializer import PacienteSerializer
 
 class PacienteViewSet(viewsets.ModelViewSet):
 
-    queryset = Paciente.objects.all()
     serializer_class = PacienteSerializer
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        queryset = Paciente.objects.all()
+        queryset = Paciente.objects.actives()
         nome = self.request.query_params.get('nome', None)
         data_nascimento = self.request.query_params.get(
             'data_nascimento', None
@@ -48,6 +47,9 @@ class PacienteViewSet(viewsets.ModelViewSet):
             instance._prefetched_objects_cache = {}
 
         return Response(serializer.data)
+
+    def perform_destroy(self, instance):
+        instance.soft_delete(self.request.user)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
