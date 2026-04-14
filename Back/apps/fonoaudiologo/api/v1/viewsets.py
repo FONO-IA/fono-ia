@@ -6,14 +6,13 @@ from apps.core.api.v1.serializer import FonoaudiologoSerializer
 
 class FonoaudiologoViewSet(viewsets.ModelViewSet):
 
-    queryset = Fonoaudiologo.objects.all()
     serializer_class = FonoaudiologoSerializer
 
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
 
-        queryset = Fonoaudiologo.objects.all()
+        queryset = Fonoaudiologo.objects.actives()
         nome = self.request.query_params.get('nome', None)
         cpf = self.request.query_params.get('cpf', None)
 
@@ -50,6 +49,9 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
             instance._prefetched_objects_cache = {}
 
         return Response(serializer.data)
+
+    def perform_destroy(self, instance):
+        instance.soft_delete(self.request.user)
 
     def destroy(self, request, *args, **kwargs):
 
