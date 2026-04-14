@@ -414,40 +414,6 @@ export function CadastroFonoPage() {
                     de cadastro.
                   </p>
 
-                  <div className="space-y-3">
-                    {[
-                      { icon: "👤", text: "Nome completo" },
-                      { icon: "🪪", text: "CPF" },
-                      { icon: "📄", text: "CRFa" },
-                      { icon: "📞", text: "Telefone" },
-                      { icon: "✉️", text: "E-mail" },
-                    ].map((item) => (
-                      <div
-                        key={item.text}
-                        className="flex items-center gap-3 rounded-2xl px-4 py-3"
-                        style={{
-                          background: "#F7FAFF",
-                          border: "1px solid #E2ECFF",
-                        }}
-                      >
-                        <div
-                          className="w-10 h-10 rounded-2xl flex items-center justify-center"
-                          style={{ background: "#EBF3FF" }}
-                        >
-                          <span style={{ fontSize: 18 }}>{item.icon}</span>
-                        </div>
-                        <p
-                          style={{
-                            fontSize: 14,
-                            fontWeight: 600,
-                            color: "#1A2B5F",
-                          }}
-                        >
-                          {item.text}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
                 </div>
 
                 {/* Formulário */}
@@ -720,8 +686,8 @@ export function CadastroFonoPage() {
                         onClick={() => navigate(-1)}
                         className="w-full sm:w-auto px-6 py-4 rounded-2xl transition-all active:scale-95"
                         style={{
-                          background: "#F4F7FF",
-                          color: "#6B7A99",
+                          background: "#B90000",
+                          color: "#fff",
                           border: "2px solid #DBEAFE",
                           fontFamily: "'Poppins', sans-serif",
                           fontSize: 14,
@@ -737,9 +703,7 @@ export function CadastroFonoPage() {
                         disabled={submitted}
                         className="w-full sm:w-auto px-6 py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95"
                         style={{
-                          background: isValid
-                            ? "linear-gradient(135deg, #0052CC, #0065FF)"
-                            : "linear-gradient(135deg, #7EA8E8, #8DB4F0)",
+                          background:"#007200",
                           color: "#fff",
                           border: "none",
                           fontFamily: "'Poppins', sans-serif",
