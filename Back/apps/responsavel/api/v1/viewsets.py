@@ -6,12 +6,11 @@ from apps.responsavel.api.v1.serializer import ResponsavelSerializer
 
 class ResponsavelViewSet(viewsets.ModelViewSet):
 
-    queryset = Responsavel.objects.all()
     serializer_class = ResponsavelSerializer
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        queryset = Responsavel.objects.all()
+        queryset = Responsavel.objects.actives()
         nome = self.request.query_params.get('nome', None)
         cpf = self.request.query_params.get('cpf', None)
 
@@ -46,6 +45,9 @@ class ResponsavelViewSet(viewsets.ModelViewSet):
             instance._prefetched_objects_cache = {}
 
         return Response(serializer.data)
+
+    def perform_destroy(self, instance):
+        instance.soft_delete(self.request.user)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
