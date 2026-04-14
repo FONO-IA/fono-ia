@@ -6,12 +6,11 @@ from apps.atendimento.api.v1.serializer import AtendimentoSerializer
 
 class AtendimentoViewSet(viewsets.ModelViewSet):
 
-    queryset = Atendimento.objects.all()
     serializer_class = AtendimentoSerializer
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        queryset = Atendimento.objects.all()
+        queryset = Atendimento.objects.actives()
         paciente = self.request.query_params.get('paciente', None)
         fonoaudiologo = self.request.query_params.get('fonoaudiologo', None)
 
@@ -47,10 +46,13 @@ class AtendimentoViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.data)
 
+    def perform_destroy(self, instance):
+        instance.soft_delete(self.request.user)
+
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         self.perform_destroy(instance)
         return Response(
-            {"message": "Paciente excluído com sucesso"},
+            {"message": "Atendimento excluído com sucesso"},
             status=status.HTTP_204_NO_CONTENT
         )
