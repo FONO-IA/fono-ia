@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from apps.resultado.models import Resultado
-from apps.resultado.serializers import ResultadoSerializer
+from apps.resultado.api.v1.serializer import ResultadoSerializer
 
 
 class ResultadoViewSet(viewsets.ModelViewSet):

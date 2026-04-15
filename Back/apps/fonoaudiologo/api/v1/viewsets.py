@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from apps.fonoaudiologo.models import Fonoaudiologo
-from apps.core.api.v1.serializer import FonoaudiologoSerializer
+from apps.fonoaudiologo.api.v1.serializer import FonoaudiologoSerializer
 
 
 class FonoaudiologoViewSet(viewsets.ModelViewSet):
