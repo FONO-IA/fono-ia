@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
 import { ArrowLeft, User, Phone, Save } from "lucide-react";
+import { criarPaciente, criarResponsavel } from "../services/pacientes";
 
 export function AddPatient() {
   const navigate = useNavigate();
@@ -20,14 +21,56 @@ export function AddPatient() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    alert(
-      "Paciente adicionado com sucesso! Código de acesso: FN" +
-        Math.floor(Math.random() * 1000)
-          .toString()
-          .padStart(3, "0")
-    );
-    navigate("/admin");
+  const handleSave = async () => {
+    try {
+      if (!formData.name.trim()) {
+        alert("Informe o nome do paciente.");
+        return;
+      }
+
+      if (!formData.birthDate) {
+        alert("Informe a data de nascimento.");
+        return;
+      }
+
+      if (!formData.parentName.trim()) {
+        alert("Informe o nome do responsável.");
+        return;
+      }
+
+      if (!formData.phone.trim()) {
+        alert("Informe o telefone do responsável.");
+        return;
+      }
+
+      if (!formData.cpf.trim()) {
+        alert("Informe o CPF do responsável.");
+        return;
+      }
+
+      const onlyDigits = (value: string) => value.replace(/\D/g, "");
+
+      const responsavel = await criarResponsavel({
+        nome: formData.parentName,
+        cpf: onlyDigits(formData.cpf),
+        email: formData.email || `sem-email-${Date.now()}@temp.local`,
+        telefone: onlyDigits(formData.phone),
+      });
+
+      await criarPaciente({
+        nome: formData.name,
+        data_nascimento: formData.birthDate,
+        observacoes: formData.observations,
+        responsavel: responsavel.id,
+      });
+
+      alert("Paciente adicionado com sucesso!");
+      navigate("/admin");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Erro ao salvar paciente.";
+      alert(message);
+    }
   };
 
   return (
