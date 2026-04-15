@@ -7,6 +7,7 @@ class ResponsavelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Responsavel
         fields = [
+            'id',
             'nome',
             'cpf',
             'email',
