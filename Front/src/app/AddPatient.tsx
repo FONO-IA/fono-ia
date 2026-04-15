@@ -172,136 +172,6 @@ export function AddPatient() {
             {/* Form Desktop */}
             <div className="flex-1 min-h-0 overflow-y-auto px-8 lg:px-12 py-8">
               <div className="max-w-4xl pb-8">
-                {/* Dados Pessoais */}
-                <div
-                  className="rounded-3xl p-6 mb-6"
-                  style={{ background: "#fff", border: "1.5px solid #DBEAFE" }}
-                >
-                  <h3
-                    className="flex items-center gap-2 mb-6"
-                    style={{
-                      fontSize: 18,
-                      fontWeight: 600,
-                      color: "#1A2B5F",
-                    }}
-                  >
-                    <User size={20} color="#0052CC" />
-                    Dados Pessoais
-                  </h3>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                      <label
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 500,
-                          color: "#000073",
-                          marginBottom: 8,
-                          display: "block",
-                        }}
-                      >
-                        Nome Completo*
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.name}
-                        onChange={(e) => handleChange("name", e.target.value)}
-                        placeholder="Ex: Maria Silva Santos"
-                        className="w-full px-4 py-3 rounded-2xl"
-                        style={{
-                          border: "1.5px solid #DBEAFE",
-                          fontSize: 14,
-                          outline: "none",
-                          fontFamily: "'Poppins', sans-serif",
-                        }}
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 500,
-                          color: "#000073",
-                          marginBottom: 8,
-                          display: "block",
-                        }}
-                      >
-                        Data de Nascimento*
-                      </label>
-                      <input
-                        type="date"
-                        value={formData.birthDate}
-                        onChange={(e) =>
-                          handleChange("birthDate", e.target.value)
-                        }
-                        className="w-full px-4 py-3 rounded-2xl"
-                        style={{
-                          border: "1.5px solid #DBEAFE",
-                          fontSize: 14,
-                          outline: "none",
-                          fontFamily: "'Poppins', sans-serif",
-                        }}
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 500,
-                          color: "#000073",
-                          marginBottom: 8,
-                          display: "block",
-                        }}
-                      >
-                        Idade*
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.age}
-                        onChange={(e) => handleChange("age", e.target.value)}
-                        placeholder="Ex: 7"
-                        className="w-full px-4 py-3 rounded-2xl"
-                        style={{
-                          border: "1.5px solid #DBEAFE",
-                          fontSize: 14,
-                          outline: "none",
-                          fontFamily: "'Poppins', sans-serif",
-                        }}
-                      />
-                    </div>
-
-                    <div className="col-span-2">
-                      <label
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 500,
-                          color: "#000073",
-                          marginBottom: 8,
-                          display: "block",
-                        }}
-                      >
-                        Observações
-                      </label>
-                      <textarea
-                        value={formData.observations}
-                        onChange={(e) =>
-                          handleChange("observations", e.target.value)
-                        }
-                        placeholder="Informações adicionais sobre o paciente..."
-                        rows={3}
-                        className="w-full px-4 py-3 rounded-2xl resize-none"
-                        style={{
-                          border: "1.5px solid #DBEAFE",
-                          fontSize: 14,
-                          outline: "none",
-                          fontFamily: "'Poppins', sans-serif",
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
 
                 {/* Contato do Responsável */}
                 <div
@@ -424,6 +294,137 @@ export function AddPatient() {
                         }
                         placeholder="000.000.000-00"
                         className="w-full px-4 py-3 rounded-2xl"
+                        style={{
+                          border: "1.5px solid #DBEAFE",
+                          fontSize: 14,
+                          outline: "none",
+                          fontFamily: "'Poppins', sans-serif",
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dados Pessoais */}
+                <div
+                  className="rounded-3xl p-6 mb-6"
+                  style={{ background: "#fff", border: "1.5px solid #DBEAFE" }}
+                >
+                  <h3
+                    className="flex items-center gap-2 mb-6"
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 600,
+                      color: "#1A2B5F",
+                    }}
+                  >
+                    <User size={20} color="#0052CC" />
+                    Dados Pessoais
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <label
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 500,
+                          color: "#000073",
+                          marginBottom: 8,
+                          display: "block",
+                        }}
+                      >
+                        Nome Completo*
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => handleChange("name", e.target.value)}
+                        placeholder="Ex: Maria Silva Santos"
+                        className="w-full px-4 py-3 rounded-2xl"
+                        style={{
+                          border: "1.5px solid #DBEAFE",
+                          fontSize: 14,
+                          outline: "none",
+                          fontFamily: "'Poppins', sans-serif",
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 500,
+                          color: "#000073",
+                          marginBottom: 8,
+                          display: "block",
+                        }}
+                      >
+                        Data de Nascimento*
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.birthDate}
+                        onChange={(e) =>
+                          handleChange("birthDate", e.target.value)
+                        }
+                        className="w-full px-4 py-3 rounded-2xl"
+                        style={{
+                          border: "1.5px solid #DBEAFE",
+                          fontSize: 14,
+                          outline: "none",
+                          fontFamily: "'Poppins', sans-serif",
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 500,
+                          color: "#000073",
+                          marginBottom: 8,
+                          display: "block",
+                        }}
+                      >
+                        Idade*
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.age}
+                        onChange={(e) => handleChange("age", e.target.value)}
+                        placeholder="Ex: 7"
+                        className="w-full px-4 py-3 rounded-2xl"
+                        style={{
+                          border: "1.5px solid #DBEAFE",
+                          fontSize: 14,
+                          outline: "none",
+                          fontFamily: "'Poppins', sans-serif",
+                        }}
+                      />
+                    </div>
+
+                    <div className="col-span-2">
+                      <label
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 500,
+                          color: "#000073",
+                          marginBottom: 8,
+                          display: "block",
+                        }}
+                      >
+                        Observações
+                      </label>
+                      <textarea
+                        value={formData.observations}
+                        onChange={(e) =>
+                          handleChange("observations", e.target.value)
+                        }
+                        placeholder="Informações adicionais sobre o paciente..."
+                        rows={3}
+                        className="w-full px-4 py-3 rounded-2xl resize-none"
                         style={{
                           border: "1.5px solid #DBEAFE",
                           fontSize: 14,
