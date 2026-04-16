@@ -39,6 +39,6 @@ export async function criarPaciente(payload: PacientePayload) {
   return api.post<Paciente>("/pacientes/", payload);
 }
 
-export async function listarPacientes(nome?: string) {
-  return api.get<any[]>("/pacientes/");
+export async function listarPacientes() {
+  return api.get<Paciente[]>("/pacientes/");
 }
