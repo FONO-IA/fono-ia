@@ -243,26 +243,6 @@ export function CadastroFonoPage() {
               >
                 <ArrowLeft size={22} color="#0052CC" />
               </button>
-
-              <div
-                className="px-4 py-2 rounded-2xl"
-                style={{
-                  background: "#ffffff",
-                  border: "1.5px solid #DBEAFE",
-                  boxShadow: "0 4px 14px rgba(0,82,204,0.06)",
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: "#0052CC",
-                    letterSpacing: 0.4,
-                  }}
-                >
-                  CADASTRO DE FONOAUDIÓLOGO
-                </p>
-              </div>
             </div>
 
             {showConfirmation ? (
@@ -399,7 +379,7 @@ export function CadastroFonoPage() {
                       marginBottom: 10,
                     }}
                   >
-                    Novo fono
+                    Novo Fonoaudiólogo
                   </h1>
 
                   <p
@@ -722,52 +702,6 @@ export function CadastroFonoPage() {
                     </div>
                   </form>
                 </div>
-              </div>
-            )}
-
-            {!showConfirmation && (
-              <div className="xl:hidden mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {[
-                  {
-                    icon: <UserRound size={18} color="#0052CC" />,
-                    label: "Nome",
-                  },
-                  {
-                    icon: <BadgeCheck size={18} color="#0052CC" />,
-                    label: "CRFa",
-                  },
-                  {
-                    icon: <Phone size={18} color="#0052CC" />,
-                    label: "Telefone",
-                  },
-                  { icon: <Mail size={18} color="#0052CC" />, label: "E-mail" },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="rounded-2xl px-4 py-4 flex items-center gap-3"
-                    style={{
-                      background: "#ffffff",
-                      border: "1.5px solid #DBEAFE",
-                      boxShadow: "0 8px 18px rgba(0,82,204,0.05)",
-                    }}
-                  >
-                    <div
-                      className="w-10 h-10 rounded-2xl flex items-center justify-center"
-                      style={{ background: "#EBF3FF" }}
-                    >
-                      {item.icon}
-                    </div>
-                    <p
-                      style={{
-                        fontSize: 14,
-                        fontWeight: 700,
-                        color: "#1A2B5F",
-                      }}
-                    >
-                      {item.label}
-                    </p>
-                  </div>
-                ))}
               </div>
             )}
           </div>

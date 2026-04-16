@@ -104,7 +104,7 @@ export const exerciseSets: ExerciseSet[] = [
     phases: [
       { word: "RATO", emoji: "🐭", hint: "Pequeno e cinza", instruction: "Diga a palavra!" },
       { word: "ROSA", emoji: "🌹", hint: "Flor cheirosa", instruction: "Diga a palavra!" },
-      { word: "RODA", emoji: "🎡", hint: "É redonda e gira", instruction: "Diga a palavra!" },
+      { word: "ROTA", emoji: "🎡", hint: "É redonda e gira", instruction: "Diga a palavra!" },
       { word: "RELÓGIO", emoji: "⏰", hint: "Mostra as horas", instruction: "Diga a palavra!" },
     ],
   },

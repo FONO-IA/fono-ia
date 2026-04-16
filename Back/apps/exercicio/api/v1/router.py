@@ -1,5 +1,5 @@
 from rest_framework.routers import DefaultRouter
-from apps.core.api.v1.viewsets import ExercicioViewSet
+from apps.exercicio.api.v1.viewsets import ExercicioViewSet
 
 
 router = DefaultRouter()

@@ -17,6 +17,11 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', include('apps.atendimento.api.v1.router')),
+    path('api/v1/', include('apps.exercicio.api.v1.router')),
+    path('api/v1/', include('apps.fonoaudiologo.api.v1.router')),
+    path('api/v1/', include('apps.paciente.api.v1.router')),
+    path('api/v1/', include('apps.responsavel.api.v1.router')),
+    path('api/v1/', include('apps.resultado.api.v1.router')),
 
     path('docs/', schema_view.with_ui(
         'swagger',

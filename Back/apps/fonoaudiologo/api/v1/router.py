@@ -1,5 +1,5 @@
 from rest_framework.routers import DefaultRouter
-from apps.core.api.v1.viewsets import FonoaudiologoViewSet
+from apps.fonoaudiologo.api.v1.viewsets import FonoaudiologoViewSet
 
 
 router = DefaultRouter()

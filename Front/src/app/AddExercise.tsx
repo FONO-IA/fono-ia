@@ -4,7 +4,6 @@ import { MobileWrapper } from "./MobileWrapper";
 import {
   ArrowLeft,
   Dumbbell,
-  Type,
   Target,
   FileText,
   Save,
@@ -23,30 +22,6 @@ type ContentItem = {
   instrucao: string;
 };
 
-const categoriasPadrao = [
-  "Articulação",
-  "Fonemas",
-  "Leitura",
-  "Consciência Fonológica",
-  "Respiração",
-  "Vocabulário",
-];
-
-const sugestoesConteudo = [
-  "A",
-  "E",
-  "I",
-  "O",
-  "U",
-  "PA",
-  "PE",
-  "PI",
-  "PO",
-  "PU",
-  "SAPO",
-  "BOLA",
-];
-
 const defaultInstruction = (texto: string) =>
   `Diga a palavra!
 
@@ -55,11 +30,9 @@ ${texto || "A"}
 💡 Como em ${texto || "ABACATE"}`;
 
 export function AddExercise() {
+
   const navigate = useNavigate();
-
-  const [showNewCategory, setShowNewCategory] = useState(false);
   const [newCategory, setNewCategory] = useState("");
-
   const [showNewContent, setShowNewContent] = useState(false);
   const [selectedContent, setSelectedContent] = useState("");
   const [newContent, setNewContent] = useState("");
@@ -76,7 +49,6 @@ A
 
   const [form, setForm] = useState({
     nome: "",
-    categoria: categoriasPadrao[0],
     objetivo: "",
     nivel: "Médio" as Level,
     instrucoesGuia: `Guia de texto para cada palavra:
@@ -91,9 +63,6 @@ A
   const updateField = (field: string, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
-
-  const categoriaFinal =
-    showNewCategory && newCategory.trim() ? newCategory.trim() : form.categoria;
 
   const totalConteudos = conteudos.length;
 
@@ -132,17 +101,19 @@ ${textoFinal}
     setConteudos((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const handleContentSelect = (value: string) => {
-    setSelectedContent(value);
-    setShowNewContent(false);
-    setContentInstruction(defaultInstruction(value));
-  };
-
   const handleSave = () => {
+
     const payload = {
-      ...form,
-      categoria: categoriaFinal,
-      conteudos,
+      categoria: newCategory,
+      nivel: form.nivel,
+      objetivo: form.objetivo,
+      instrucao: form.instrucoesGuia,
+      conteudo: "",
+
+      conteudos: conteudos.map((item) => ({
+        texto: item.texto,
+        instrucao: item.instrucao,
+      })),
     };
 
     console.log("Novo exercício:", payload);
@@ -187,7 +158,7 @@ I
     setForm((prev) => ({
       ...prev,
       nome: prev.nome || "Exercício gerado com IA",
-      categoria: prev.categoria || "Fonemas",
+      categoria: "Fonemas",
       objetivo:
         prev.objetivo || `Exercício montado com base na solicitação: ${prompt}`,
       nivel: prev.nivel || "Médio",
@@ -209,372 +180,301 @@ I
         className="min-h-screen"
         style={{ fontFamily: "'Poppins', sans-serif", background: "#F4F7FF" }}
       >
-        {/* Desktop */}
-        <div className="hidden md:flex min-h-screen">
-          <div
-            className="w-96 p-8"
-            style={{
-              background: "linear-gradient(180deg, #003884 0%, #0052CC 60%, #0065FF 100%)",
-            }}
-          >
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-2 mb-8 transition-all hover:opacity-80"
-              style={{ background: "none", border: "none", cursor: "pointer" }}
+        <div className="mx-auto w-full max-w-[1600px]">
+          <div className="xl:grid xl:min-h-screen xl:grid-cols-[340px_minmax(0,1fr)]">
+            {/* Sidebar desktop grande */}
+            <aside
+              className="hidden xl:block"
+              style={{
+                background:
+                  "linear-gradient(180deg, #003884 0%, #0052CC 60%, #0065FF 100%)",
+              }}
             >
-              <ArrowLeft size={20} color="rgba(255,255,255,0.9)" />
-              <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}>
-                Voltar
-              </span>
-            </button>
+              <div className="sticky top-0 flex min-h-screen flex-col p-8">
+                <button
+                  onClick={() => navigate(-1)}
+                  className="mb-8 flex items-center gap-2 transition-all hover:opacity-80"
+                  style={{ background: "none", border: "none", cursor: "pointer" }}
+                >
+                  <ArrowLeft size={20} color="rgba(255,255,255,0.9)" />
+                  <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}>
+                    Voltar
+                  </span>
+                </button>
 
-            <div
-              className="rounded-[28px] p-6"
-              style={{ background: "rgba(255,255,255,0.14)" }}
-            >
-              <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
-                style={{ background: "rgba(255,255,255,0.18)" }}
-              >
-                <Dumbbell size={28} color="#fff" />
+                <div
+                  className="rounded-[28px] p-6"
+                  style={{ background: "rgba(255,255,255,0.14)" }}
+                >
+                  <div
+                    className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl"
+                    style={{ background: "rgba(255,255,255,0.18)" }}
+                  >
+                    <Dumbbell size={28} color="#fff" />
+                  </div>
+
+                  <h1
+                    style={{
+                      fontSize: 28,
+                      fontWeight: 700,
+                      color: "#fff",
+                      lineHeight: 1.15,
+                    }}
+                  >
+                    Novo Exercício
+                  </h1>
+
+                  <p
+                    style={{
+                      fontSize: 14,
+                      color: "rgba(255,255,255,0.78)",
+                      marginTop: 10,
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    Monte um exercício com conteúdo por item e instrução
+                    individual para cada palavra.
+                  </p>
+
+                  <div className="mt-8 space-y-3">
+                    {[
+                      { label: "Categoria", value: newCategory || "-" },
+                      { label: "Nível", value: form.nivel },
+                      { label: "Itens", value: `${totalConteudos}` },
+                    ].map((item) => (
+                      <div
+                        key={item.label}
+                        className="rounded-2xl p-4"
+                        style={{ background: "rgba(255,255,255,0.12)" }}
+                      >
+                        <p
+                          style={{
+                            fontSize: 11,
+                            color: "rgba(255,255,255,0.72)",
+                          }}
+                        >
+                          {item.label}
+                        </p>
+                        <p
+                          style={{
+                            fontSize: 18,
+                            fontWeight: 700,
+                            color: "#fff",
+                            marginTop: 2,
+                          }}
+                        >
+                          {item.value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
+            </aside>
 
-              <h1 style={{ fontSize: 28, fontWeight: 700, color: "#fff", lineHeight: 1.15 }}>
-                Novo Exercício
-              </h1>
-
-              <p
+            {/* Conteúdo principal */}
+            <main className="min-w-0">
+              {/* Header mobile/tablet */}
+              <div
+                className="xl:hidden px-4 sm:px-6 md:px-8 pt-10 sm:pt-12 pb-8"
                 style={{
-                  fontSize: 14,
-                  color: "rgba(255,255,255,0.78)",
-                  marginTop: 10,
-                  lineHeight: 1.6,
+                  background:
+                    "linear-gradient(150deg, #003884 0%, #0052CC 60%, #0065FF 100%)",
                 }}
               >
-                Monte um exercício com conteúdo por item e instrução individual para cada palavra.
-              </p>
+                <button
+                  onClick={() => navigate(-1)}
+                  className="mb-6 flex items-center gap-2"
+                  style={{ background: "none", border: "none", cursor: "pointer" }}
+                >
+                  <ArrowLeft size={20} color="rgba(255,255,255,0.9)" />
+                  <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}>
+                    Voltar
+                  </span>
+                </button>
 
-              <div className="mt-8 space-y-3">
-                {[
-                  { label: "Categoria", value: categoriaFinal || "-" },
-                  { label: "Nível", value: form.nivel },
-                  { label: "Itens", value: `${totalConteudos}` },
-                ].map((item) => (
+                <div className="flex items-start gap-4">
                   <div
-                    key={item.label}
-                    className="rounded-2xl p-4"
-                    style={{ background: "rgba(255,255,255,0.12)" }}
+                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl sm:h-16 sm:w-16"
+                    style={{ background: "rgba(255,255,255,0.18)" }}
                   >
-                    <p style={{ fontSize: 11, color: "rgba(255,255,255,0.72)" }}>
-                      {item.label}
-                    </p>
-                    <p style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginTop: 2 }}>
-                      {item.value}
+                    <Dumbbell size={24} color="#fff" />
+                  </div>
+
+                  <div className="min-w-0">
+                    <h1
+                      style={{
+                        fontSize: 22,
+                        fontWeight: 700,
+                        color: "#fff",
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      Adicionar Exercício
+                    </h1>
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: "rgba(255,255,255,0.75)",
+                        marginTop: 6,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      Conteúdo por item com instrução individual
                     </p>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex-1 p-10 lg:p-12">
-            <div className="max-w-6xl mx-auto">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h2 style={{ fontSize: 30, fontWeight: 700, color: "#1A2B5F" }}>
-                    Cadastrar Exercício
-                  </h2>
-                  <p style={{ fontSize: 15, color: "#6B7A99", marginTop: 8 }}>
-                    Preencha os dados ou use a IA para montar tudo automaticamente
-                  </p>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setShowAiBox((prev) => !prev)}
-                        className="px-5 py-4 rounded-2xl flex items-center gap-2 transition-all hover:opacity-90"
+                {/* Resumo tablet */}
+                <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  {[
+                    { label: "Categoria", value: newCategory || "-" },
+                    { label: "Nível", value: form.nivel },
+                    { label: "Itens", value: `${totalConteudos}` },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className="rounded-2xl p-4"
+                      style={{ background: "rgba(255,255,255,0.12)" }}
+                    >
+                      <p
                         style={{
+                          fontSize: 11,
+                          color: "rgba(255,255,255,0.72)",
+                        }}
+                      >
+                        {item.label}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 700,
+                          color: "#fff",
+                          marginTop: 2,
+                        }}
+                      >
+                        {item.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="px-4 sm:px-6 md:px-8 xl:px-10 2xl:px-12 pb-8 xl:py-10">
+                <div className="mx-auto max-w-7xl">
+                  {/* Cabeçalho desktop/tablet */}
+                  <div className="hidden xl:flex items-center justify-between mb-8 gap-6">
+                    <div className="min-w-0">
+                      <h2
+                        style={{ fontSize: 30, fontWeight: 700, color: "#1A2B5F" }}
+                      >
+                        Cadastrar Exercício
+                      </h2>
+                      <p
+                        style={{
+                          fontSize: 15,
+                          color: "#6B7A99",
+                          marginTop: 8,
+                        }}
+                      >
+                        Preencha os dados ou use a IA para montar tudo automaticamente
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => setShowAiBox((prev) => !prev)}
+                      className="shrink-0 rounded-2xl px-5 py-4 flex items-center gap-2 transition-all hover:opacity-90"
+                      style={{
                         background: "#EEF4FF",
                         color: "#0052CC",
                         border: "1.5px solid #CFE0FF",
                         cursor: "pointer",
                         fontSize: 15,
                         fontWeight: 700,
-                        }}
-                    >
-                        <Wand2 size={18} />
-                        Ajuda da IA
-                    </button>
-                </div>
-              </div>
-
-              {showAiBox && (
-                <div
-                  className="rounded-[28px] p-6 mb-6"
-                  style={{
-                    background: "#ffffff",
-                    border: "1.5px solid #DBEAFE",
-                    boxShadow: "0 4px 16px rgba(0,82,204,0.05)",
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 style={{ fontSize: 18, fontWeight: 700, color: "#1A2B5F" }}>
-                        Como o exercício deve ser feito?
-                      </h3>
-                      <p style={{ fontSize: 13, color: "#6B7A99", marginTop: 6 }}>
-                        Escreva para a IA como o fono quer montar o exercício
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => setShowAiBox(false)}
-                      style={{
-                        border: "none",
-                        background: "transparent",
-                        cursor: "pointer",
                       }}
                     >
-                      <X size={18} color="#7B8AAC" />
+                      <Wand2 size={18} />
+                      Ajuda da IA
                     </button>
                   </div>
 
-                  <textarea
-                    value={aiPrompt}
-                    onChange={(e) => setAiPrompt(e.target.value)}
-                    rows={4}
-                    placeholder="Ex: Criar um exercício com vogais, nível fácil, com palavras curtas e dica visual para cada item."
-                    className="w-full resize-none"
-                    style={{ ...inputStyle, height: "auto", paddingTop: 14 }}
-                  />
-
-                  <div className="flex justify-end mt-4">
+                  {/* Ação tablet/mobile */}
+                  <div className="xl:hidden -mt-4 sm:-mt-6 md:-mt-8 mb-4 sm:mb-5 py-4">
                     <button
-                      onClick={handleGenerateWithAI}
-                      className="px-5 py-3 rounded-2xl flex items-center gap-2"
+                      onClick={() => setShowAiBox((prev) => !prev)}
+                      className="w-full sm:w-auto rounded-2xl px-5 py-4 flex items-center justify-center gap-2"
                       style={{
-                        background: "#0052CC",
-                        color: "#fff",
-                        border: "none",
+                        background: "#EEF4FF",
+                        color: "#0052CC",
+                        border: "1.5px solid #CFE0FF",
                         cursor: "pointer",
                         fontSize: 14,
                         fontWeight: 700,
                       }}
                     >
-                      <Wand2 size={16} />
-                      Gerar exercício
+                      <Wand2 size={18} />
+                      Ajuda da IA
                     </button>
                   </div>
-                </div>
-              )}
 
-              <div className="grid grid-cols-3 gap-6">
-                <div className="col-span-2 space-y-6">
-                  <div
-                    className="rounded-[28px] p-8"
-                    style={{
-                      background: "#fff",
-                      border: "1.5px solid #DBEAFE",
-                      boxShadow: "0 4px 16px rgba(0,82,204,0.05)",
-                    }}
-                  >
-                    <div className="grid grid-cols-2 gap-5">
-                      <Field label="Nome do exercício" icon={<Type size={16} color="#0052CC" />}>
-                        <input
-                          value={form.nome}
-                          onChange={(e) => updateField("nome", e.target.value)}
-                          placeholder="Ex: Vogais iniciais"
-                          className="w-full"
-                          style={inputStyle}
-                        />
-                      </Field>
-
-                      <Field label="Nível" icon={<CheckCircle2 size={16} color="#0052CC" />}>
-
-                      <div className="flex gap-2">
-                        {(["Fácil", "Médio", "Avançado"] as Level[]).map((nivel) => {
-                          const isActive = form.nivel === nivel;
-                          return (
-                            <button
-                              key={nivel}
-                              type="button"
-                              onClick={() => updateField("nivel", nivel)}
-                              className="flex-1 py-3 rounded-2xl transition-all"
-                              style={{
-                                border: isActive ? "2px solid #0052CC" : "1.5px solid #DBEAFE",
-                                background: isActive ? "#EBF3FF" : "#F8FBFF",
-                                color: isActive ? "#0052CC" : "#6B7A99",
-                                fontSize: 13,
-                                fontWeight: 700,
-                                cursor: "pointer",
-                              }}
-                            >
-                              {nivel}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      </Field>
-
-                      <div className="col-span-2">
-                        <Field label="Categoria" icon={<Sparkles size={16} color="#0052CC" />}>
-                          <div className="space-y-3">
-                            <div className="grid grid-cols-[1fr_auto] gap-3">
-                              <select
-                                value={form.categoria}
-                                onChange={(e) => {
-                                  updateField("categoria", e.target.value);
-                                  setShowNewCategory(false);
-                                }}
-                                className="w-full"
-                                style={inputStyle}
-                              >
-                                {categoriasPadrao.map((categoria) => (
-                                  <option key={categoria} value={categoria}>
-                                    {categoria}
-                                  </option>
-                                ))}
-                              </select>
-
-                              <button
-                                type="button"
-                                onClick={() => setShowNewCategory((prev) => !prev)}
-                                className="px-4 rounded-2xl flex items-center gap-2"
-                                style={{
-                                  border: "1.5px solid #DBEAFE",
-                                  background: showNewCategory ? "#EBF3FF" : "#F8FBFF",
-                                  color: "#0052CC",
-                                  fontSize: 13,
-                                  fontWeight: 700,
-                                  cursor: "pointer",
-                                }}
-                              >
-                                <PlusCircle size={16} />
-                                Nova
-                              </button>
-                            </div>
-
-                            {showNewCategory && (
-                              <input
-                                value={newCategory}
-                                onChange={(e) => setNewCategory(e.target.value)}
-                                placeholder="Digite a nova categoria"
-                                className="w-full"
-                                style={inputStyle}
-                              />
-                            )}
-                          </div>
-                        </Field>
-                      </div>
-
-                      <div className="col-span-2">
-                        <Field label="Objetivo" icon={<Target size={16} color="#0052CC" />}>
-                          <input
-                            value={form.objetivo}
-                            onChange={(e) => updateField("objetivo", e.target.value)}
-                            placeholder="Ex: Trabalhar identificação e emissão correta"
-                            className="w-full"
-                            style={inputStyle}
-                          />
-                        </Field>
-                      </div>
-
-                      <div className="col-span-2">
-                        <Field label="Instruções" icon={<FileText size={16} color="#0052CC" />}>
-                          <textarea
-                            value={form.instrucoesGuia}
-                            onChange={(e) => updateField("instrucoesGuia", e.target.value)}
-                            rows={5}
-                            placeholder="Guia de texto para cada palavra"
-                            className="w-full resize-none"
-                            style={{ ...inputStyle, height: "auto", paddingTop: 14 }}
-                          />
-                        </Field>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    className="rounded-[28px] p-8"
-                    style={{
-                      background: "#fff",
-                      border: "1.5px solid #DBEAFE",
-                      boxShadow: "0 4px 16px rgba(0,82,204,0.05)",
-                    }}
-                  >
-                    <div className="flex items-center justify-between mb-5">
-                      <div>
-                        <h3 style={{ fontSize: 20, fontWeight: 700, color: "#1A2B5F" }}>
-                          Conteúdo do exercício
-                        </h3>
-                        <p style={{ fontSize: 13, color: "#6B7A99", marginTop: 6 }}>
-                          Adicione cada palavra com sua própria instrução
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-[1fr_auto] gap-3">
-                        <select
-                          value={selectedContent}
-                          onChange={(e) => handleContentSelect(e.target.value)}
-                          className="w-full"
-                          style={inputStyle}
-                        >
-                          <option value="">Selecione um conteúdo cadastrado</option>
-                          {sugestoesConteudo.map((item) => (
-                            <option key={item} value={item}>
-                              {item}
-                            </option>
-                          ))}
-                        </select>
+                  {showAiBox && (
+                    <section
+                      className="rounded-[24px] sm:rounded-[28px] p-4 sm:p-5 md:p-6 mb-5 sm:mb-6"
+                      style={{
+                        background: "#ffffff",
+                        border: "1.5px solid #DBEAFE",
+                        boxShadow: "0 4px 16px rgba(0,82,204,0.05)",
+                      }}
+                    >
+                      <div className="mb-4 flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <h3
+                            style={{
+                              fontSize: 18,
+                              fontWeight: 700,
+                              color: "#1A2B5F",
+                            }}
+                          >
+                            Como o exercício deve ser feito?
+                          </h3>
+                          <p
+                            style={{
+                              fontSize: 13,
+                              color: "#6B7A99",
+                              marginTop: 6,
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            Escreva para a IA como o fono quer montar o exercício
+                          </p>
+                        </div>
 
                         <button
-                          type="button"
-                          onClick={() => setShowNewContent((prev) => !prev)}
-                          className="px-4 rounded-2xl flex items-center gap-2"
+                          onClick={() => setShowAiBox(false)}
                           style={{
-                            border: "1.5px solid #DBEAFE",
-                            background: showNewContent ? "#EBF3FF" : "#F8FBFF",
-                            color: "#0052CC",
-                            fontSize: 13,
-                            fontWeight: 700,
+                            border: "none",
+                            background: "transparent",
                             cursor: "pointer",
+                            flexShrink: 0,
                           }}
                         >
-                          <PlusCircle size={16} />
-                          Novo
+                          <X size={18} color="#7B8AAC" />
                         </button>
                       </div>
 
-                      {showNewContent && (
-                        <input
-                          value={newContent}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setNewContent(value);
-                            setContentInstruction(defaultInstruction(value));
-                          }}
-                          placeholder="Digite a nova palavra, sílaba ou conteúdo"
-                          className="w-full"
-                          style={inputStyle}
-                        />
-                      )}
-
                       <textarea
-                        value={contentInstruction}
-                        onChange={(e) => setContentInstruction(e.target.value)}
-                        rows={6}
-                        placeholder="Instrução específica deste conteúdo"
+                        value={aiPrompt}
+                        onChange={(e) => setAiPrompt(e.target.value)}
+                        rows={4}
+                        placeholder="Ex: Criar um exercício com vogais, nível fácil, com palavras curtas e dica visual para cada item."
                         className="w-full resize-none"
                         style={{ ...inputStyle, height: "auto", paddingTop: 14 }}
                       />
 
-                      <div className="flex justify-end">
+                      <div className="mt-4 flex justify-end">
                         <button
-                          type="button"
-                          onClick={handleAddContent}
-                          className="px-5 py-3 rounded-2xl flex items-center gap-2"
+                          onClick={handleGenerateWithAI}
+                          className="w-full sm:w-auto rounded-2xl px-5 py-3 flex items-center justify-center gap-2"
                           style={{
                             background: "#0052CC",
                             color: "#fff",
@@ -584,568 +484,401 @@ I
                             fontWeight: 700,
                           }}
                         >
-                          <PlusCircle size={16} />
-                          Adicionar conteúdo
+                          <Wand2 size={16} />
+                          Gerar exercício
                         </button>
                       </div>
+                    </section>
+                  )}
+
+                  {/* Layout principal responsivo */}
+                  <div className="grid grid-cols-1 gap-5 lg:gap-6 2xl:grid-cols-[minmax(0,1fr)_360px]">
+                    {/* Coluna principal */}
+                    <div className="min-w-0 space-y-5 lg:space-y-6">
+                      <section
+                        className="rounded-[24px] sm:rounded-[28px] p-4 sm:p-6 lg:p-8"
+                        style={{
+                          background: "#fff",
+                          border: "1.5px solid #DBEAFE",
+                          boxShadow: "0 4px 16px rgba(0,82,204,0.05)",
+                        }}
+                      >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                          <Field
+                            label="Categoria"
+                            icon={<Sparkles size={16} color="#0052CC" />}
+                          >
+                            <div className="space-y-3">
+                              <input
+                                value={newCategory}
+                                onChange={(e) => setNewCategory(e.target.value)}
+                                placeholder="Digite a nova categoria"
+                                className="w-full"
+                                style={inputStyle}
+                              />
+                            </div>
+                          </Field>
+
+                          <Field
+                            label="Nível"
+                            icon={<CheckCircle2 size={16} color="#0052CC" />}
+                          >
+                            <div className="grid grid-cols-1 xs:grid-cols-3 sm:grid-cols-3 gap-2">
+                              {(["Fácil", "Médio", "Avançado"] as Level[]).map(
+                                (nivel) => {
+                                  const isActive = form.nivel === nivel;
+                                  return (
+                                    <button
+                                      key={nivel}
+                                      type="button"
+                                      onClick={() => updateField("nivel", nivel)}
+                                      className="min-h-[48px] rounded-2xl px-3 py-3 transition-all"
+                                      style={{
+                                        border: isActive
+                                          ? "2px solid #0052CC"
+                                          : "1.5px solid #DBEAFE",
+                                        background: isActive ? "#EBF3FF" : "#F8FBFF",
+                                        color: isActive ? "#0052CC" : "#6B7A99",
+                                        fontSize: 13,
+                                        fontWeight: 700,
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      {nivel}
+                                    </button>
+                                  );
+                                }
+                              )}
+                            </div>
+                          </Field>
+
+                          <div className="md:col-span-2">
+                            <Field
+                              label="Objetivo"
+                              icon={<Target size={16} color="#0052CC" />}
+                            >
+                              <input
+                                value={form.objetivo}
+                                onChange={(e) =>
+                                  updateField("objetivo", e.target.value)
+                                }
+                                placeholder="Ex: Trabalhar identificação e emissão correta"
+                                className="w-full"
+                                style={inputStyle}
+                              />
+                            </Field>
+                          </div>
+
+                          <div className="md:col-span-2">
+                            <Field
+                              label="Instruções"
+                              icon={<FileText size={16} color="#0052CC" />}
+                            >
+                              <textarea
+                                rows={5}
+                                placeholder="Guia de texto para cada palavra"
+                                className="w-full resize-none"
+                                style={{
+                                  ...inputStyle,
+                                  height: "auto",
+                                  minHeight: 132,
+                                  paddingTop: 14,
+                                }}
+                              />
+                            </Field>
+                          </div>
+                        </div>
+                      </section>
+
+                      <section
+                        className="rounded-[24px] sm:rounded-[28px] p-4 sm:p-6 lg:p-8"
+                        style={{
+                          background: "#fff",
+                          border: "1.5px solid #DBEAFE",
+                          boxShadow: "0 4px 16px rgba(0,82,204,0.05)",
+                        }}
+                      >
+                        <div className="mb-5 flex items-start justify-between gap-4">
+                          <div className="min-w-0 w-full">
+                            <h3 style={{fontSize: 20, fontWeight: 700, color: "#1A2B5F",}}>
+                              Conteúdo do exercício
+                            </h3>
+                            <input
+                              placeholder="Digite a nova palavra, sílaba ou conteúdo"
+                              className="w-full"
+                              style={inputStyle}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <textarea
+                            value={contentInstruction}
+                            onChange={(e) => setContentInstruction(e.target.value)}
+                            rows={6}
+                            placeholder="Instrução específica deste conteúdo"
+                            className="w-full resize-none"
+                            style={{
+                              ...inputStyle,
+                              height: "auto",
+                              minHeight: 160,
+                              paddingTop: 14,
+                            }}
+                          />
+
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={handleAddContent}
+                              className="w-full sm:w-auto rounded-2xl px-5 py-3 flex items-center justify-center gap-2"
+                              style={{
+                                background: "#0052CC",
+                                color: "#fff",
+                                border: "none",
+                                cursor: "pointer",
+                                fontSize: 14,
+                                fontWeight: 700,
+                              }}
+                            >
+                              <PlusCircle size={16} />
+                              Adicionar conteúdo
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="mt-6 space-y-3">
+                          {conteudos.length > 0 ? (
+                            conteudos.map((item, index) => (
+                              <div
+                                key={item.id}
+                                className="rounded-[24px] sm:rounded-3xl p-4 sm:p-5"
+                                style={{
+                                  background: "#F8FBFF",
+                                  border: "1.5px solid #E3EEFF",
+                                }}
+                              >
+                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                                      <span
+                                        className="rounded-full px-2.5 py-1"
+                                        style={{
+                                          background: "#EBF3FF",
+                                          color: "#0052CC",
+                                          fontSize: 11,
+                                          fontWeight: 700,
+                                        }}
+                                      >
+                                        Item {index + 1}
+                                      </span>
+
+                                      <span
+                                        style={{
+                                          fontSize: 17,
+                                          fontWeight: 700,
+                                          color: "#1A2B5F",
+                                          wordBreak: "break-word",
+                                        }}
+                                      >
+                                        {item.texto}
+                                      </span>
+                                    </div>
+
+                                    <p
+                                      style={{
+                                        fontSize: 13,
+                                        color: "#4C5B7C",
+                                        whiteSpace: "pre-wrap",
+                                        lineHeight: 1.7,
+                                        wordBreak: "break-word",
+                                      }}
+                                    >
+                                      {item.instrucao}
+                                    </p>
+                                  </div>
+
+                                  <button
+                                    onClick={() => handleRemoveContent(item.id)}
+                                    className="h-10 w-10 sm:h-10 sm:w-10 rounded-2xl flex items-center justify-center self-end sm:self-auto shrink-0"
+                                    style={{
+                                      border: "none",
+                                      cursor: "pointer",
+                                      background: "#FFECEC",
+                                    }}
+                                  >
+                                    <X size={16} color="#D14343" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div
+                              className="rounded-[24px] sm:rounded-3xl p-5"
+                              style={{
+                                background: "#F8FBFF",
+                                border: "1.5px dashed #C9DBFF",
+                              }}
+                            >
+                              <p style={{ fontSize: 14, color: "#7B8AAC" }}>
+                                Nenhum conteúdo adicionado ainda.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="mt-6 flex justify-end">
+                          <button
+                            onClick={handleSave}
+                            className="w-full sm:w-auto rounded-2xl px-6 py-4 flex items-center justify-center gap-2"
+                            style={{
+                              background: "#007200",
+                              color: "#fff",
+                              border: "none",
+                              cursor: "pointer",
+                              fontSize: 15,
+                              fontWeight: 700,
+                              boxShadow: "0 12px 28px rgba(54,179,126,0.22)",
+                              minWidth: 220,
+                              maxWidth: "100%",
+                            }}
+                          >
+                            <Save size={18} />
+                            Salvar Exercício
+                          </button>
+                        </div>
+                      </section>
                     </div>
 
-                    <div className="mt-6 space-y-3">
-                      {conteudos.length > 0 ? (
-                        conteudos.map((item, index) => (
+                    {/* Preview */}
+                    <aside className="min-w-0">
+                      <div
+                        className="rounded-[24px] sm:rounded-[28px] p-4 sm:p-6 2xl:sticky 2xl:top-8"
+                        style={{
+                          background: "#fff",
+                          border: "1.5px solid #DBEAFE",
+                          boxShadow: "0 4px 16px rgba(0,82,204,0.05)",
+                        }}
+                      >
+                        <h3
+                          style={{
+                            fontSize: 18,
+                            fontWeight: 700,
+                            color: "#1A2B5F",
+                            marginBottom: 16,
+                          }}
+                        >
+                          Pré-visualização
+                        </h3>
+
+                        <div
+                          className="rounded-3xl p-5"
+                          style={{
+                            background:
+                              "linear-gradient(135deg, #0052CC, #0065FF)",
+                            color: "#fff",
+                          }}
+                        >
+                          <p style={{ fontSize: 12, opacity: 0.75 }}>Nome</p>
+                          <h4
+                            style={{
+                              fontSize: 20,
+                              fontWeight: 700,
+                              marginTop: 4,
+                              wordBreak: "break-word",
+                            }}
+                          >
+                            {form.nome || "Novo exercício"}
+                          </h4>
+
+                          <div className="mt-5 space-y-3">
+                            <PreviewItem
+                              label="Categoria"
+                              value={newCategory || "-"}
+                            />
+                            <PreviewItem
+                              label="Objetivo"
+                              value={form.objetivo || "-"}
+                            />
+                            <PreviewItem label="Nível" value={form.nivel} />
+                            <PreviewItem
+                              label="Itens"
+                              value={`${totalConteudos}`}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="mt-5">
+                          <p
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 600,
+                              color: "#1A2B5F",
+                              marginBottom: 10,
+                            }}
+                          >
+                            Resumo do conteúdo
+                          </p>
+
                           <div
-                            key={item.id}
-                            className="rounded-3xl p-5"
+                            className="rounded-2xl p-4"
                             style={{
                               background: "#F8FBFF",
                               border: "1.5px solid #E3EEFF",
                             }}
                           >
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span
-                                    className="px-2.5 py-1 rounded-full"
-                                    style={{
-                                      background: "#EBF3FF",
-                                      color: "#0052CC",
-                                      fontSize: 11,
-                                      fontWeight: 700,
-                                    }}
-                                  >
-                                    Item {index + 1}
-                                  </span>
-                                  <span
-                                    style={{
-                                      fontSize: 17,
-                                      fontWeight: 700,
-                                      color: "#1A2B5F",
-                                    }}
-                                  >
-                                    {item.texto}
-                                  </span>
-                                </div>
-
-                                <p
-                                  style={{
-                                    fontSize: 13,
-                                    color: "#4C5B7C",
-                                    whiteSpace: "pre-wrap",
-                                    lineHeight: 1.7,
-                                  }}
-                                >
-                                  {item.instrucao}
-                                </p>
-                              </div>
-
-                              <button
-                                onClick={() => handleRemoveContent(item.id)}
-                                className="w-10 h-10 rounded-2xl flex items-center justify-center"
-                                style={{
-                                  border: "none",
-                                  cursor: "pointer",
-                                  background: "#FFECEC",
-                                }}
-                              >
-                                <X size={16} color="#D14343" />
-                              </button>
-                            </div>
+                            <p
+                              style={{
+                                fontSize: 13,
+                                color: "#4C5B7C",
+                                whiteSpace: "pre-wrap",
+                                lineHeight: 1.6,
+                                wordBreak: "break-word",
+                              }}
+                            >
+                              {previewConteudo ||
+                                "Nenhum conteúdo informado ainda."}
+                            </p>
                           </div>
-                        ))
-                      ) : (
-                        <div
-                          className="rounded-3xl p-5"
-                          style={{
-                            background: "#F8FBFF",
-                            border: "1.5px dashed #C9DBFF",
-                          }}
-                        >
-                          <p style={{ fontSize: 14, color: "#7B8AAC" }}>
-                            Nenhum conteúdo adicionado ainda.
-                          </p>
                         </div>
-                      )}
-                    </div>
-                    <div className="mt-6 flex justify-end">
-                        <button
-                            onClick={handleSave}
-                            className="px-6 py-4 rounded-2xl flex items-center justify-center gap-2"
-                            style={{
-                            background: "linear-gradient(135deg, #36B37E, #57D9A3)",
-                            color: "#fff",
-                            border: "none",
-                            cursor: "pointer",
-                            fontSize: 15,
-                            fontWeight: 700,
-                            boxShadow: "0 12px 28px rgba(54,179,126,0.22)",
-                            minWidth: 220,
-                            }}
-                        >
-                            <Save size={18} />
-                            Salvar Exercício
-                        </button>
-                    </div>
-                  </div>
-                </div>
 
-                <div>
-                  <div
-                    className="rounded-[28px] p-6"
-                    style={{
-                      background: "#fff",
-                      border: "1.5px solid #DBEAFE",
-                      boxShadow: "0 4px 16px rgba(0,82,204,0.05)",
-                    }}
-                  >
-                    <h3 style={{ fontSize: 18, fontWeight: 700, color: "#1A2B5F", marginBottom: 16 }}>
-                      Pré-visualização
-                    </h3>
-
-                    <div
-                      className="rounded-3xl p-5"
-                      style={{
-                        background: "linear-gradient(135deg, #0052CC, #0065FF)",
-                        color: "#fff",
-                      }}
-                    >
-                      <p style={{ fontSize: 12, opacity: 0.75 }}>Nome</p>
-                      <h4 style={{ fontSize: 20, fontWeight: 700, marginTop: 4 }}>
-                        {form.nome || "Novo exercício"}
-                      </h4>
-
-                      <div className="mt-5 space-y-3">
-                        <PreviewItem label="Categoria" value={categoriaFinal || "-"} />
-                        <PreviewItem label="Objetivo" value={form.objetivo || "-"} />
-                        <PreviewItem label="Nível" value={form.nivel} />
-                        <PreviewItem label="Itens" value={`${totalConteudos}`} />
-                      </div>
-                    </div>
-
-                    <div className="mt-5">
-                      <p style={{ fontSize: 13, fontWeight: 600, color: "#1A2B5F", marginBottom: 10 }}>
-                        Resumo do conteúdo
-                      </p>
-
-                      <div
-                        className="rounded-2xl p-4"
-                        style={{ background: "#F8FBFF", border: "1.5px solid #E3EEFF" }}
-                      >
-                        <p
-                          style={{
-                            fontSize: 13,
-                            color: "#4C5B7C",
-                            whiteSpace: "pre-wrap",
-                            lineHeight: 1.6,
-                          }}
-                        >
-                          {previewConteudo || "Nenhum conteúdo informado ainda."}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-5">
-                      <p style={{ fontSize: 13, fontWeight: 600, color: "#1A2B5F", marginBottom: 10 }}>
-                        Guia de instruções
-                      </p>
-
-                      <div
-                        className="rounded-2xl p-4"
-                        style={{ background: "#F8FBFF", border: "1.5px solid #E3EEFF" }}
-                      >
-                        <p
-                          style={{
-                            fontSize: 13,
-                            color: "#4C5B7C",
-                            whiteSpace: "pre-wrap",
-                            lineHeight: 1.7,
-                          }}
-                        >
-                          {form.instrucoesGuia}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile */}
-        <div className="md:hidden min-h-screen">
-          <div
-            className="px-6 pt-14 pb-8"
-            style={{
-              background: "linear-gradient(150deg, #003884 0%, #0052CC 60%, #0065FF 100%)",
-            }}
-          >
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-2 mb-6"
-              style={{ background: "none", border: "none", cursor: "pointer" }}
-            >
-              <ArrowLeft size={20} color="rgba(255,255,255,0.9)" />
-              <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}>Voltar</span>
-            </button>
-
-            <div className="flex items-center gap-4">
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                style={{ background: "rgba(255,255,255,0.18)" }}
-              >
-                <Dumbbell size={24} color="#fff" />
-              </div>
-              <div>
-                <h1 style={{ fontSize: 22, fontWeight: 700, color: "#fff" }}>
-                  Adicionar Exercício
-                </h1>
-                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", marginTop: 4 }}>
-                  Conteúdo por item com instrução individual
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="px-6 -mt-4 pb-8 space-y-4">
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowAiBox((prev) => !prev)}
-                className="flex-1 py-4 rounded-2xl flex items-center justify-center gap-2"
-                style={{
-                  background: "#EEF4FF",
-                  color: "#0052CC",
-                  border: "1.5px solid #CFE0FF",
-                  cursor: "pointer",
-                  fontSize: 14,
-                  fontWeight: 700,
-                }}
-              >
-                <Wand2 size={18} />
-                Ajuda da IA
-              </button>
-            </div>
-
-            {showAiBox && (
-              <div
-                className="rounded-[28px] p-5"
-                style={{
-                  background: "#fff",
-                  border: "1.5px solid #DBEAFE",
-                  boxShadow: "0 4px 16px rgba(0,82,204,0.05)",
-                }}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <h3 style={{ fontSize: 16, fontWeight: 700, color: "#1A2B5F" }}>
-                    Como o exercício deve ser feito?
-                  </h3>
-
-                  <button
-                    onClick={() => setShowAiBox(false)}
-                    style={{ border: "none", background: "transparent", cursor: "pointer" }}
-                  >
-                    <X size={18} color="#7B8AAC" />
-                  </button>
-                </div>
-
-                <textarea
-                  value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
-                  rows={4}
-                  placeholder="Ex: Criar um exercício com vogais e dica visual em cada item."
-                  className="w-full resize-none"
-                  style={{ ...inputStyle, height: "auto", paddingTop: 14 }}
-                />
-
-                <button
-                  onClick={handleGenerateWithAI}
-                  className="w-full mt-4 py-4 rounded-2xl flex items-center justify-center gap-2"
-                  style={{
-                    background: "#0052CC",
-                    color: "#fff",
-                    border: "none",
-                    cursor: "pointer",
-                    fontSize: 14,
-                    fontWeight: 700,
-                  }}
-                >
-                  <Wand2 size={18} />
-                  Gerar exercício
-                </button>
-              </div>
-            )}
-
-            <div
-              className="rounded-[28px] p-5"
-              style={{
-                background: "#fff",
-                border: "1.5px solid #DBEAFE",
-                boxShadow: "0 4px 16px rgba(0,82,204,0.05)",
-              }}
-            >
-              <div className="space-y-4">
-                <Field label="Nome do exercício" icon={<Type size={16} color="#0052CC" />}>
-                  <input
-                    value={form.nome}
-                    onChange={(e) => updateField("nome", e.target.value)}
-                    placeholder="Ex: Vogais iniciais"
-                    className="w-full"
-                    style={inputStyle}
-                  />
-                </Field>
-
-                <Field label="Categoria" icon={<Sparkles size={16} color="#0052CC" />}>
-                  <div className="space-y-3">
-                    <select
-                      value={form.categoria}
-                      onChange={(e) => {
-                        updateField("categoria", e.target.value);
-                        setShowNewCategory(false);
-                      }}
-                      className="w-full"
-                      style={inputStyle}
-                    >
-                      {categoriasPadrao.map((categoria) => (
-                        <option key={categoria} value={categoria}>
-                          {categoria}
-                        </option>
-                      ))}
-                    </select>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowNewCategory((prev) => !prev)}
-                      className="w-full h-[52px] rounded-2xl flex items-center justify-center gap-2"
-                      style={{
-                        border: "1.5px solid #DBEAFE",
-                        background: showNewCategory ? "#EBF3FF" : "#F8FBFF",
-                        color: "#0052CC",
-                        fontSize: 14,
-                        fontWeight: 700,
-                        cursor: "pointer",
-                      }}
-                    >
-                      <PlusCircle size={16} />
-                      Cadastrar nova categoria
-                    </button>
-
-                    {showNewCategory && (
-                      <input
-                        value={newCategory}
-                        onChange={(e) => setNewCategory(e.target.value)}
-                        placeholder="Digite a nova categoria"
-                        className="w-full"
-                        style={inputStyle}
-                      />
-                    )}
-                  </div>
-                </Field>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Nível" icon={<CheckCircle2 size={16} color="#0052CC" />}>
-                    <select
-                      value={form.nivel}
-                      onChange={(e) => updateField("nivel", e.target.value)}
-                      className="w-full"
-                      style={inputStyle}
-                    >
-                      <option>Fácil</option>
-                      <option>Médio</option>
-                      <option>Avançado</option>
-                    </select>
-                  </Field>
-
-                  <Field label="Ativo" icon={<CheckCircle2 size={16} color="#0052CC" />}>
-                    <button
-                      onClick={() => updateField("ativo", !form.ativo)}
-                      className="w-full h-[52px] rounded-2xl"
-                      style={{
-                        border: "1.5px solid #DBEAFE",
-                        background: form.ativo ? "#ECFDF5" : "#F8FAFC",
-                        color: form.ativo ? "#36B37E" : "#7B8AAC",
-                        fontSize: 14,
-                        fontWeight: 700,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {form.ativo ? "Ativo" : "Inativo"}
-                    </button>
-                  </Field>
-                </div>
-
-                <Field label="Objetivo" icon={<Target size={16} color="#0052CC" />}>
-                  <input
-                    value={form.objetivo}
-                    onChange={(e) => updateField("objetivo", e.target.value)}
-                    placeholder="Ex: Trabalhar identificação e emissão correta"
-                    className="w-full"
-                    style={inputStyle}
-                  />
-                </Field>
-
-                <Field label="Instruções" icon={<FileText size={16} color="#0052CC" />}>
-                  <textarea
-                    value={form.instrucoesGuia}
-                    onChange={(e) => updateField("instrucoesGuia", e.target.value)}
-                    rows={5}
-                    className="w-full resize-none"
-                    style={{ ...inputStyle, height: "auto", paddingTop: 14 }}
-                  />
-                </Field>
-              </div>
-            </div>
-
-            <div
-              className="rounded-[28px] p-5"
-              style={{
-                background: "#fff",
-                border: "1.5px solid #DBEAFE",
-                boxShadow: "0 4px 16px rgba(0,82,204,0.05)",
-              }}
-            >
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: "#1A2B5F", marginBottom: 12 }}>
-                Conteúdo
-              </h3>
-
-              <div className="space-y-3">
-                <select
-                  value={selectedContent}
-                  onChange={(e) => handleContentSelect(e.target.value)}
-                  className="w-full"
-                  style={inputStyle}
-                >
-                  <option value="">Selecione um conteúdo cadastrado</option>
-                  {sugestoesConteudo.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-
-                <button
-                  type="button"
-                  onClick={() => setShowNewContent((prev) => !prev)}
-                  className="w-full h-[52px] rounded-2xl flex items-center justify-center gap-2"
-                  style={{
-                    border: "1.5px solid #DBEAFE",
-                    background: showNewContent ? "#EBF3FF" : "#F8FBFF",
-                    color: "#0052CC",
-                    fontSize: 14,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
-                >
-                  <PlusCircle size={16} />
-                  Cadastrar novo conteúdo
-                </button>
-
-                {showNewContent && (
-                  <input
-                    value={newContent}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setNewContent(value);
-                      setContentInstruction(defaultInstruction(value));
-                    }}
-                    placeholder="Digite a nova palavra, sílaba ou conteúdo"
-                    className="w-full"
-                    style={inputStyle}
-                  />
-                )}
-
-                <textarea
-                  value={contentInstruction}
-                  onChange={(e) => setContentInstruction(e.target.value)}
-                  rows={6}
-                  className="w-full resize-none"
-                  style={{ ...inputStyle, height: "auto", paddingTop: 14 }}
-                />
-
-                <button
-                  type="button"
-                  onClick={handleAddContent}
-                  className="w-full py-4 rounded-2xl flex items-center justify-center gap-2"
-                  style={{
-                    background: "#0052CC",
-                    color: "#fff",
-                    border: "none",
-                    cursor: "pointer",
-                    fontSize: 14,
-                    fontWeight: 700,
-                  }}
-                >
-                  <PlusCircle size={16} />
-                  Adicionar conteúdo
-                </button>
-              </div>
-
-              <div className="mt-4 space-y-3">
-                {conteudos.length > 0 ? (
-                  conteudos.map((item, index) => (
-                    <div
-                      key={item.id}
-                      className="rounded-2xl p-4"
-                      style={{ background: "#F8FBFF", border: "1.5px solid #E3EEFF" }}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <p style={{ fontSize: 14, fontWeight: 700, color: "#1A2B5F" }}>
-                            {index + 1}. {item.texto}
-                          </p>
+                        <div className="mt-5">
                           <p
                             style={{
-                              fontSize: 12,
-                              color: "#4C5B7C",
-                              whiteSpace: "pre-wrap",
-                              lineHeight: 1.7,
-                              marginTop: 8,
+                              fontSize: 13,
+                              fontWeight: 600,
+                              color: "#1A2B5F",
+                              marginBottom: 10,
                             }}
                           >
-                            {item.instrucao}
+                            Guia de instruções
                           </p>
+
+                          <div
+                            className="rounded-2xl p-4"
+                            style={{
+                              background: "#F8FBFF",
+                              border: "1.5px solid #E3EEFF",
+                            }}
+                          >
+                            <p
+                              style={{
+                                fontSize: 13,
+                                color: "#4C5B7C",
+                                whiteSpace: "pre-wrap",
+                                lineHeight: 1.7,
+                                wordBreak: "break-word",
+                              }}
+                            >
+                              {form.instrucoesGuia}
+                            </p>
+                          </div>
                         </div>
-                        
-                        <button
-                          onClick={() => handleRemoveContent(item.id)}
-                          className="w-9 h-9 rounded-xl flex items-center justify-center"
-                          style={{
-                            border: "none",
-                            background: "#FFECEC",
-                            cursor: "pointer",
-                          }}
-                        >
-                          <X size={15} color="#D14343" />
-                        </button>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <div
-                    className="rounded-2xl p-4"
-                    style={{ background: "#F8FBFF", border: "1.5px dashed #C9DBFF" }}
-                  >
-                    <p style={{ fontSize: 13, color: "#7B8AAC" }}>
-                      Nenhum conteúdo adicionado ainda.
-                    </p>
+                    </aside>
                   </div>
-                )}
+                </div>
               </div>
-                <button
-                    onClick={handleSave}
-                    className="w-full mt-5 py-4 rounded-2xl flex items-center justify-center gap-2"
-                    style={{
-                        background: "linear-gradient(135deg, #36B37E, #57D9A3)",
-                        color: "#fff",
-                        border: "none",
-                        cursor: "pointer",
-                        fontSize: 14,
-                        fontWeight: 700,
-                        boxShadow: "0 10px 22px rgba(54,179,126,0.2)",
-                    }}
-                    >
-                    <Save size={18} />
-                    Salvar Exercício
-                </button>
-            </div>
+            </main>
           </div>
         </div>
       </div>
@@ -1163,13 +896,13 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div>
+    <div className="min-w-0">
       <label
-        className="flex items-center gap-2 mb-2"
+        className="mb-2 flex items-center gap-2"
         style={{ fontSize: 13, fontWeight: 600, color: "#1A2B5F" }}
       >
         {icon}
-        {label}
+        <span className="min-w-0 break-words">{label}</span>
       </label>
       {children}
     </div>
@@ -1183,14 +916,23 @@ function PreviewItem({ label, value }: { label: string; value: string }) {
       style={{ background: "rgba(255,255,255,0.12)" }}
     >
       <p style={{ fontSize: 11, opacity: 0.72 }}>{label}</p>
-      <p style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{value}</p>
+      <p
+        style={{
+          fontSize: 14,
+          fontWeight: 700,
+          marginTop: 2,
+          wordBreak: "break-word",
+        }}
+      >
+        {value}
+      </p>
     </div>
   );
 }
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
-  height: 52,
+  minHeight: 52,
   borderRadius: 16,
   border: "1.5px solid #DBEAFE",
   background: "#F8FBFF",
