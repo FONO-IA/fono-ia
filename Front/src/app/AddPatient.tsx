@@ -403,7 +403,7 @@ export function AddPatient() {
                     }}
                   >
                     <User size={20} color="#0052CC" />
-                    Dados Pessoais
+                    Paciente
                   </h3>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -445,7 +445,6 @@ export function AddPatient() {
                         type="text"
                         value={formData.age}
                         readOnly
-                        placeholder="Calculada automaticamente"
                         className="w-full px-4 py-3 rounded-2xl"
                         style={{
                           border: "1.5px solid #DBEAFE",
@@ -609,101 +608,6 @@ export function AddPatient() {
                     color: "#1A2B5F",
                   }}
                 >
-                  <User size={18} color="#0052CC" />
-                  Dados Pessoais
-                </h3>
-
-                <div className="space-y-3">
-                  <Input
-                    label="Nome Completo*"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="Ex: Maria Silva Santos"
-                    error={errors.name}
-                  />
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input
-                      label="Nascimento*"
-                      name="birthDate"
-                      type="date"
-                      value={formData.birthDate}
-                      onChange={handleChange}
-                      error={errors.birthDate}
-                    />
-
-                    <div>
-                      <label
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 500,
-                          color: "#6B7A99",
-                          marginBottom: 6,
-                          display: "block",
-                        }}
-                      >
-                        Idade
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.age}
-                        readOnly
-                        placeholder="Auto"
-                        className="w-full px-3 py-3 rounded-2xl"
-                        style={{
-                          border: "1.5px solid #DBEAFE",
-                          fontSize: 14,
-                          outline: "none",
-                          background: "#F8FAFC",
-                          fontFamily: "'Poppins', sans-serif",
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 500,
-                        color: "#6B7A99",
-                        marginBottom: 6,
-                        display: "block",
-                      }}
-                    >
-                      Observações
-                    </label>
-                    <textarea
-                      value={formData.observations}
-                      onChange={handleChange}
-                      name="observations"
-                      placeholder="Informações adicionais sobre o paciente..."
-                      rows={3}
-                      className="w-full px-4 py-3 rounded-2xl resize-none"
-                      style={{
-                        border: "1.5px solid #DBEAFE",
-                        fontSize: 14,
-                        outline: "none",
-                        fontFamily: "'Poppins', sans-serif",
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className="rounded-3xl p-5 mb-4"
-                style={{ background: "#fff", border: "1.5px solid #DBEAFE" }}
-              >
-                <h3
-                  className="flex items-center gap-2 mb-4"
-                  style={{
-                    fontSize: 15,
-                    fontWeight: 600,
-                    color: "#1A2B5F",
-                  }}
-                >
                   <Phone size={18} color="#0052CC" />
                   Responsável
                 </h3>
@@ -748,16 +652,110 @@ export function AddPatient() {
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              <div
+                className="rounded-3xl p-5 mb-4"
+                style={{ background: "#fff", border: "1.5px solid #DBEAFE" }}
+              >
+                <h3
+                  className="flex items-center gap-2 mb-4"
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: "#1A2B5F",
+                  }}
+                >
+                  <User size={18} color="#0052CC" />
+                  Paciente
+                </h3>
+
+                <div className="space-y-3">
+                  <Input
+                    label="Nome Completo*"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="Ex: Maria Silva Santos"
+                    error={errors.name}
+                  />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      label="Nascimento*"
+                      name="birthDate"
+                      type="date"
+                      value={formData.birthDate}
+                      onChange={handleChange}
+                      error={errors.birthDate}
+                    />
+
+                    <div>
+                      <label
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 500,
+                          color: "#6B7A99",
+                          marginBottom: 6,
+                          display: "block",
+                        }}
+                      >
+                        Idade
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.age}
+                        readOnly
+                        className="w-full px-3 py-3 rounded-2xl"
+                        style={{
+                          border: "1.5px solid #DBEAFE",
+                          fontSize: 14,
+                          outline: "none",
+                          background: "#F8FAFC",
+                          fontFamily: "'Poppins', sans-serif",
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 500,
+                        color: "#6B7A99",
+                        marginBottom: 6,
+                        display: "block",
+                      }}
+                    >
+                      Observações
+                    </label>
+                    <textarea
+                      value={formData.observations}
+                      onChange={handleChange}
+                      name="observations"
+                      placeholder="Informações adicionais sobre o paciente..."
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-2xl resize-none"
+                      style={{
+                        border: "1.5px solid #DBEAFE",
+                        fontSize: 14,
+                        outline: "none",
+                        fontFamily: "'Poppins', sans-serif",
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3">
                 <button
                   onClick={() => navigate("/admin")}
                   className="px-6 py-3.5 rounded-2xl"
                   style={{
-                    background: "#fff",
+                    background: "#B90000",
                     border: "2px solid #DBEAFE",
                     fontSize: 14,
                     fontWeight: 600,
-                    color: "#6B7A99",
+                    color: "#fff",
                     cursor: "pointer",
                   }}
                 >
@@ -765,10 +763,9 @@ export function AddPatient() {
                 </button>
                 <button
                   onClick={handleSave}
-                  className="flex-1 px-6 py-3.5 rounded-2xl flex items-center justify-center gap-2"
+                  className="flex px-6 py-3.5 rounded-2xl justify-center gap-2"
                   style={{
-                    background:
-                      "linear-gradient(135deg, #0052CC, #0065FF)",
+                    background: "#007200",
                     fontSize: 14,
                     fontWeight: 600,
                     color: "#fff",
