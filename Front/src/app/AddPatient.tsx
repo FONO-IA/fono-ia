@@ -527,7 +527,7 @@ export function AddPatient() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-3">
+                <div className="flex gap-3 justify-end">
                   <button
                     onClick={() => navigate("/admin")}
                     className="px-8 py-3.5 rounded-2xl transition-all hover:bg-gray-100"
