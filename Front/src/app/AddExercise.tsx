@@ -671,7 +671,7 @@ I
                             onClick={handleSave}
                             className="px-6 py-4 rounded-2xl flex items-center justify-center gap-2"
                             style={{
-                            background: "linear-gradient(135deg, #36B37E, #57D9A3)",
+                            background: "#007200",
                             color: "#fff",
                             border: "none",
                             cursor: "pointer",
@@ -1133,7 +1133,7 @@ I
                     onClick={handleSave}
                     className="w-full mt-5 py-4 rounded-2xl flex items-center justify-center gap-2"
                     style={{
-                        background: "linear-gradient(135deg, #36B37E, #57D9A3)",
+                        background: "#007200",
                         color: "#fff",
                         border: "none",
                         cursor: "pointer",
