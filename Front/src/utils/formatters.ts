@@ -1,6 +1,8 @@
-const onlyDigits = (value: string) => value.replace(/\D/g, "");
+// src/utils/formatters.ts
 
-const formatCPF = (value: string) => {
+export const onlyDigits = (value: string) => value.replace(/\D/g, "");
+
+export const formatCPF = (value: string) => {
   const digits = onlyDigits(value).slice(0, 11);
 
   return digits
@@ -9,7 +11,7 @@ const formatCPF = (value: string) => {
     .replace(/\.(\d{3})(\d)/, ".$1-$2");
 };
 
-const formatPhone = (value: string) => {
+export const formatPhone = (value: string) => {
   const digits = onlyDigits(value).slice(0, 11);
 
   if (digits.length <= 10) {
@@ -23,7 +25,7 @@ const formatPhone = (value: string) => {
     .replace(/(\d{5})(\d)/, "$1-$2");
 };
 
-const calculateAge = (birthDate: string) => {
+export const calculateAge = (birthDate: string) => {
   if (!birthDate) return "";
 
   const today = new Date();
