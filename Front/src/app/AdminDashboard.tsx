@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
 import {
@@ -15,83 +15,113 @@ import {
   LogOut,
   Crown,
 } from "lucide-react";
+import { listarPacientes } from "../services/pacientes";
 
-const patients = [
-  {
-    id: "1",
-    name: "Lucas Mendes",
-    age: 6,
-    initials: "LM",
-    color: "#4C9AFF",
-    lastSession: "24 Fev 2026",
-    progress: 82,
-    status: "Ótimo progresso",
-    statusColor: "#36B37E",
-    nextSession: "Hoje, 14:30",
-  },
-  {
-    id: "2",
-    name: "Ana Beatriz Costa",
-    age: 7,
-    initials: "AB",
-    color: "#FF7452",
-    lastSession: "23 Fev 2026",
-    progress: 65,
-    status: "Em progresso",
-    statusColor: "#FFAB00",
-    nextSession: "Amanhã, 10:00",
-  },
-  {
-    id: "3",
-    name: "Pedro Oliveira",
-    age: 5,
-    initials: "PO",
-    color: "#57D9A3",
-    lastSession: "21 Fev 2026",
-    progress: 45,
-    status: "Precisa atenção",
-    statusColor: "#FF5630",
-    nextSession: "27 Fev, 09:00",
-  },
-  {
-    id: "4",
-    name: "Sofia Ribeiro",
-    age: 8,
-    initials: "SR",
-    color: "#998DD9",
-    lastSession: "20 Fev 2026",
-    progress: 91,
-    status: "Excelente",
-    statusColor: "#36B37E",
-    nextSession: "28 Fev, 15:00",
-  },
-  {
-    id: "5",
-    name: "Gabriel Santos",
-    age: 6,
-    initials: "GS",
-    color: "#F99CDB",
-    lastSession: "18 Fev 2026",
-    progress: 58,
-    status: "Em progresso",
-    statusColor: "#FFAB00",
-    nextSession: "01 Mar, 11:00",
-  },
-];
+type ApiPaciente = {
+  id: string;
+  nome: string;
+  data_nascimento: string;
+  observacoes?: string;
+  responsavel?: string;
+  responsavel_nome?: string;
+};
+
+type DashboardPatient = {
+  id: string;
+  name: string;
+  age: number;
+  initials: string;
+  color: string;
+  lastSession: string;
+  progress: number;
+  status: string;
+  statusColor: string;
+  nextSession: string;
+};
 
 const tabs = [
   { id: "patients", label: "Pacientes", icon: Users },
   { id: "stats", label: "Estatísticas", icon: BarChart2 },
 ];
 
+const colors = ["#4C9AFF", "#FF7452", "#57D9A3", "#998DD9", "#F99CDB", "#36B37E"];
+
+const calculateAge = (birthDate: string) => {
+  if (!birthDate) return 0;
+
+  const today = new Date();
+  const birth = new Date(birthDate);
+
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+
+  return age >= 0 ? age : 0;
+};
+
+const getInitials = (name: string) => {
+  return name
+    .trim()
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+};
+
+const mapPacienteToCard = (patient: ApiPaciente, index: number): DashboardPatient => ({
+  id: patient.id,
+  name: patient.nome,
+  age: calculateAge(patient.data_nascimento),
+  initials: getInitials(patient.nome),
+  color: colors[index % colors.length],
+  lastSession: "Sem sessão",
+  progress: 0,
+  status: "Recém cadastrado",
+  statusColor: "#6B7A99",
+  nextSession: "Não agendada",
+});
+
 export function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("patients");
   const [searchQuery, setSearchQuery] = useState("");
+  const [patients, setPatients] = useState<DashboardPatient[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const filtered = patients.filter((p) =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    async function loadPatients() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await listarPacientes();
+        const mapped = data.map((patient: ApiPaciente, index: number) =>
+          mapPacienteToCard(patient, index)
+        );
+
+        setPatients(mapped);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Erro ao carregar pacientes.";
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadPatients();
+  }, []);
+
+  const filtered = useMemo(() => {
+    return patients.filter((p) =>
+      p.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [patients, searchQuery]);
 
   return (
     <MobileWrapper bgColor="#EBF3FF" desktopMode="full">
@@ -102,7 +132,6 @@ export function AdminDashboard() {
           background: "#F4F7FF",
         }}
       >
-        {/* Desktop Sidebar */}
         <div
           className="hidden md:flex md:flex-col md:w-72 lg:w-80 min-h-screen"
           style={{
@@ -110,7 +139,6 @@ export function AdminDashboard() {
               "linear-gradient(180deg, #003884 0%, #0052CC 50%, #0065FF 100%)",
           }}
         >
-          {/* Logo */}
           <div className="p-8 border-b border-white/10">
             <div className="flex items-center gap-3 mb-2">
               <div
@@ -148,7 +176,6 @@ export function AdminDashboard() {
             </div>
           </div>
 
-          {/* Profile card */}
           <div className="p-6 border-b border-white/10">
             <div className="flex items-center gap-3 mb-3">
               <div
@@ -160,9 +187,7 @@ export function AdminDashboard() {
                 </span>
               </div>
               <div className="flex-1">
-                <p
-                  style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}
-                >
+                <p style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>
                   Dr. Paulo Andrade
                 </p>
                 <p
@@ -181,15 +206,12 @@ export function AdminDashboard() {
               style={{ background: "rgba(255,255,255,0.15)" }}
             >
               <Crown size={12} color="#FFD700" />
-              <span
-                style={{ fontSize: 11, fontWeight: 600, color: "#FFD700" }}
-              >
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#FFD700" }}>
                 Plano Pro
               </span>
             </div>
           </div>
 
-          {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1">
             {tabs.map((tab) => {
               const Icon = tab.icon;
@@ -200,9 +222,7 @@ export function AdminDashboard() {
                   onClick={() => setActiveTab(tab.id)}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200"
                   style={{
-                    background: isActive
-                      ? "rgba(255,255,255,0.2)"
-                      : "transparent",
+                    background: isActive ? "rgba(255,255,255,0.2)" : "transparent",
                     border: "none",
                     cursor: "pointer",
                   }}
@@ -226,16 +246,11 @@ export function AdminDashboard() {
             })}
           </nav>
 
-          {/* Bottom actions */}
           <div className="p-4 border-t border-white/10 space-y-2">
             <button
               onClick={() => navigate("/settings/perfil")}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all"
-              style={{
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-              }}
+              style={{ background: "transparent", border: "none", cursor: "pointer" }}
             >
               <Settings size={20} color="rgba(255,255,255,0.6)" />
               <span
@@ -258,20 +273,15 @@ export function AdminDashboard() {
               }}
             >
               <LogOut size={20} color="#FF9580" />
-              <span
-                style={{ fontSize: 14, fontWeight: 500, color: "#FFB4A6" }}
-              >
+              <span style={{ fontSize: 14, fontWeight: 500, color: "#FFB4A6" }}>
                 Sair
               </span>
             </button>
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="flex flex-col flex-1 min-h-0">
-          {/* Desktop Content */}
           <div className="hidden md:flex md:flex-col md:flex-1 min-h-0">
-            {/* Desktop Header */}
             <div
               className="px-8 lg:px-12 py-6 border-b border-gray-200"
               style={{ background: "#fff" }}
@@ -285,7 +295,7 @@ export function AdminDashboard() {
                       fontWeight: 400,
                     }}
                   >
-                    Quinta-feira, 26 Fev 2026
+                    Dashboard
                   </p>
                   <h1
                     style={{
@@ -308,17 +318,12 @@ export function AdminDashboard() {
                     }}
                   >
                     <Bell size={20} color="#6B7A99" />
-                    <div
-                      className="absolute top-2 right-2 w-2 h-2 rounded-full"
-                      style={{ background: "#FF5630" }}
-                    />
                   </button>
                   <button
                     onClick={() => navigate("/add-patient")}
                     className="px-5 py-2.5 rounded-2xl flex items-center gap-2 transition-all hover:opacity-90"
                     style={{
-                      background:
-                        "linear-gradient(135deg, #0052CC, #0065FF)",
+                      background: "linear-gradient(135deg, #0052CC, #0065FF)",
                       color: "#fff",
                       fontSize: 14,
                       fontWeight: 600,
@@ -332,24 +337,23 @@ export function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Stats */}
               <div className="grid grid-cols-3 gap-4">
                 {[
                   {
                     label: "Total de Pacientes",
-                    value: "24",
+                    value: String(patients.length),
                     icon: Users,
                     color: "#0052CC",
                   },
                   {
                     label: "Sessões Hoje",
-                    value: "3",
+                    value: "0",
                     icon: Calendar,
                     color: "#FFAB00",
                   },
                   {
                     label: "Taxa Média de Progresso",
-                    value: "68%",
+                    value: "0%",
                     icon: TrendingUp,
                     color: "#36B37E",
                   },
@@ -393,7 +397,6 @@ export function AdminDashboard() {
               </div>
             </div>
 
-            {/* Desktop Search & Content */}
             <div className="flex-1 min-h-0 overflow-y-auto px-8 lg:px-12 py-6">
               {activeTab === "patients" && (
                 <>
@@ -431,6 +434,45 @@ export function AdminDashboard() {
                       />
                     </div>
                   </div>
+
+                  {loading && <p style={{ color: "#6B7A99" }}>Carregando pacientes...</p>}
+
+                  {!loading && error && (
+                    <div
+                      className="rounded-2xl p-4 mb-4"
+                      style={{
+                        background: "#FEF2F2",
+                        border: "1px solid #FECACA",
+                        color: "#B91C1C",
+                      }}
+                    >
+                      {error}
+                    </div>
+                  )}
+
+                  {!loading && !error && filtered.length === 0 && (
+                    <div
+                      className="rounded-3xl p-8 text-center"
+                      style={{
+                        background: "#fff",
+                        border: "1.5px solid #DBEAFE",
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 600,
+                          color: "#1A2B5F",
+                          marginBottom: 8,
+                        }}
+                      >
+                        Nenhum paciente encontrado
+                      </p>
+                      <p style={{ fontSize: 14, color: "#6B7A99" }}>
+                        Cadastre um paciente para ele aparecer aqui.
+                      </p>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-6">
                     {filtered.map((patient) => (
@@ -472,6 +514,7 @@ export function AdminDashboard() {
                             </p>
                             <ChevronRight size={18} color="#B0BAD3" />
                           </div>
+
                           <div className="flex items-center gap-2 mb-3">
                             <span
                               className="px-2.5 py-1 rounded-full"
@@ -494,6 +537,7 @@ export function AdminDashboard() {
                               · Última: {patient.lastSession}
                             </span>
                           </div>
+
                           <div className="flex items-center gap-2">
                             <div
                               className="flex-1 rounded-full overflow-hidden"
@@ -518,6 +562,7 @@ export function AdminDashboard() {
                               {patient.progress}%
                             </span>
                           </div>
+
                           <div className="flex items-center gap-2 mt-2">
                             <Clock size={11} color={patient.statusColor} />
                             <span
@@ -572,30 +617,13 @@ export function AdminDashboard() {
                       maxWidth: 400,
                     }}
                   >
-                    Acompanhe o desempenho geral de todos os seus pacientes em
-                    um dashboard completo
+                    Acompanhe o desempenho geral de todos os seus pacientes.
                   </p>
-                  <button
-                    onClick={() => navigate("/patient/1")}
-                    className="px-8 py-3.5 rounded-2xl"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #0052CC, #0065FF)",
-                      color: "#fff",
-                      fontSize: 15,
-                      fontWeight: 600,
-                      border: "none",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Ver Progresso de Lucas
-                  </button>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Mobile Version */}
           <div
             className="md:hidden flex flex-col flex-1 min-h-screen"
             style={{
@@ -603,7 +631,6 @@ export function AdminDashboard() {
               background: "#F4F7FF",
             }}
           >
-            {/* Header */}
             <div
               className="px-6 pt-14 pb-6 relative overflow-hidden"
               style={{
@@ -611,30 +638,19 @@ export function AdminDashboard() {
                   "linear-gradient(150deg, #003884 0%, #0052CC 60%, #0065FF 100%)",
               }}
             >
-              <div
-                className="absolute -top-8 -right-8 w-32 h-32 rounded-full opacity-15"
-                style={{ background: "#fff" }}
-              />
-              <div
-                className="absolute top-12 right-16 w-16 h-16 rounded-full opacity-10"
-                style={{ background: "#fff" }}
-              />
-
               <div className="flex items-start justify-between mb-6 relative z-10">
                 <div>
                   <p
                     style={{
-                      fontFamily: "'Poppins', sans-serif",
                       fontSize: 13,
                       color: "rgba(255,255,255,0.7)",
                       fontWeight: 400,
                     }}
                   >
-                    Quinta-feira, 26 Fev
+                    Dashboard
                   </p>
                   <h1
                     style={{
-                      fontFamily: "'Poppins', sans-serif",
                       fontSize: 22,
                       fontWeight: 700,
                       color: "#fff",
@@ -645,13 +661,12 @@ export function AdminDashboard() {
                   </h1>
                   <p
                     style={{
-                      fontFamily: "'Poppins', sans-serif",
                       fontSize: 13,
                       color: "rgba(255,255,255,0.75)",
                       fontWeight: 400,
                     }}
                   >
-                    3 sessões agendadas hoje
+                    {patients.length} pacientes cadastrados
                   </p>
                 </div>
                 <button
@@ -663,19 +678,14 @@ export function AdminDashboard() {
                   }}
                 >
                   <Bell size={20} color="white" />
-                  <div
-                    className="absolute top-2 right-2 w-2 h-2 rounded-full"
-                    style={{ background: "#FF5630" }}
-                  />
                 </button>
               </div>
 
-              {/* Stats row */}
               <div className="flex gap-3 relative z-10 mb-1">
                 {[
-                  { label: "Pacientes", value: "24", icon: Users },
-                  { label: "Sessões hoje", value: "3", icon: Calendar },
-                  { label: "Média", value: "68%", icon: TrendingUp },
+                  { label: "Pacientes", value: String(patients.length), icon: Users },
+                  { label: "Sessões hoje", value: "0", icon: Calendar },
+                  { label: "Média", value: "0%", icon: TrendingUp },
                 ].map((stat) => (
                   <div
                     key={stat.label}
@@ -685,7 +695,6 @@ export function AdminDashboard() {
                     <stat.icon size={16} color="rgba(255,255,255,0.8)" />
                     <p
                       style={{
-                        fontFamily: "'Poppins', sans-serif",
                         fontSize: 16,
                         fontWeight: 700,
                         color: "#fff",
@@ -695,7 +704,6 @@ export function AdminDashboard() {
                     </p>
                     <p
                       style={{
-                        fontFamily: "'Poppins', sans-serif",
                         fontSize: 10,
                         color: "rgba(255,255,255,0.7)",
                         fontWeight: 400,
@@ -708,7 +716,6 @@ export function AdminDashboard() {
               </div>
             </div>
 
-            {/* Search */}
             <div className="px-6 -mt-4 relative z-20">
               <div
                 className="flex items-center gap-3 px-4 py-3 rounded-2xl shadow-md"
@@ -726,7 +733,6 @@ export function AdminDashboard() {
                     flex: 1,
                     border: "none",
                     outline: "none",
-                    fontFamily: "'Poppins', sans-serif",
                     fontSize: 14,
                     fontWeight: 400,
                     color: "#1A2B5F",
@@ -736,14 +742,12 @@ export function AdminDashboard() {
               </div>
             </div>
 
-            {/* Content */}
             <div className="flex-1 overflow-y-auto px-6 pt-5 pb-32">
               {activeTab === "patients" && (
                 <>
                   <div className="flex items-center justify-between mb-4">
                     <h2
                       style={{
-                        fontFamily: "'Poppins', sans-serif",
                         fontSize: 16,
                         fontWeight: 600,
                         color: "#1A2B5F",
@@ -753,7 +757,6 @@ export function AdminDashboard() {
                     </h2>
                     <span
                       style={{
-                        fontFamily: "'Poppins', sans-serif",
                         fontSize: 12,
                         color: "#6B7A99",
                         fontWeight: 400,
@@ -763,12 +766,27 @@ export function AdminDashboard() {
                     </span>
                   </div>
 
+                  {loading && <p style={{ color: "#6B7A99" }}>Carregando pacientes...</p>}
+
+                  {!loading && error && (
+                    <div
+                      className="rounded-2xl p-4 mb-4"
+                      style={{
+                        background: "#FEF2F2",
+                        border: "1px solid #FECACA",
+                        color: "#B91C1C",
+                      }}
+                    >
+                      {error}
+                    </div>
+                  )}
+
                   <div className="flex flex-col gap-3">
                     {filtered.map((patient) => (
                       <button
                         key={patient.id}
                         onClick={() => navigate(`/patient/${patient.id}`)}
-                        className="w-full text-left rounded-3xl p-4 flex items-center gap-4 transition-all duration-200 active:scale-98"
+                        className="w-full text-left rounded-3xl p-4 flex items-center gap-4"
                         style={{
                           background: "#ffffff",
                           border: "1.5px solid #DBEAFE",
@@ -782,7 +800,6 @@ export function AdminDashboard() {
                         >
                           <span
                             style={{
-                              fontFamily: "'Poppins', sans-serif",
                               fontSize: 15,
                               fontWeight: 700,
                               color: patient.color,
@@ -796,7 +813,6 @@ export function AdminDashboard() {
                           <div className="flex items-center justify-between mb-1">
                             <p
                               style={{
-                                fontFamily: "'Poppins', sans-serif",
                                 fontSize: 14,
                                 fontWeight: 600,
                                 color: "#1A2B5F",
@@ -806,12 +822,12 @@ export function AdminDashboard() {
                             </p>
                             <ChevronRight size={16} color="#B0BAD3" />
                           </div>
+
                           <div className="flex items-center gap-2 mb-2">
                             <span
                               className="px-2 py-0.5 rounded-full"
                               style={{
                                 background: "#EBF3FF",
-                                fontFamily: "'Poppins', sans-serif",
                                 fontSize: 10,
                                 fontWeight: 500,
                                 color: "#0052CC",
@@ -821,7 +837,6 @@ export function AdminDashboard() {
                             </span>
                             <span
                               style={{
-                                fontFamily: "'Poppins', sans-serif",
                                 fontSize: 11,
                                 color: "#6B7A99",
                                 fontWeight: 400,
@@ -847,7 +862,6 @@ export function AdminDashboard() {
                             </div>
                             <span
                               style={{
-                                fontFamily: "'Poppins', sans-serif",
                                 fontSize: 11,
                                 fontWeight: 600,
                                 color: "#0052CC",
@@ -861,7 +875,6 @@ export function AdminDashboard() {
                             <Clock size={10} color={patient.statusColor} />
                             <span
                               style={{
-                                fontFamily: "'Poppins', sans-serif",
                                 fontSize: 10,
                                 color: patient.statusColor,
                                 fontWeight: 500,
@@ -871,7 +884,6 @@ export function AdminDashboard() {
                             </span>
                             <span
                               style={{
-                                fontFamily: "'Poppins', sans-serif",
                                 fontSize: 10,
                                 color: "#B0BAD3",
                                 fontWeight: 400,
@@ -897,7 +909,6 @@ export function AdminDashboard() {
                   </div>
                   <h2
                     style={{
-                      fontFamily: "'Poppins', sans-serif",
                       fontSize: 18,
                       fontWeight: 600,
                       color: "#1A2B5F",
@@ -905,41 +916,13 @@ export function AdminDashboard() {
                   >
                     Estatísticas
                   </h2>
-                  <p
-                    style={{
-                      fontFamily: "'Poppins', sans-serif",
-                      fontSize: 13,
-                      color: "#6B7A99",
-                      fontWeight: 400,
-                      textAlign: "center",
-                    }}
-                  >
-                    Acompanhe o desempenho geral de todos os seus pacientes
-                  </p>
-                  <button
-                    onClick={() => navigate("/patient/1")}
-                    className="px-6 py-3 rounded-2xl"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #0052CC, #0065FF)",
-                      color: "#fff",
-                      fontFamily: "'Poppins', sans-serif",
-                      fontSize: 14,
-                      fontWeight: 600,
-                      border: "none",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Ver Progresso de Lucas
-                  </button>
                 </div>
               )}
             </div>
 
-            {/* FAB */}
             <button
               onClick={() => navigate("/add-patient")}
-              className="fixed md:hidden flex items-center justify-center rounded-full shadow-lg transition-all duration-200 active:scale-90"
+              className="fixed md:hidden flex items-center justify-center rounded-full shadow-lg"
               style={{
                 width: 60,
                 height: 60,
@@ -955,7 +938,6 @@ export function AdminDashboard() {
               <Plus size={28} color="white" strokeWidth={2.5} />
             </button>
 
-            {/* Bottom Navigation */}
             <div
               className="fixed md:hidden bottom-0 left-0 right-0 flex items-center px-6 pb-6 pt-3"
               style={{
@@ -972,7 +954,7 @@ export function AdminDashboard() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className="flex-1 flex flex-col items-center gap-1 py-1 transition-all duration-200"
+                    className="flex-1 flex flex-col items-center gap-1 py-1"
                     style={{
                       background: "none",
                       border: "none",
@@ -980,7 +962,7 @@ export function AdminDashboard() {
                     }}
                   >
                     <div
-                      className="flex items-center justify-center rounded-xl transition-all duration-200"
+                      className="flex items-center justify-center rounded-xl"
                       style={{
                         width: 42,
                         height: 32,
@@ -995,7 +977,6 @@ export function AdminDashboard() {
                     </div>
                     <span
                       style={{
-                        fontFamily: "'Poppins', sans-serif",
                         fontSize: 10,
                         fontWeight: isActive ? 600 : 400,
                         color: isActive ? "#0052CC" : "#B0BAD3",
