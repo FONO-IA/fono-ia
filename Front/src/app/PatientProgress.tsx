@@ -256,7 +256,7 @@ export function PatientProgress() {
                   onClick={() => navigate("/add-exercise")}
                   className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:opacity-90"
                   style={{
-                    background: "linear-gradient(135deg, #36B37E, #57D9A3)",
+                    background: "linear-gradient(135deg, #00A337, #00B561)",
                     color: "#fff",
                     fontSize: 15,
                     fontWeight: 700,
