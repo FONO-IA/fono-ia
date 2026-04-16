@@ -3,11 +3,51 @@ import { useNavigate } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
 import { ArrowLeft, User, Phone, Save } from "lucide-react";
 import { criarPaciente, criarResponsavel } from "../services/pacientes";
-import { onlyDigits, calculateAge, formatPhone, formatCPF } from "../utils/formatters";
+import {
+  onlyDigits,
+  calculateAge,
+  formatPhone,
+  formatCPF,
+} from "../utils/formatters";
+import { Input } from "./components/Inputs";
+
+type FormDataType = {
+  name: string;
+  birthDate: string;
+  age: string;
+  observations: string;
+  parentName: string;
+  phone: string;
+  email: string;
+  cpf: string;
+};
+
+type ErrorsType = {
+  name: string;
+  birthDate: string;
+  parentName: string;
+  phone: string;
+  email: string;
+  cpf: string;
+  general: string;
+};
+
+const initialErrors: ErrorsType = {
+  name: "",
+  birthDate: "",
+  parentName: "",
+  phone: "",
+  email: "",
+  cpf: "",
+  general: "",
+};
 
 export function AddPatient() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
+
+  const [errors, setErrors] = useState<ErrorsType>(initialErrors);
+
+  const [formData, setFormData] = useState<FormDataType>({
     name: "",
     birthDate: "",
     age: "",
@@ -24,12 +64,14 @@ export function AddPatient() {
     const { name, value } = e.target;
 
     if (name === "cpf") {
+      const hasLetters = /[^\d.\-]/.test(value);
       const cleaned = onlyDigits(value);
 
-      if (value && /\D/.test(value.replace(/[.\-]/g, ""))) {
-        alert("CPF aceita somente números.");
-        return;
-      }
+      setErrors((prev) => ({
+        ...prev,
+        cpf: hasLetters ? "CPF aceita somente números." : "",
+        general: "",
+      }));
 
       setFormData((prev) => ({
         ...prev,
@@ -39,12 +81,14 @@ export function AddPatient() {
     }
 
     if (name === "phone") {
+      const hasLetters = /[^\d()\-\s]/.test(value);
       const cleaned = onlyDigits(value);
 
-      if (value && /\D/.test(value.replace(/[()\-\s]/g, ""))) {
-        alert("Telefone aceita somente números.");
-        return;
-      }
+      setErrors((prev) => ({
+        ...prev,
+        phone: hasLetters ? "Telefone aceita somente números." : "",
+        general: "",
+      }));
 
       setFormData((prev) => ({
         ...prev,
@@ -54,6 +98,12 @@ export function AddPatient() {
     }
 
     if (name === "birthDate") {
+      setErrors((prev) => ({
+        ...prev,
+        birthDate: "",
+        general: "",
+      }));
+
       setFormData((prev) => ({
         ...prev,
         birthDate: value,
@@ -62,6 +112,12 @@ export function AddPatient() {
       return;
     }
 
+    setErrors((prev) => ({
+      ...prev,
+      [name]: "",
+      general: "",
+    }));
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -69,54 +125,102 @@ export function AddPatient() {
   };
 
   const handleSave = async () => {
+    const newErrors: ErrorsType = {
+      name: "",
+      birthDate: "",
+      parentName: "",
+      phone: "",
+      email: "",
+      cpf: "",
+      general: "",
+    };
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Informe o nome do paciente.";
+    }
+
+    if (!formData.birthDate) {
+      newErrors.birthDate = "Informe a data de nascimento.";
+    }
+
+    if (!formData.parentName.trim()) {
+      newErrors.parentName = "Informe o nome do responsável.";
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Informe o telefone do responsável.";
+    } else if (onlyDigits(formData.phone).length < 10) {
+      newErrors.phone = "Informe um telefone válido.";
+    }
+
+    if (!formData.cpf.trim()) {
+      newErrors.cpf = "Informe o CPF do responsável.";
+    } else if (onlyDigits(formData.cpf).length !== 11) {
+      newErrors.cpf = "Informe um CPF válido.";
+    }
+
+    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Informe um e-mail válido.";
+    }
+
+    if (Object.values(newErrors).some(Boolean)) {
+      setErrors(newErrors);
+      return;
+    }
+
     try {
-      if (!formData.name.trim()) {
-        alert("Informe o nome do paciente.");
-        return;
-      }
-
-      if (!formData.birthDate) {
-        alert("Informe a data de nascimento.");
-        return;
-      }
-
-      if (!formData.parentName.trim()) {
-        alert("Informe o nome do responsável.");
-        return;
-      }
-
-      if (!formData.phone.trim()) {
-        alert("Informe o telefone do responsável.");
-        return;
-      }
-
-      if (!formData.cpf.trim()) {
-        alert("Informe o CPF do responsável.");
-        return;
-      }
-
-      const onlyDigits = (value: string) => value.replace(/\D/g, "");
+      setErrors(initialErrors);
 
       const responsavel = await criarResponsavel({
-        nome: formData.parentName,
+        nome: formData.parentName.trim(),
         cpf: onlyDigits(formData.cpf),
-        email: formData.email || `sem-email-${Date.now()}@temp.local`,
+        email: formData.email.trim() || `sem-email-${Date.now()}@temp.local`,
         telefone: onlyDigits(formData.phone),
       });
 
       await criarPaciente({
-        nome: formData.name,
+        nome: formData.name.trim(),
         data_nascimento: formData.birthDate,
-        observacoes: formData.observations,
+        observacoes: formData.observations.trim(),
         responsavel: responsavel.id,
       });
 
-      alert("Paciente adicionado com sucesso!");
       navigate("/admin");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Erro ao salvar paciente.";
-      alert(message);
+
+      const apiErrors: ErrorsType = {
+        name: "",
+        birthDate: "",
+        parentName: "",
+        phone: "",
+        email: "",
+        cpf: "",
+        general: "",
+      };
+
+      const lowerMessage = message.toLowerCase();
+
+      if (lowerMessage.includes("cpf")) {
+        apiErrors.cpf = message;
+      } else if (
+        lowerMessage.includes("email") ||
+        lowerMessage.includes("e-mail")
+      ) {
+        apiErrors.email = message;
+      } else if (
+        lowerMessage.includes("telefone") ||
+        lowerMessage.includes("phone")
+      ) {
+        apiErrors.phone = message;
+      } else if (lowerMessage.includes("nome")) {
+        apiErrors.parentName = message;
+      } else {
+        apiErrors.general = message;
+      }
+
+      setErrors(apiErrors);
     }
   };
 
@@ -129,7 +233,6 @@ export function AddPatient() {
           background: "#F4F7FF",
         }}
       >
-        {/* Desktop Sidebar - Info */}
         <div
           className="hidden md:flex md:flex-col md:w-80 lg:w-96 min-h-screen"
           style={{
@@ -185,64 +288,11 @@ export function AddPatient() {
                 automaticamente
               </p>
             </div>
-
-            {/* Info cards */}
-            <div className="space-y-3">
-              {[
-                {
-                  icon: "🎯",
-                  title: "Código Automático",
-                  desc: "Gerado após cadastro",
-                },
-                {
-                  icon: "🔐",
-                  title: "PIN Seguro",
-                  desc: "4 dígitos escolhidos",
-                },
-                {
-                  icon: "📊",
-                  title: "Perfil Completo",
-                  desc: "Histórico e evolução",
-                },
-              ].map((item, i) => (
-                <div
-                  key={i}
-                  className="rounded-2xl p-4 flex items-start gap-3"
-                  style={{ background: "rgba(255,255,255,0.15)" }}
-                >
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: "rgba(255,255,255,0.2)" }}
-                  >
-                    <span style={{ fontSize: 20 }}>{item.icon}</span>
-                  </div>
-                  <div>
-                    <p
-                      style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}
-                    >
-                      {item.title}
-                    </p>
-                    <p
-                      style={{
-                        fontSize: 12,
-                        color: "rgba(255,255,255,0.7)",
-                        fontWeight: 400,
-                      }}
-                    >
-                      {item.desc}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="flex flex-col flex-1 min-h-0">
-          {/* Desktop Content */}
           <div className="hidden md:flex md:flex-col md:flex-1 min-h-0">
-            {/* Desktop Header */}
             <div
               className="px-8 lg:px-12 py-6 border-b border-gray-200"
               style={{ background: "#fff" }}
@@ -259,11 +309,23 @@ export function AddPatient() {
               </p>
             </div>
 
-            {/* Form Desktop */}
             <div className="flex-1 min-h-0 overflow-y-auto px-8 lg:px-12 py-8">
               <div className="max-w-4xl pb-8">
+                {errors.general && (
+                  <div
+                    className="mb-6 px-4 py-3 rounded-2xl"
+                    style={{
+                      background: "#FEF2F2",
+                      border: "1px solid #FCA5A5",
+                      color: "#B91C1C",
+                      fontSize: 14,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {errors.general}
+                  </div>
+                )}
 
-                {/* Contato do Responsável */}
                 <div
                   className="rounded-3xl p-6 mb-6"
                   style={{ background: "#fff", border: "1.5px solid #DBEAFE" }}
@@ -282,120 +344,52 @@ export function AddPatient() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2">
-                      <label
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 500,
-                          color: "#000073",
-                          marginBottom: 8,
-                          display: "block",
-                        }}
-                      >
-                        Nome do Responsável*
-                      </label>
-                      <input
-                        type="text"
+                      <Input
+                        label="Nome do Responsável*"
+                        name="parentName"
                         value={formData.parentName}
                         onChange={handleChange}
-                        name="parentName"
                         placeholder="Ex: João Silva Santos"
-                        className="w-full px-4 py-3 rounded-2xl"
-                        style={{
-                          border: "1.5px solid #DBEAFE",
-                          fontSize: 14,
-                          outline: "none",
-                          fontFamily: "'Poppins', sans-serif",
-                        }}
+                        error={errors.parentName}
                       />
                     </div>
 
                     <div>
-                      <label
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 500,
-                          color: "#000073",
-                          marginBottom: 8,
-                          display: "block",
-                        }}
-                      >
-                        Telefone*
-                      </label>
-                      <input
-                        type="tel"
+                      <Input
+                        label="Telefone*"
+                        name="phone"
                         value={formData.phone}
                         onChange={handleChange}
-                        name="phone"
                         placeholder="(11) 98765-4321"
-                        className="w-full px-4 py-3 rounded-2xl"
-                        style={{
-                          border: "1.5px solid #DBEAFE",
-                          fontSize: 14,
-                          outline: "none",
-                          fontFamily: "'Poppins', sans-serif",
-                        }}
+                        error={errors.phone}
                       />
                     </div>
 
                     <div>
-                      <label
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 500,
-                          color: "#000073",
-                          marginBottom: 8,
-                          display: "block",
-                        }}
-                      >
-                        E-mail
-                      </label>
-                      <input
+                      <Input
+                        label="E-mail"
+                        name="email"
                         type="email"
                         value={formData.email}
                         onChange={handleChange}
-                        name="email"
                         placeholder="email@exemplo.com"
-                        className="w-full px-4 py-3 rounded-2xl"
-                        style={{
-                          border: "1.5px solid #DBEAFE",
-                          fontSize: 14,
-                          outline: "none",
-                          fontFamily: "'Poppins', sans-serif",
-                        }}
+                        error={errors.email}
                       />
                     </div>
 
                     <div className="col-span-2">
-                      <label
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 500,
-                          color: "#000073",
-                          marginBottom: 8,
-                          display: "block",
-                        }}
-                      >
-                        CPF do Responsável
-                      </label>
-                      <input
-                        type="text"
+                      <Input
+                        label="CPF do Responsável*"
+                        name="cpf"
                         value={formData.cpf}
                         onChange={handleChange}
-                        name="cpf"
                         placeholder="000.000.000-00"
-                        className="w-full px-4 py-3 rounded-2xl"
-                        style={{
-                          border: "1.5px solid #DBEAFE",
-                          fontSize: 14,
-                          outline: "none",
-                          fontFamily: "'Poppins', sans-serif",
-                        }}
+                        error={errors.cpf}
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Dados Pessoais */}
                 <div
                   className="rounded-3xl p-6 mb-6"
                   style={{ background: "#fff", border: "1.5px solid #DBEAFE" }}
@@ -414,57 +408,24 @@ export function AddPatient() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2">
-                      <label
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 500,
-                          color: "#000073",
-                          marginBottom: 8,
-                          display: "block",
-                        }}
-                      >
-                        Nome Completo*
-                      </label>
-                      <input
-                        type="text"
+                      <Input
+                        label="Nome Completo*"
+                        name="name"
                         value={formData.name}
                         onChange={handleChange}
-                        name="name"
                         placeholder="Ex: Maria Silva Santos"
-                        className="w-full px-4 py-3 rounded-2xl"
-                        style={{
-                          border: "1.5px solid #DBEAFE",
-                          fontSize: 14,
-                          outline: "none",
-                          fontFamily: "'Poppins', sans-serif",
-                        }}
+                        error={errors.name}
                       />
                     </div>
 
                     <div>
-                      <label
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 500,
-                          color: "#000073",
-                          marginBottom: 8,
-                          display: "block",
-                        }}
-                      >
-                        Data de Nascimento*
-                      </label>
-                      <input
+                      <Input
+                        label="Data de Nascimento*"
+                        name="birthDate"
                         type="date"
                         value={formData.birthDate}
                         onChange={handleChange}
-                        name="birthDate"
-                        className="w-full px-4 py-3 rounded-2xl"
-                        style={{
-                          border: "1.5px solid #DBEAFE",
-                          fontSize: 14,
-                          outline: "none",
-                          fontFamily: "'Poppins', sans-serif",
-                        }}
+                        error={errors.birthDate}
                       />
                     </div>
 
@@ -478,19 +439,19 @@ export function AddPatient() {
                           display: "block",
                         }}
                       >
-                        Idade*
+                        Idade
                       </label>
                       <input
-                        type="number"
+                        type="text"
                         value={formData.age}
-                        onChange={handleChange}
-                        name="age"
-                        placeholder="Ex: 7"
+                        readOnly
+                        placeholder="Calculada automaticamente"
                         className="w-full px-4 py-3 rounded-2xl"
                         style={{
                           border: "1.5px solid #DBEAFE",
                           fontSize: 14,
                           outline: "none",
+                          background: "#F8FAFC",
                           fontFamily: "'Poppins', sans-serif",
                         }}
                       />
@@ -526,7 +487,6 @@ export function AddPatient() {
                   </div>
                 </div>
 
-                {/* Actions */}
                 <div className="flex gap-3 justify-end">
                   <button
                     onClick={() => navigate("/admin")}
@@ -546,7 +506,7 @@ export function AddPatient() {
                     onClick={handleSave}
                     className="px-8 py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all hover:opacity-90"
                     style={{
-                      background:"#007200",
+                      background: "#007200",
                       fontSize: 15,
                       fontWeight: 600,
                       color: "#fff",
@@ -562,12 +522,10 @@ export function AddPatient() {
             </div>
           </div>
 
-          {/* Mobile Version */}
           <div
             className="md:hidden flex flex-col flex-1 min-h-screen"
             style={{ background: "#F4F7FF" }}
           >
-            {/* Mobile Header */}
             <div
               className="px-6 pt-14 pb-6 relative overflow-hidden"
               style={{
@@ -623,9 +581,22 @@ export function AddPatient() {
               </div>
             </div>
 
-            {/* Form Mobile */}
             <div className="flex-1 overflow-y-auto px-6 pt-5 pb-10">
-              {/* Dados Pessoais */}
+              {errors.general && (
+                <div
+                  className="mb-4 px-4 py-3 rounded-2xl"
+                  style={{
+                    background: "#FEF2F2",
+                    border: "1px solid #FCA5A5",
+                    color: "#B91C1C",
+                    fontSize: 13,
+                    fontWeight: 500,
+                  }}
+                >
+                  {errors.general}
+                </div>
+              )}
+
               <div
                 className="rounded-3xl p-5 mb-4"
                 style={{ background: "#fff", border: "1.5px solid #DBEAFE" }}
@@ -643,61 +614,24 @@ export function AddPatient() {
                 </h3>
 
                 <div className="space-y-3">
-                  <div>
-                    <label
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 500,
-                        color: "#000073",
-                        marginBottom: 6,
-                        display: "block",
-                      }}
-                    >
-                      Nome Completo*
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={handleChange}
-                      name="name"
-                      placeholder="Ex: Maria Silva Santos"
-                      className="w-full px-4 py-3 rounded-2xl"
-                      style={{
-                        border: "1.5px solid #DBEAFE",
-                        fontSize: 14,
-                        outline: "none",
-                        fontFamily: "'Poppins', sans-serif",
-                      }}
-                    />
-                  </div>
+                  <Input
+                    label="Nome Completo*"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="Ex: Maria Silva Santos"
+                    error={errors.name}
+                  />
 
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 500,
-                          color: "#6B7A99",
-                          marginBottom: 6,
-                          display: "block",
-                        }}
-                      >
-                        Nascimento*
-                      </label>
-                      <input
-                        type="date"
-                        value={formData.birthDate}
-                        onChange={handleChange}
-                        name="birthDate"
-                        className="w-full px-3 py-3 rounded-2xl"
-                        style={{
-                          border: "1.5px solid #DBEAFE",
-                          fontSize: 13,
-                          outline: "none",
-                          fontFamily: "'Poppins', sans-serif",
-                        }}
-                      />
-                    </div>
+                    <Input
+                      label="Nascimento*"
+                      name="birthDate"
+                      type="date"
+                      value={formData.birthDate}
+                      onChange={handleChange}
+                      error={errors.birthDate}
+                    />
 
                     <div>
                       <label
@@ -709,19 +643,19 @@ export function AddPatient() {
                           display: "block",
                         }}
                       >
-                        Idade*
+                        Idade
                       </label>
                       <input
-                        type="number"
+                        type="text"
                         value={formData.age}
-                        onChange={handleChange}
-                        name="age"
-                        placeholder="Ex: 7"
+                        readOnly
+                        placeholder="Auto"
                         className="w-full px-3 py-3 rounded-2xl"
                         style={{
                           border: "1.5px solid #DBEAFE",
                           fontSize: 14,
                           outline: "none",
+                          background: "#F8FAFC",
                           fontFamily: "'Poppins', sans-serif",
                         }}
                       />
@@ -758,7 +692,6 @@ export function AddPatient() {
                 </div>
               </div>
 
-              {/* Responsável */}
               <div
                 className="rounded-3xl p-5 mb-4"
                 style={{ background: "#fff", border: "1.5px solid #DBEAFE" }}
@@ -776,121 +709,45 @@ export function AddPatient() {
                 </h3>
 
                 <div className="space-y-3">
-                  <div>
-                    <label
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 500,
-                        color: "#6B7A99",
-                        marginBottom: 6,
-                        display: "block",
-                      }}
-                    >
-                      Nome do Responsável*
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.parentName}
-                      onChange={handleChange}
-                      name="parentName"
-                      placeholder="Ex: João Silva Santos"
-                      className="w-full px-4 py-3 rounded-2xl"
-                      style={{
-                        border: "1.5px solid #DBEAFE",
-                        fontSize: 14,
-                        outline: "none",
-                        fontFamily: "'Poppins', sans-serif",
-                      }}
-                    />
-                  </div>
+                  <Input
+                    label="Nome do Responsável*"
+                    name="parentName"
+                    value={formData.parentName}
+                    onChange={handleChange}
+                    placeholder="Ex: João Silva Santos"
+                    error={errors.parentName}
+                  />
 
-                  <div>
-                    <label
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 500,
-                        color: "#6B7A99",
-                        marginBottom: 6,
-                        display: "block",
-                      }}
-                    >
-                      Telefone*
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      name="phone"
-                      placeholder="(11) 98765-4321"
-                      className="w-full px-4 py-3 rounded-2xl"
-                      style={{
-                        border: "1.5px solid #DBEAFE",
-                        fontSize: 14,
-                        outline: "none",
-                        fontFamily: "'Poppins', sans-serif",
-                      }}
-                    />
-                  </div>
+                  <Input
+                    label="Telefone*"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="(11) 98765-4321"
+                    error={errors.phone}
+                  />
 
-                  <div>
-                    <label
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 500,
-                        color: "#6B7A99",
-                        marginBottom: 6,
-                        display: "block",
-                      }}
-                    >
-                      E-mail
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      name="email"
-                      placeholder="email@exemplo.com"
-                      className="w-full px-4 py-3 rounded-2xl"
-                      style={{
-                        border: "1.5px solid #DBEAFE",
-                        fontSize: 14,
-                        outline: "none",
-                        fontFamily: "'Poppins', sans-serif",
-                      }}
-                    />
-                  </div>
+                  <Input
+                    label="E-mail"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="email@exemplo.com"
+                    error={errors.email}
+                  />
 
-                  <div>
-                    <label
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 500,
-                        color: "#6B7A99",
-                        marginBottom: 6,
-                        display: "block",
-                      }}
-                    >
-                      CPF do Responsável
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.cpf}
-                      onChange={handleChange}
-                      name="cpf"
-                      placeholder="000.000.000-00"
-                      className="w-full px-4 py-3 rounded-2xl"
-                      style={{
-                        border: "1.5px solid #DBEAFE",
-                        fontSize: 14,
-                        outline: "none",
-                        fontFamily: "'Poppins', sans-serif",
-                      }}
-                    />
-                  </div>
+                  <Input
+                    label="CPF do Responsável*"
+                    name="cpf"
+                    value={formData.cpf}
+                    onChange={handleChange}
+                    placeholder="000.000.000-00"
+                    error={errors.cpf}
+                  />
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3">
                 <button
                   onClick={() => navigate("/admin")}
