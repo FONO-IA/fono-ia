@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
 import { ArrowLeft, User, Phone, Save } from "lucide-react";
 import { criarPaciente, criarResponsavel } from "../services/pacientes";
+import { onlyDigits, calculateAge, formatPhone, formatCPF } from "../utils/formatters";
 
 export function AddPatient() {
   const navigate = useNavigate();
@@ -17,8 +18,54 @@ export function AddPatient() {
     cpf: "",
   });
 
-  const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+
+    if (name === "cpf") {
+      const cleaned = onlyDigits(value);
+
+      if (value && /\D/.test(value.replace(/[.\-]/g, ""))) {
+        alert("CPF aceita somente números.");
+        return;
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        cpf: formatCPF(cleaned),
+      }));
+      return;
+    }
+
+    if (name === "phone") {
+      const cleaned = onlyDigits(value);
+
+      if (value && /\D/.test(value.replace(/[()\-\s]/g, ""))) {
+        alert("Telefone aceita somente números.");
+        return;
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        phone: formatPhone(cleaned),
+      }));
+      return;
+    }
+
+    if (name === "birthDate") {
+      setFormData((prev) => ({
+        ...prev,
+        birthDate: value,
+        age: calculateAge(value),
+      }));
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleSave = async () => {
@@ -249,9 +296,8 @@ export function AddPatient() {
                       <input
                         type="text"
                         value={formData.parentName}
-                        onChange={(e) =>
-                          handleChange("parentName", e.target.value)
-                        }
+                        onChange={handleChange}
+                        name="parentName"
                         placeholder="Ex: João Silva Santos"
                         className="w-full px-4 py-3 rounded-2xl"
                         style={{
@@ -278,7 +324,8 @@ export function AddPatient() {
                       <input
                         type="tel"
                         value={formData.phone}
-                        onChange={(e) => handleChange("phone", e.target.value)}
+                        onChange={handleChange}
+                        name="phone"
                         placeholder="(11) 98765-4321"
                         className="w-full px-4 py-3 rounded-2xl"
                         style={{
@@ -305,7 +352,8 @@ export function AddPatient() {
                       <input
                         type="email"
                         value={formData.email}
-                        onChange={(e) => handleChange("email", e.target.value)}
+                        onChange={handleChange}
+                        name="email"
                         placeholder="email@exemplo.com"
                         className="w-full px-4 py-3 rounded-2xl"
                         style={{
@@ -332,9 +380,8 @@ export function AddPatient() {
                       <input
                         type="text"
                         value={formData.cpf}
-                        onChange={(e) =>
-                          handleChange("cpf", e.target.value)
-                        }
+                        onChange={handleChange}
+                        name="cpf"
                         placeholder="000.000.000-00"
                         className="w-full px-4 py-3 rounded-2xl"
                         style={{
@@ -381,7 +428,8 @@ export function AddPatient() {
                       <input
                         type="text"
                         value={formData.name}
-                        onChange={(e) => handleChange("name", e.target.value)}
+                        onChange={handleChange}
+                        name="name"
                         placeholder="Ex: Maria Silva Santos"
                         className="w-full px-4 py-3 rounded-2xl"
                         style={{
@@ -408,9 +456,8 @@ export function AddPatient() {
                       <input
                         type="date"
                         value={formData.birthDate}
-                        onChange={(e) =>
-                          handleChange("birthDate", e.target.value)
-                        }
+                        onChange={handleChange}
+                        name="birthDate"
                         className="w-full px-4 py-3 rounded-2xl"
                         style={{
                           border: "1.5px solid #DBEAFE",
@@ -436,7 +483,8 @@ export function AddPatient() {
                       <input
                         type="number"
                         value={formData.age}
-                        onChange={(e) => handleChange("age", e.target.value)}
+                        onChange={handleChange}
+                        name="age"
                         placeholder="Ex: 7"
                         className="w-full px-4 py-3 rounded-2xl"
                         style={{
@@ -462,9 +510,8 @@ export function AddPatient() {
                       </label>
                       <textarea
                         value={formData.observations}
-                        onChange={(e) =>
-                          handleChange("observations", e.target.value)
-                        }
+                        onChange={handleChange}
+                        name="observations"
                         placeholder="Informações adicionais sobre o paciente..."
                         rows={3}
                         className="w-full px-4 py-3 rounded-2xl resize-none"
@@ -611,7 +658,8 @@ export function AddPatient() {
                     <input
                       type="text"
                       value={formData.name}
-                      onChange={(e) => handleChange("name", e.target.value)}
+                      onChange={handleChange}
+                      name="name"
                       placeholder="Ex: Maria Silva Santos"
                       className="w-full px-4 py-3 rounded-2xl"
                       style={{
@@ -639,9 +687,8 @@ export function AddPatient() {
                       <input
                         type="date"
                         value={formData.birthDate}
-                        onChange={(e) =>
-                          handleChange("birthDate", e.target.value)
-                        }
+                        onChange={handleChange}
+                        name="birthDate"
                         className="w-full px-3 py-3 rounded-2xl"
                         style={{
                           border: "1.5px solid #DBEAFE",
@@ -667,7 +714,8 @@ export function AddPatient() {
                       <input
                         type="number"
                         value={formData.age}
-                        onChange={(e) => handleChange("age", e.target.value)}
+                        onChange={handleChange}
+                        name="age"
                         placeholder="Ex: 7"
                         className="w-full px-3 py-3 rounded-2xl"
                         style={{
@@ -694,9 +742,8 @@ export function AddPatient() {
                     </label>
                     <textarea
                       value={formData.observations}
-                      onChange={(e) =>
-                        handleChange("observations", e.target.value)
-                      }
+                      onChange={handleChange}
+                      name="observations"
                       placeholder="Informações adicionais sobre o paciente..."
                       rows={3}
                       className="w-full px-4 py-3 rounded-2xl resize-none"
@@ -744,9 +791,8 @@ export function AddPatient() {
                     <input
                       type="text"
                       value={formData.parentName}
-                      onChange={(e) =>
-                        handleChange("parentName", e.target.value)
-                      }
+                      onChange={handleChange}
+                      name="parentName"
                       placeholder="Ex: João Silva Santos"
                       className="w-full px-4 py-3 rounded-2xl"
                       style={{
@@ -773,7 +819,8 @@ export function AddPatient() {
                     <input
                       type="tel"
                       value={formData.phone}
-                      onChange={(e) => handleChange("phone", e.target.value)}
+                      onChange={handleChange}
+                      name="phone"
                       placeholder="(11) 98765-4321"
                       className="w-full px-4 py-3 rounded-2xl"
                       style={{
@@ -800,7 +847,8 @@ export function AddPatient() {
                     <input
                       type="email"
                       value={formData.email}
-                      onChange={(e) => handleChange("email", e.target.value)}
+                      onChange={handleChange}
+                      name="email"
                       placeholder="email@exemplo.com"
                       className="w-full px-4 py-3 rounded-2xl"
                       style={{
@@ -827,9 +875,8 @@ export function AddPatient() {
                     <input
                       type="text"
                       value={formData.cpf}
-                      onChange={(e) =>
-                        handleChange("cpf", e.target.value)
-                      }
+                      onChange={handleChange}
+                      name="cpf"
                       placeholder="000.000.000-00"
                       className="w-full px-4 py-3 rounded-2xl"
                       style={{
