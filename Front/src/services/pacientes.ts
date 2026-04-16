@@ -40,6 +40,5 @@ export async function criarPaciente(payload: PacientePayload) {
 }
 
 export async function listarPacientes(nome?: string) {
-  const query = nome ? `/pacientes/?nome=${encodeURIComponent(nome)}` : "/pacientes/";
-  return api.get<Paciente[]>(query);
+  return api.get<any[]>("/pacientes/");
 }
