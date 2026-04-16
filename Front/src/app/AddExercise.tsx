@@ -4,7 +4,6 @@ import { MobileWrapper } from "./MobileWrapper";
 import {
   ArrowLeft,
   Dumbbell,
-  Type,
   Target,
   FileText,
   Save,
@@ -23,30 +22,6 @@ type ContentItem = {
   instrucao: string;
 };
 
-const categoriasPadrao = [
-  "Articulação",
-  "Fonemas",
-  "Leitura",
-  "Consciência Fonológica",
-  "Respiração",
-  "Vocabulário",
-];
-
-const sugestoesConteudo = [
-  "A",
-  "E",
-  "I",
-  "O",
-  "U",
-  "PA",
-  "PE",
-  "PI",
-  "PO",
-  "PU",
-  "SAPO",
-  "BOLA",
-];
-
 const defaultInstruction = (texto: string) =>
   `Diga a palavra!
 
@@ -55,11 +30,9 @@ ${texto || "A"}
 💡 Como em ${texto || "ABACATE"}`;
 
 export function AddExercise() {
+
   const navigate = useNavigate();
-
-  const [showNewCategory, setShowNewCategory] = useState(false);
   const [newCategory, setNewCategory] = useState("");
-
   const [showNewContent, setShowNewContent] = useState(false);
   const [selectedContent, setSelectedContent] = useState("");
   const [newContent, setNewContent] = useState("");
@@ -76,7 +49,6 @@ A
 
   const [form, setForm] = useState({
     nome: "",
-    categoria: categoriasPadrao[0],
     objetivo: "",
     nivel: "Médio" as Level,
     instrucoesGuia: `Guia de texto para cada palavra:
@@ -91,9 +63,6 @@ A
   const updateField = (field: string, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
-
-  const categoriaFinal =
-    showNewCategory && newCategory.trim() ? newCategory.trim() : form.categoria;
 
   const totalConteudos = conteudos.length;
 
@@ -132,17 +101,19 @@ ${textoFinal}
     setConteudos((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const handleContentSelect = (value: string) => {
-    setSelectedContent(value);
-    setShowNewContent(false);
-    setContentInstruction(defaultInstruction(value));
-  };
-
   const handleSave = () => {
+
     const payload = {
-      ...form,
-      categoria: categoriaFinal,
-      conteudos,
+      categoria: newCategory,
+      nivel: form.nivel,
+      objetivo: form.objetivo,
+      instrucao: form.instrucoesGuia,
+      conteudo: "",
+
+      conteudos: conteudos.map((item) => ({
+        texto: item.texto,
+        instrucao: item.instrucao,
+      })),
     };
 
     console.log("Novo exercício:", payload);
@@ -187,7 +158,7 @@ I
     setForm((prev) => ({
       ...prev,
       nome: prev.nome || "Exercício gerado com IA",
-      categoria: prev.categoria || "Fonemas",
+      categoria: "Fonemas",
       objetivo:
         prev.objetivo || `Exercício montado com base na solicitação: ${prompt}`,
       nivel: prev.nivel || "Médio",
@@ -267,7 +238,7 @@ I
 
                   <div className="mt-8 space-y-3">
                     {[
-                      { label: "Categoria", value: categoriaFinal || "-" },
+                      { label: "Categoria", value: newCategory || "-" },
                       { label: "Nível", value: form.nivel },
                       { label: "Itens", value: `${totalConteudos}` },
                     ].map((item) => (
@@ -357,7 +328,7 @@ I
                 {/* Resumo tablet */}
                 <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
                   {[
-                    { label: "Categoria", value: categoriaFinal || "-" },
+                    { label: "Categoria", value: newCategory || "-" },
                     { label: "Nível", value: form.nivel },
                     { label: "Itens", value: `${totalConteudos}` },
                   ].map((item) => (
@@ -534,16 +505,18 @@ I
                       >
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                           <Field
-                            label="Nome do exercício"
-                            icon={<Type size={16} color="#0052CC" />}
+                            label="Categoria"
+                            icon={<Sparkles size={16} color="#0052CC" />}
                           >
-                            <input
-                              value={form.nome}
-                              onChange={(e) => updateField("nome", e.target.value)}
-                              placeholder="Ex: Vogais iniciais"
-                              className="w-full"
-                              style={inputStyle}
-                            />
+                            <div className="space-y-3">
+                              <input
+                                value={newCategory}
+                                onChange={(e) => setNewCategory(e.target.value)}
+                                placeholder="Digite a nova categoria"
+                                className="w-full"
+                                style={inputStyle}
+                              />
+                            </div>
                           </Field>
 
                           <Field
@@ -581,65 +554,6 @@ I
 
                           <div className="md:col-span-2">
                             <Field
-                              label="Categoria"
-                              icon={<Sparkles size={16} color="#0052CC" />}
-                            >
-                              <div className="space-y-3">
-                                <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-3">
-                                  <select
-                                    value={form.categoria}
-                                    onChange={(e) => {
-                                      updateField("categoria", e.target.value);
-                                      setShowNewCategory(false);
-                                    }}
-                                    className="w-full"
-                                    style={inputStyle}
-                                  >
-                                    {categoriasPadrao.map((categoria) => (
-                                      <option key={categoria} value={categoria}>
-                                        {categoria}
-                                      </option>
-                                    ))}
-                                  </select>
-
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setShowNewCategory((prev) => !prev)
-                                    }
-                                    className="min-h-[52px] rounded-2xl px-4 flex items-center justify-center gap-2"
-                                    style={{
-                                      border: "1.5px solid #DBEAFE",
-                                      background: showNewCategory
-                                        ? "#EBF3FF"
-                                        : "#F8FBFF",
-                                      color: "#0052CC",
-                                      fontSize: 13,
-                                      fontWeight: 700,
-                                      cursor: "pointer",
-                                      whiteSpace: "nowrap",
-                                    }}
-                                  >
-                                    <PlusCircle size={16} />
-                                    Nova
-                                  </button>
-                                </div>
-
-                                {showNewCategory && (
-                                  <input
-                                    value={newCategory}
-                                    onChange={(e) => setNewCategory(e.target.value)}
-                                    placeholder="Digite a nova categoria"
-                                    className="w-full"
-                                    style={inputStyle}
-                                  />
-                                )}
-                              </div>
-                            </Field>
-                          </div>
-
-                          <div className="md:col-span-2">
-                            <Field
                               label="Objetivo"
                               icon={<Target size={16} color="#0052CC" />}
                             >
@@ -661,10 +575,6 @@ I
                               icon={<FileText size={16} color="#0052CC" />}
                             >
                               <textarea
-                                value={form.instrucoesGuia}
-                                onChange={(e) =>
-                                  updateField("instrucoesGuia", e.target.value)
-                                }
                                 rows={5}
                                 placeholder="Guia de texto para cada palavra"
                                 className="w-full resize-none"
@@ -689,80 +599,19 @@ I
                         }}
                       >
                         <div className="mb-5 flex items-start justify-between gap-4">
-                          <div className="min-w-0">
-                            <h3
-                              style={{
-                                fontSize: 20,
-                                fontWeight: 700,
-                                color: "#1A2B5F",
-                              }}
-                            >
+                          <div className="min-w-0 w-full">
+                            <h3 style={{fontSize: 20, fontWeight: 700, color: "#1A2B5F",}}>
                               Conteúdo do exercício
                             </h3>
-                            <p
-                              style={{
-                                fontSize: 13,
-                                color: "#6B7A99",
-                                marginTop: 6,
-                                lineHeight: 1.5,
-                              }}
-                            >
-                              Adicione cada palavra com sua própria instrução
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-3">
-                            <select
-                              value={selectedContent}
-                              onChange={(e) => handleContentSelect(e.target.value)}
-                              className="w-full"
-                              style={inputStyle}
-                            >
-                              <option value="">
-                                Selecione um conteúdo cadastrado
-                              </option>
-                              {sugestoesConteudo.map((item) => (
-                                <option key={item} value={item}>
-                                  {item}
-                                </option>
-                              ))}
-                            </select>
-
-                            <button
-                              type="button"
-                              onClick={() => setShowNewContent((prev) => !prev)}
-                              className="min-h-[52px] rounded-2xl px-4 flex items-center justify-center gap-2"
-                              style={{
-                                border: "1.5px solid #DBEAFE",
-                                background: showNewContent ? "#EBF3FF" : "#F8FBFF",
-                                color: "#0052CC",
-                                fontSize: 13,
-                                fontWeight: 700,
-                                cursor: "pointer",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              <PlusCircle size={16} />
-                              Novo
-                            </button>
-                          </div>
-
-                          {showNewContent && (
                             <input
-                              value={newContent}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                setNewContent(value);
-                                setContentInstruction(defaultInstruction(value));
-                              }}
                               placeholder="Digite a nova palavra, sílaba ou conteúdo"
                               className="w-full"
                               style={inputStyle}
                             />
-                          )}
+                          </div>
+                        </div>
 
+                        <div className="space-y-4">
                           <textarea
                             value={contentInstruction}
                             onChange={(e) => setContentInstruction(e.target.value)}
@@ -944,7 +793,7 @@ I
                           <div className="mt-5 space-y-3">
                             <PreviewItem
                               label="Categoria"
-                              value={categoriaFinal || "-"}
+                              value={newCategory || "-"}
                             />
                             <PreviewItem
                               label="Objetivo"
