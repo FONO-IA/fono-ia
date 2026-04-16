@@ -10,7 +10,6 @@ import {
   Sparkles,
   CheckCircle2,
   Wand2,
-  PlusCircle,
   X,
 } from "lucide-react";
 
@@ -22,31 +21,13 @@ type ContentItem = {
   instrucao: string;
 };
 
-const defaultInstruction = (texto: string) =>
-  `Diga a palavra!
-
-${texto || "A"}
-
-💡 Como em ${texto || "ABACATE"}`;
-
 export function AddExercise() {
-
   const navigate = useNavigate();
   const [newCategory, setNewCategory] = useState("");
-  const [showNewContent, setShowNewContent] = useState(false);
-  const [selectedContent, setSelectedContent] = useState("");
-  const [newContent, setNewContent] = useState("");
-  const [contentInstruction, setContentInstruction] = useState(
-    `Diga a palavra!
-
-A
-
-💡 Como em ABACATE`
-  );
-
   const [showAiBox, setShowAiBox] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
-
+  const [conteudo, setConteudo] = useState("");
+  const [instrucaoItem, setInstrucaoItem] = useState("");
   const [form, setForm] = useState({
     nome: "",
     objetivo: "",
@@ -70,54 +51,60 @@ A
     return conteudos.map((item) => item.texto).join(", ");
   }, [conteudos]);
 
-  const handleAddContent = () => {
-    const textoFinal =
-      showNewContent && newContent.trim()
-        ? newContent.trim()
-        : selectedContent.trim();
-
-    if (!textoFinal) return;
-
-    setConteudos((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        texto: textoFinal,
-        instrucao: contentInstruction.trim() || defaultInstruction(textoFinal),
-      },
-    ]);
-
-    setSelectedContent("");
-    setNewContent("");
-    setContentInstruction(`Diga a palavra!
-
-${textoFinal}
-
-💡 Como em ${textoFinal}`);
-    setShowNewContent(false);
-  };
-
-  const handleRemoveContent = (id: number) => {
-    setConteudos((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  const handleSave = () => {
-
+  const handleSave = async () => {
+    const nivelMap = {
+      "Fácil": "FAC",
+      "Médio": "MED",
+      "Avançado": "DIF",
+    };
     const payload = {
       categoria: newCategory,
-      nivel: form.nivel,
+      nivel: nivelMap[form.nivel],
       objetivo: form.objetivo,
-      instrucao: form.instrucoesGuia,
-      conteudo: "",
-
-      conteudos: conteudos.map((item) => ({
-        texto: item.texto,
-        instrucao: item.instrucao,
-      })),
+      instrucao: instrucaoItem,
+      conteudo: conteudo,
+      conteudos: [
+        {
+          texto: conteudo,
+          instrucao: instrucaoItem,
+        },
+      ],
     };
 
-    console.log("Novo exercício:", payload);
-    navigate(-1);
+    console.log("PAYLOAD:", payload);
+
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/exercicios/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      console.log("STATUS:", response.status);
+      console.log("RESPOSTA:", JSON.stringify(data, null, 2));
+
+      if (response.ok) {
+        setNewCategory("");
+        setConteudo("");
+        setInstrucaoItem("");
+        setForm({
+          nome: "",
+          objetivo: "",
+          nivel: "Médio",
+          instrucoesGuia: "",
+          ativo: true,
+        });
+        alert("Exercício salvo com sucesso!");
+      } else {
+        console.error("Erro do backend:", data);
+      }
+    } catch (e) {
+      console.error("Erro ao salvar exercício:", e);
+    }
   };
 
   const handleGenerateWithAI = () => {
@@ -194,10 +181,16 @@ I
                 <button
                   onClick={() => navigate(-1)}
                   className="mb-8 flex items-center gap-2 transition-all hover:opacity-80"
-                  style={{ background: "none", border: "none", cursor: "pointer" }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
                 >
                   <ArrowLeft size={20} color="rgba(255,255,255,0.9)" />
-                  <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}>
+                  <span
+                    style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}
+                  >
                     Voltar
                   </span>
                 </button>
@@ -285,10 +278,16 @@ I
                 <button
                   onClick={() => navigate(-1)}
                   className="mb-6 flex items-center gap-2"
-                  style={{ background: "none", border: "none", cursor: "pointer" }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
                 >
                   <ArrowLeft size={20} color="rgba(255,255,255,0.9)" />
-                  <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}>
+                  <span
+                    style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}
+                  >
                     Voltar
                   </span>
                 </button>
@@ -366,7 +365,11 @@ I
                   <div className="hidden xl:flex items-center justify-between mb-8 gap-6">
                     <div className="min-w-0">
                       <h2
-                        style={{ fontSize: 30, fontWeight: 700, color: "#1A2B5F" }}
+                        style={{
+                          fontSize: 30,
+                          fontWeight: 700,
+                          color: "#1A2B5F",
+                        }}
                       >
                         Cadastrar Exercício
                       </h2>
@@ -377,7 +380,8 @@ I
                           marginTop: 8,
                         }}
                       >
-                        Preencha os dados ou use a IA para montar tudo automaticamente
+                        Preencha os dados ou use a IA para montar tudo
+                        automaticamente
                       </p>
                     </div>
 
@@ -445,7 +449,8 @@ I
                               lineHeight: 1.5,
                             }}
                           >
-                            Escreva para a IA como o fono quer montar o exercício
+                            Escreva para a IA como o fono quer montar o
+                            exercício
                           </p>
                         </div>
 
@@ -468,7 +473,11 @@ I
                         rows={4}
                         placeholder="Ex: Criar um exercício com vogais, nível fácil, com palavras curtas e dica visual para cada item."
                         className="w-full resize-none"
-                        style={{ ...inputStyle, height: "auto", paddingTop: 14 }}
+                        style={{
+                          ...inputStyle,
+                          height: "auto",
+                          paddingTop: 14,
+                        }}
                       />
 
                       <div className="mt-4 flex justify-end">
@@ -524,20 +533,24 @@ I
                             icon={<CheckCircle2 size={16} color="#0052CC" />}
                           >
                             <div className="grid grid-cols-1 xs:grid-cols-3 sm:grid-cols-3 gap-2">
-                              {(["Fácil", "Médio", "Avançado"] as Level[]).map(
+                              {(["Fácil", "Médio", "Dificíl"] as Level[]).map(
                                 (nivel) => {
                                   const isActive = form.nivel === nivel;
                                   return (
                                     <button
                                       key={nivel}
                                       type="button"
-                                      onClick={() => updateField("nivel", nivel)}
+                                      onClick={() =>
+                                        updateField("nivel", nivel)
+                                      }
                                       className="min-h-[48px] rounded-2xl px-3 py-3 transition-all"
                                       style={{
                                         border: isActive
                                           ? "2px solid #0052CC"
                                           : "1.5px solid #DBEAFE",
-                                        background: isActive ? "#EBF3FF" : "#F8FBFF",
+                                        background: isActive
+                                          ? "#EBF3FF"
+                                          : "#F8FBFF",
                                         color: isActive ? "#0052CC" : "#6B7A99",
                                         fontSize: 13,
                                         fontWeight: 700,
@@ -547,7 +560,7 @@ I
                                       {nivel}
                                     </button>
                                   );
-                                }
+                                },
                               )}
                             </div>
                           </Field>
@@ -600,10 +613,18 @@ I
                       >
                         <div className="mb-5 flex items-start justify-between gap-4">
                           <div className="min-w-0 w-full">
-                            <h3 style={{fontSize: 20, fontWeight: 700, color: "#1A2B5F",}}>
+                            <h3
+                              style={{
+                                fontSize: 20,
+                                fontWeight: 700,
+                                color: "#1A2B5F",
+                              }}
+                            >
                               Conteúdo do exercício
                             </h3>
                             <input
+                              value={conteudo}
+                              onChange={(e) => setConteudo(e.target.value)}
                               placeholder="Digite a nova palavra, sílaba ou conteúdo"
                               className="w-full"
                               style={inputStyle}
@@ -613,8 +634,8 @@ I
 
                         <div className="space-y-4">
                           <textarea
-                            value={contentInstruction}
-                            onChange={(e) => setContentInstruction(e.target.value)}
+                            value={instrucaoItem}
+                            onChange={(e) => setInstrucaoItem(e.target.value)}
                             rows={6}
                             placeholder="Instrução específica deste conteúdo"
                             className="w-full resize-none"
@@ -625,105 +646,6 @@ I
                               paddingTop: 14,
                             }}
                           />
-
-                          <div className="flex justify-end">
-                            <button
-                              type="button"
-                              onClick={handleAddContent}
-                              className="w-full sm:w-auto rounded-2xl px-5 py-3 flex items-center justify-center gap-2"
-                              style={{
-                                background: "#0052CC",
-                                color: "#fff",
-                                border: "none",
-                                cursor: "pointer",
-                                fontSize: 14,
-                                fontWeight: 700,
-                              }}
-                            >
-                              <PlusCircle size={16} />
-                              Adicionar conteúdo
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="mt-6 space-y-3">
-                          {conteudos.length > 0 ? (
-                            conteudos.map((item, index) => (
-                              <div
-                                key={item.id}
-                                className="rounded-[24px] sm:rounded-3xl p-4 sm:p-5"
-                                style={{
-                                  background: "#F8FBFF",
-                                  border: "1.5px solid #E3EEFF",
-                                }}
-                              >
-                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                                  <div className="min-w-0 flex-1">
-                                    <div className="mb-2 flex flex-wrap items-center gap-2">
-                                      <span
-                                        className="rounded-full px-2.5 py-1"
-                                        style={{
-                                          background: "#EBF3FF",
-                                          color: "#0052CC",
-                                          fontSize: 11,
-                                          fontWeight: 700,
-                                        }}
-                                      >
-                                        Item {index + 1}
-                                      </span>
-
-                                      <span
-                                        style={{
-                                          fontSize: 17,
-                                          fontWeight: 700,
-                                          color: "#1A2B5F",
-                                          wordBreak: "break-word",
-                                        }}
-                                      >
-                                        {item.texto}
-                                      </span>
-                                    </div>
-
-                                    <p
-                                      style={{
-                                        fontSize: 13,
-                                        color: "#4C5B7C",
-                                        whiteSpace: "pre-wrap",
-                                        lineHeight: 1.7,
-                                        wordBreak: "break-word",
-                                      }}
-                                    >
-                                      {item.instrucao}
-                                    </p>
-                                  </div>
-
-                                  <button
-                                    onClick={() => handleRemoveContent(item.id)}
-                                    className="h-10 w-10 sm:h-10 sm:w-10 rounded-2xl flex items-center justify-center self-end sm:self-auto shrink-0"
-                                    style={{
-                                      border: "none",
-                                      cursor: "pointer",
-                                      background: "#FFECEC",
-                                    }}
-                                  >
-                                    <X size={16} color="#D14343" />
-                                  </button>
-                                </div>
-                              </div>
-                            ))
-                          ) : (
-                            <div
-                              className="rounded-[24px] sm:rounded-3xl p-5"
-                              style={{
-                                background: "#F8FBFF",
-                                border: "1.5px dashed #C9DBFF",
-                              }}
-                            >
-                              <p style={{ fontSize: 14, color: "#7B8AAC" }}>
-                                Nenhum conteúdo adicionado ainda.
-                              </p>
-                            </div>
-                          )}
                         </div>
 
                         <div className="mt-6 flex justify-end">
