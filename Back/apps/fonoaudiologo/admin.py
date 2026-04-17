@@ -20,7 +20,7 @@ class FonoaudiologoAdmin(admin.ModelAdmin):
             'fields': ('crfa',)
         }),
         ('Informações do Sistema', {
-            'fields': ('id', 'data_cadastro'),
+            'fields': ('id',),
             'classes': ('collapse',)
         }),
     )
