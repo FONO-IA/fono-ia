@@ -24,6 +24,9 @@ type ApiPaciente = {
   observacoes?: string;
   responsavel?: string;
   responsavel_nome?: string;
+  total_exercicios?: number;
+  exercicios_concluidos?: number;
+  ultima_sessao?: string;
 };
 
 type DashboardPatient = {
@@ -34,9 +37,8 @@ type DashboardPatient = {
   color: string;
   lastSession: string;
   progress: number;
-  status: string;
+  numberExercises: number;
   statusColor: string;
-  nextSession: string;
 };
 
 const tabs = [
@@ -72,18 +74,36 @@ const getInitials = (name: string) => {
     .join("");
 };
 
-const mapPacienteToCard = (patient: ApiPaciente, index: number): DashboardPatient => ({
-  id: patient.id,
-  name: patient.nome,
-  age: calculateAge(patient.data_nascimento),
-  initials: getInitials(patient.nome),
-  color: colors[index % colors.length],
-  lastSession: "Sem sessão",
-  progress: 0,
-  status: "Recém cadastrado",
-  statusColor: "#6B7A99",
-  nextSession: "Não agendada",
-});
+const mapPacienteToCard = (patient: ApiPaciente, index: number): DashboardPatient => {
+  const total = patient.total_exercicios ?? 0;
+  const done = patient.exercicios_concluidos ?? 0;
+
+  const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  return {
+    id: patient.id,
+    name: patient.nome,
+    age: calculateAge(patient.data_nascimento),
+    initials: getInitials(patient.nome),
+    color: colors[index % colors.length],
+    lastSession: formatLastSession(patient.ultima_sessao),
+    progress,
+    numberExercises: total,
+    statusColor: "#6B7A99",
+  };
+};
+
+const formatLastSession = (date?: string) => {
+  if (!date) return "Sem sessões";
+
+  const d = new Date(date);
+
+  return d.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -527,6 +547,7 @@ export function AdminDashboard() {
                             >
                               {patient.age} anos
                             </span>
+                            <Clock size={11} color={patient.statusColor} />
                             <span
                               style={{
                                 fontSize: 12,
@@ -534,7 +555,7 @@ export function AdminDashboard() {
                                 fontWeight: 400,
                               }}
                             >
-                              · Última: {patient.lastSession}
+                              Última Sessão: {patient.lastSession}
                             </span>
                           </div>
 
@@ -564,7 +585,6 @@ export function AdminDashboard() {
                           </div>
 
                           <div className="flex items-center gap-2 mt-2">
-                            <Clock size={11} color={patient.statusColor} />
                             <span
                               style={{
                                 fontSize: 11,
@@ -572,16 +592,7 @@ export function AdminDashboard() {
                                 fontWeight: 500,
                               }}
                             >
-                              {patient.status}
-                            </span>
-                            <span
-                              style={{
-                                fontSize: 11,
-                                color: "#B0BAD3",
-                                fontWeight: 400,
-                              }}
-                            >
-                              · Próx: {patient.nextSession}
+                              {`Exercícios: ${patient.numberExercises}`}
                             </span>
                           </div>
                         </div>
@@ -880,16 +891,7 @@ export function AdminDashboard() {
                                 fontWeight: 500,
                               }}
                             >
-                              {patient.status}
-                            </span>
-                            <span
-                              style={{
-                                fontSize: 10,
-                                color: "#B0BAD3",
-                                fontWeight: 400,
-                              }}
-                            >
-                              · Próx: {patient.nextSession}
+                              {`Exercícios: ${patient.numberExercises}`}
                             </span>
                           </div>
                         </div>
