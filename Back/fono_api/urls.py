@@ -20,6 +20,8 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
+    # ========================================================================
+    # Auth
     path(
         'api/token/',
         TokenObtainPairView.as_view(),
@@ -30,6 +32,9 @@ urlpatterns = [
         TokenRefreshView.as_view(),
         name='token_refresh'
     ),
+    # ========================================================================
+    # ========================================================================
+    # Admin e APIs
     path('admin/', admin.site.urls),
     path('api/v1/', include('apps.atendimento.api.v1.router')),
     path('api/v1/', include('apps.exercicio.api.v1.router')),
@@ -37,6 +42,9 @@ urlpatterns = [
     path('api/v1/', include('apps.paciente.api.v1.router')),
     path('api/v1/', include('apps.responsavel.api.v1.router')),
     path('api/v1/', include('apps.resultado.api.v1.router')),
+    # ========================================================================
+    # ========================================================================
+    # Documentação
 
     path('docs/', schema_view.with_ui(
         'swagger',
@@ -57,4 +65,5 @@ urlpatterns = [
     path('api-docs/', RedirectView.as_view(url='/docs/', permanent=True)),
     path('redocs/', RedirectView.as_view(url='/redoc/', permanent=True)),
     path('api-redoc/', RedirectView.as_view(url='/redoc/', permanent=True)),
+    # ========================================================================
 ]
