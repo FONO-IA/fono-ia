@@ -24,6 +24,9 @@ type ApiPaciente = {
   observacoes?: string;
   responsavel?: string;
   responsavel_nome?: string;
+  total_exercicios?: number;
+  exercicios_concluidos?: number;
+  ultima_sessao?: string;
 };
 
 type DashboardPatient = {
@@ -34,9 +37,8 @@ type DashboardPatient = {
   color: string;
   lastSession: string;
   progress: number;
-  status: string;
+  numberExercises: number;
   statusColor: string;
-  nextSession: string;
 };
 
 const tabs = [
@@ -72,18 +74,36 @@ const getInitials = (name: string) => {
     .join("");
 };
 
-const mapPacienteToCard = (patient: ApiPaciente, index: number): DashboardPatient => ({
-  id: patient.id,
-  name: patient.nome,
-  age: calculateAge(patient.data_nascimento),
-  initials: getInitials(patient.nome),
-  color: colors[index % colors.length],
-  lastSession: "Sem sessão",
-  progress: 0,
-  status: "Recém cadastrado",
-  statusColor: "#6B7A99",
-  nextSession: "Não agendada",
-});
+const mapPacienteToCard = (patient: ApiPaciente, index: number): DashboardPatient => {
+  const total = patient.total_exercicios ?? 0;
+  const done = patient.exercicios_concluidos ?? 0;
+
+  const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  return {
+    id: patient.id,
+    name: patient.nome,
+    age: calculateAge(patient.data_nascimento),
+    initials: getInitials(patient.nome),
+    color: colors[index % colors.length],
+    lastSession: formatLastSession(patient.ultima_sessao),
+    progress,
+    numberExercises: total,
+    statusColor: "#6B7A99",
+  };
+};
+
+const formatLastSession = (date?: string) => {
+  if (!date) return "Sem sessões";
+
+  const d = new Date(date);
+
+  return d.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -145,12 +165,11 @@ export function AdminDashboard() {
                 className="w-12 h-12 rounded-2xl flex items-center justify-center"
                 style={{ background: "rgba(255,255,255,0.2)" }}
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
-                    fill="white"
-                  />
-                </svg>
+                <img
+                src="https://res.cloudinary.com/dqkpkmicx/image/upload/q_auto/f_auto/v1775585373/logo_fono_ia_ppzb2r.png"
+                alt="Logo Fono IA"
+                className="w-full h-full object-cover rounded-[16px]"
+                />
               </div>
               <div>
                 <h2
@@ -305,7 +324,7 @@ export function AdminDashboard() {
                       marginTop: 4,
                     }}
                   >
-                    Olá, Dr. Paulo 👋
+                    Olá, Dr. Paulo
                   </h1>
                 </div>
                 <div className="flex items-center gap-3">
@@ -350,12 +369,6 @@ export function AdminDashboard() {
                     value: "0",
                     icon: Calendar,
                     color: "#FFAB00",
-                  },
-                  {
-                    label: "Taxa Média de Progresso",
-                    value: "0%",
-                    icon: TrendingUp,
-                    color: "#36B37E",
                   },
                 ].map((stat) => (
                   <div
@@ -527,6 +540,7 @@ export function AdminDashboard() {
                             >
                               {patient.age} anos
                             </span>
+                            <Clock size={11} color={patient.statusColor} />
                             <span
                               style={{
                                 fontSize: 12,
@@ -534,7 +548,7 @@ export function AdminDashboard() {
                                 fontWeight: 400,
                               }}
                             >
-                              · Última: {patient.lastSession}
+                              Última Sessão: {patient.lastSession}
                             </span>
                           </div>
 
@@ -564,7 +578,6 @@ export function AdminDashboard() {
                           </div>
 
                           <div className="flex items-center gap-2 mt-2">
-                            <Clock size={11} color={patient.statusColor} />
                             <span
                               style={{
                                 fontSize: 11,
@@ -572,16 +585,7 @@ export function AdminDashboard() {
                                 fontWeight: 500,
                               }}
                             >
-                              {patient.status}
-                            </span>
-                            <span
-                              style={{
-                                fontSize: 11,
-                                color: "#B0BAD3",
-                                fontWeight: 400,
-                              }}
-                            >
-                              · Próx: {patient.nextSession}
+                              {`Exercícios: ${patient.numberExercises}`}
                             </span>
                           </div>
                         </div>
@@ -880,16 +884,7 @@ export function AdminDashboard() {
                                 fontWeight: 500,
                               }}
                             >
-                              {patient.status}
-                            </span>
-                            <span
-                              style={{
-                                fontSize: 10,
-                                color: "#B0BAD3",
-                                fontWeight: 400,
-                              }}
-                            >
-                              · Próx: {patient.nextSession}
+                              {`Exercícios: ${patient.numberExercises}`}
                             </span>
                           </div>
                         </div>

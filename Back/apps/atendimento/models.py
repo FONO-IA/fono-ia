@@ -28,6 +28,7 @@ class Atendimento(BaseModel):
     observacoes = models.TextField(
         blank=True, null=True, verbose_name="Observações"
     )
+    concluido = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Atendimento"

@@ -2,6 +2,8 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from apps.paciente.models import Paciente
 from apps.paciente.api.v1.serializer import PacienteSerializer
+from django.db.models import Count, Q, OuterRef, Subquery
+from apps.atendimento.models import Atendimento
 
 
 class PacienteViewSet(viewsets.ModelViewSet):
@@ -21,6 +23,18 @@ class PacienteViewSet(viewsets.ModelViewSet):
         if data_nascimento:
             queryset = queryset.filter(data_nascimento=data_nascimento)
 
+        ultimo_atendimento = Atendimento.objects.filter(
+            paciente=OuterRef('pk')
+        ).order_by('-updated_at')
+
+        queryset = queryset.annotate(
+            total_exercicios=Count('atendimentos'),
+            exercicios_concluidos=Count(
+                'atendimentos',
+                filter=Q(atendimentos__concluido=True)
+            ),
+            ultima_sessao=Subquery(ultimo_atendimento.values('updated_at')[:1])
+        )
         return queryset
 
     def create(self, request, *args, **kwargs):

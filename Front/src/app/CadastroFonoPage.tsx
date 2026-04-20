@@ -147,18 +147,40 @@ export function CadastroFonoPage() {
     setErrors((prev) => ({ ...prev, [field]: "" }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
+    console.log("SUBMIT FOI CHAMADO 🚀");
     e.preventDefault();
 
     const validation = validate(form);
     setErrors(validation);
 
+    console.log("ERROS:", validation);
     if (Object.keys(validation).length > 0) return;
 
     setSubmitted(true);
 
-    setTimeout(() => {
-      setSubmitted(false);
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/v1/fonoaudiologos/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nome: form.nome,
+          // cpf: onlyDigits(form.cpf),
+          // telefone: onlyDigits(form.telefone),
+          cpf: form.cpf,
+          crfa: form.crfa,
+          telefone: form.telefone,
+          email: form.email,
+          senha: form.senha,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao cadastrar");
+      }
+
       setShowConfirmation(true);
       setForm({
         nome: "",
@@ -169,8 +191,13 @@ export function CadastroFonoPage() {
         senha: "",
         confirmacaoSenha: "",
       });
-      setErrors({});
-    }, 600);
+
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao enviar cadastro");
+    } finally {
+      setSubmitted(false);
+    }
   }
 
   const inputStyle: React.CSSProperties = {
@@ -697,7 +724,7 @@ export function CadastroFonoPage() {
                         }}
                       >
                         <Send size={18} />
-                        {submitted ? "Enviando..." : "Enviar cadastro"}
+                        {submitted ? "Enviando..." : "Enviar Cadastro"}
                       </button>
                     </div>
                   </form>
