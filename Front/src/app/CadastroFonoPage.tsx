@@ -6,8 +6,6 @@ import {
   Send,
   UserRound,
   BadgeCheck,
-  Phone,
-  Mail,
   CheckCircle2,
 } from "lucide-react";
 
