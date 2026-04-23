@@ -1,809 +1,788 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
-import { ArrowLeft, User, Phone, Save } from "lucide-react";
-import { criarPaciente, criarResponsavel } from "../services/pacientes";
 import {
+  ArrowLeft,
+  UserRound,
+  Calendar,
+  FileText,
+  Shield,
+  Mail,
+  Phone,
+  Save,
+  AlertCircle,
+  Baby,
+  X,
+  CheckCircle2,
+} from "lucide-react";
+import { criarResponsavel } from "../services/responsaveis";
+import { criarPaciente } from "../services/pacientes";
+import {
+  formatCPF,
+  formatPhone,
   onlyDigits,
   calculateAge,
-  formatPhone,
-  formatCPF,
 } from "../utils/formatters";
-import { Input } from "./components/Inputs";
 
-type FormDataType = {
-  name: string;
-  birthDate: string;
-  age: string;
-  observations: string;
-  parentName: string;
-  phone: string;
-  email: string;
-  cpf: string;
+type FormState = {
+  nomePaciente: string;
+  dataNascimento: string;
+  observacoes: string;
+  nomeResponsavel: string;
+  cpfResponsavel: string;
+  emailResponsavel: string;
+  telefoneResponsavel: string;
 };
 
-type ErrorsType = {
-  name: string;
-  birthDate: string;
-  parentName: string;
-  phone: string;
-  email: string;
-  cpf: string;
-  general: string;
-};
+type FieldErrors = Partial<Record<keyof FormState, string>>;
 
-const initialErrors: ErrorsType = {
-  name: "",
-  birthDate: "",
-  parentName: "",
-  phone: "",
-  email: "",
-  cpf: "",
-  general: "",
-};
-
-const initialFormData: FormDataType = {
-  name: "",
-  birthDate: "",
-  age: "",
-  observations: "",
-  parentName: "",
-  phone: "",
-  email: "",
-  cpf: "",
+const initialForm: FormState = {
+  nomePaciente: "",
+  dataNascimento: "",
+  observacoes: "",
+  nomeResponsavel: "",
+  cpfResponsavel: "",
+  emailResponsavel: "",
+  telefoneResponsavel: "",
 };
 
 export function AddPatient() {
   const navigate = useNavigate();
 
-  const [errors, setErrors] = useState<ErrorsType>(initialErrors);
+  const [form, setForm] = useState<FormState>(initialForm);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [loading, setLoading] = useState(false);
+  const [generalError, setGeneralError] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  const [formData, setFormData] = useState<FormDataType>(initialFormData);
+  function updateField(field: keyof FormState, value: string) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    setFieldErrors((prev) => ({ ...prev, [field]: "" }));
+    setGeneralError("");
+  }
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
+  function validateField(
+    field: keyof FormState,
+    value: string,
+    allValues: FormState
+  ): string {
+    switch (field) {
+      case "nomeResponsavel":
+        return !value.trim() ? "Nome do responsável é obrigatório." : "";
 
-    if (name === "cpf") {
-      const hasLetters = /[^\d.\-]/.test(value);
-      const cleaned = onlyDigits(value);
+      case "cpfResponsavel": {
+        if (!value.trim()) return "CPF do responsável é obrigatório.";
 
-      setErrors((prev) => ({
-        ...prev,
-        cpf: hasLetters ? "CPF aceita somente números." : "",
-        general: "",
-      }));
+        if (/[A-Za-z]/.test(value)) {
+          return "CPF aceita apenas números.";
+        }
 
-      setFormData((prev) => ({
-        ...prev,
-        cpf: formatCPF(cleaned),
-      }));
-      return;
+        const digits = onlyDigits(value);
+        if (digits.length !== 11) return "CPF do responsável deve ter 11 dígitos.";
+        return "";
+      }
+
+      case "telefoneResponsavel": {
+        if (!value.trim()) return "Telefone do responsável é obrigatório.";
+
+        if (/[A-Za-z]/.test(value)) {
+          return "Telefone aceita apenas números.";
+        }
+
+        const digits = onlyDigits(value);
+        if (digits.length < 10) return "Telefone do responsável inválido.";
+        return "";
+      }
+
+      case "emailResponsavel":
+        if (!value.trim()) return "";
+        return /\S+@\S+\.\S+/.test(value)
+          ? ""
+          : "Email do responsável inválido.";
+
+      case "nomePaciente":
+        return !value.trim() ? "Nome do paciente é obrigatório." : "";
+
+      case "dataNascimento":
+        return !value ? "Data de nascimento é obrigatória." : "";
+
+      case "observacoes":
+        return "";
+
+      default:
+        return "";
     }
+  }
 
-    if (name === "phone") {
-      const hasLetters = /[^\d()\-\s]/.test(value);
-      const cleaned = onlyDigits(value);
-
-      setErrors((prev) => ({
-        ...prev,
-        phone: hasLetters ? "Telefone aceita somente números." : "",
-        general: "",
-      }));
-
-      setFormData((prev) => ({
-        ...prev,
-        phone: formatPhone(cleaned),
-      }));
-      return;
-    }
-
-    if (name === "birthDate") {
-      setErrors((prev) => ({
-        ...prev,
-        birthDate: "",
-        general: "",
-      }));
-
-      setFormData((prev) => ({
-        ...prev,
-        birthDate: value,
-        age: calculateAge(value),
-      }));
-      return;
-    }
-
-    setErrors((prev) => ({
-      ...prev,
-      [name]: "",
-      general: "",
-    }));
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const resetForm = () => {
-    setFormData(initialFormData);
-    setErrors(initialErrors);
-  };
-
-  const handleSave = async () => {
-    const newErrors: ErrorsType = {
-      name: "",
-      birthDate: "",
-      parentName: "",
-      phone: "",
-      email: "",
-      cpf: "",
-      general: "",
+  function validateForm(values: FormState) {
+    const nextErrors: FieldErrors = {
+      nomeResponsavel: validateField(
+        "nomeResponsavel",
+        values.nomeResponsavel,
+        values
+      ),
+      cpfResponsavel: validateField(
+        "cpfResponsavel",
+        values.cpfResponsavel,
+        values
+      ),
+      telefoneResponsavel: validateField(
+        "telefoneResponsavel",
+        values.telefoneResponsavel,
+        values
+      ),
+      emailResponsavel: validateField(
+        "emailResponsavel",
+        values.emailResponsavel,
+        values
+      ),
+      nomePaciente: validateField("nomePaciente", values.nomePaciente, values),
+      dataNascimento: validateField(
+        "dataNascimento",
+        values.dataNascimento,
+        values
+      ),
+      observacoes: "",
     };
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Informe o nome do paciente.";
-    }
+    return nextErrors;
+  }
 
-    if (!formData.birthDate) {
-      newErrors.birthDate = "Informe a data de nascimento.";
-    }
+  function hasErrors(errors: FieldErrors) {
+    return Object.values(errors).some(Boolean);
+  }
 
-    if (!formData.parentName.trim()) {
-      newErrors.parentName = "Informe o nome do responsável.";
-    }
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Informe o telefone do responsável.";
-    } else if (onlyDigits(formData.phone).length < 10) {
-      newErrors.phone = "Informe um telefone válido.";
-    }
+    const errors = validateForm(form);
+    setFieldErrors(errors);
 
-    if (!formData.cpf.trim()) {
-      newErrors.cpf = "Informe o CPF do responsável.";
-    } else if (onlyDigits(formData.cpf).length !== 11) {
-      newErrors.cpf = "Informe um CPF válido.";
-    }
-
-    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Informe um e-mail válido.";
-    }
-
-    if (Object.values(newErrors).some(Boolean)) {
-      setErrors(newErrors);
+    if (hasErrors(errors)) {
+      setGeneralError("Corrija os campos destacados para continuar.");
       return;
     }
 
     try {
-      setErrors(initialErrors);
+      setLoading(true);
+      setGeneralError("");
 
       const responsavel = await criarResponsavel({
-        nome: formData.parentName.trim(),
-        cpf: onlyDigits(formData.cpf),
-        email: formData.email.trim() || `sem-email-${Date.now()}@temp.local`,
-        telefone: onlyDigits(formData.phone),
+        nome: form.nomeResponsavel.trim(),
+        cpf: onlyDigits(form.cpfResponsavel),
+        email: form.emailResponsavel.trim(),
+        telefone: onlyDigits(form.telefoneResponsavel),
       });
 
       await criarPaciente({
-        nome: formData.name.trim(),
-        data_nascimento: formData.birthDate,
-        observacoes: formData.observations.trim(),
-        responsavel: responsavel.id,
+        nome: form.nomePaciente.trim(),
+        data_nascimento: form.dataNascimento,
+        observacoes: form.observacoes.trim(),
+        responsavel: String(responsavel.id),
       });
 
       setShowSuccessModal(true);
-    } catch (error) {
+    } catch (err) {
       const message =
-        error instanceof Error ? error.message : "Erro ao salvar paciente.";
-
-      const apiErrors: ErrorsType = {
-        name: "",
-        birthDate: "",
-        parentName: "",
-        phone: "",
-        email: "",
-        cpf: "",
-        general: "",
-      };
-
-      const lowerMessage = message.toLowerCase();
-
-      if (lowerMessage.includes("cpf")) {
-        apiErrors.cpf = message;
-      } else if (
-        lowerMessage.includes("email") ||
-        lowerMessage.includes("e-mail")
-      ) {
-        apiErrors.email = message;
-      } else if (
-        lowerMessage.includes("telefone") ||
-        lowerMessage.includes("phone")
-      ) {
-        apiErrors.phone = message;
-      } else if (lowerMessage.includes("nome")) {
-        apiErrors.parentName = message;
-      } else {
-        apiErrors.general = message;
-      }
-
-      setErrors(apiErrors);
+        err instanceof Error ? err.message : "Erro ao cadastrar paciente.";
+      setGeneralError(message);
+    } finally {
+      setLoading(false);
     }
-  };
+  }
+
+  function handleContinueRegistering() {
+    setForm(initialForm);
+    setFieldErrors({});
+    setGeneralError("");
+    setShowSuccessModal(false);
+  }
+
+  function handleFinishRegistering() {
+    setShowSuccessModal(false);
+    navigate("/admin");
+  }
+
+  const idadePreview = useMemo(() => {
+    return calculateAge(form.dataNascimento);
+  }, [form.dataNascimento]);
+
+  const iniciaisPaciente = useMemo(() => {
+    if (!form.nomePaciente.trim()) return "PC";
+
+    return form.nomePaciente
+      .trim()
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((item) => item[0]?.toUpperCase())
+      .join("");
+  }, [form.nomePaciente]);
+
+  const inputStyle = (hasError?: boolean): React.CSSProperties => ({
+    width: "100%",
+    minHeight: 52,
+    borderRadius: 16,
+    border: hasError ? "1.5px solid #DC2626" : "1.5px solid #DBEAFE",
+    background: hasError ? "#FEF2F2" : "#F8FBFF",
+    padding: "0 16px",
+    fontFamily: "'Poppins', sans-serif",
+    fontSize: 14,
+    color: "#1A2B5F",
+    outline: "none",
+  });
 
   return (
     <MobileWrapper bgColor="#EBF3FF" desktopMode="full">
-      <>
-        <div
-          className="flex min-h-screen"
-          style={{
-            fontFamily: "'Poppins', sans-serif",
-            background: "#F4F7FF",
-          }}
-        >
-          <div
-            className="hidden md:flex md:flex-col md:w-80 lg:w-96 min-h-screen"
-            style={{
-              background:
-                "linear-gradient(180deg, #003884 0%, #0052CC 60%, #0065FF 100%)",
-            }}
-          >
-            <div className="p-8">
-              <button
-                onClick={() => navigate("/admin")}
-                className="flex items-center gap-2 mb-8 transition-all hover:opacity-80"
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                <ArrowLeft size={20} color="rgba(255,255,255,0.85)" />
-                <span
-                  style={{
-                    fontSize: 14,
-                    color: "rgba(255,255,255,0.85)",
-                    fontWeight: 400,
-                  }}
-                >
-                  Voltar ao Dashboard
-                </span>
-              </button>
-
-              <div className="mb-8">
-                <div
-                  className="w-20 h-20 rounded-3xl flex items-center justify-center mb-6"
-                  style={{ background: "rgba(255,255,255,0.2)" }}
-                >
-                  <User size={36} color="#fff" strokeWidth={1.8} />
-                </div>
-                <h1
-                  style={{
-                    fontSize: 28,
-                    fontWeight: 700,
-                    color: "#fff",
-                    lineHeight: 1.2,
-                    marginBottom: 8,
-                  }}
-                >
-                  Novo Paciente
-                </h1>
-                <p
-                  style={{
-                    fontSize: 14,
-                    color: "rgba(255,255,255,0.75)",
-                    fontWeight: 400,
-                    lineHeight: 1.6,
-                  }}
-                >
-                  Adicione um novo paciente ao sistema e gere o código de acesso
-                  automaticamente
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col flex-1 min-h-0">
-            <div className="hidden md:flex md:flex-col md:flex-1 min-h-0">
-              <div
-                className="px-8 lg:px-12 py-6 border-b border-gray-200"
-                style={{ background: "#fff" }}
-              >
-                <h2
-                  style={{ fontSize: 24, fontWeight: 700, color: "#1A2B5F" }}
-                >
-                  Cadastro de Paciente
-                </h2>
-                <p
-                  style={{ fontSize: 14, color: "#6B7A99", fontWeight: 400 }}
-                >
-                  Preencha os dados abaixo para criar um novo perfil
-                </p>
-              </div>
-
-              <div className="flex-1 min-h-0 overflow-y-auto px-8 lg:px-12 py-8">
-                <div className="max-w-4xl pb-8">
-                  {errors.general && (
-                    <div
-                      className="mb-6 px-4 py-3 rounded-2xl"
-                      style={{
-                        background: "#FEF2F2",
-                        border: "1px solid #FCA5A5",
-                        color: "#B91C1C",
-                        fontSize: 14,
-                        fontWeight: 500,
-                      }}
-                    >
-                      {errors.general}
-                    </div>
-                  )}
-
-                  <div
-                    className="rounded-3xl p-6 mb-6"
-                    style={{
-                      background: "#fff",
-                      border: "1.5px solid #DBEAFE",
-                    }}
-                  >
-                    <h3
-                      className="flex items-center gap-2 mb-6"
-                      style={{
-                        fontSize: 18,
-                        fontWeight: 600,
-                        color: "#1A2B5F",
-                      }}
-                    >
-                      <Phone size={20} color="#0052CC" />
-                      Responsável
-                    </h3>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="col-span-2">
-                        <Input
-                          label="Nome do Responsável*"
-                          name="parentName"
-                          value={formData.parentName}
-                          onChange={handleChange}
-                          placeholder="Ex: João Silva Santos"
-                          error={errors.parentName}
-                        />
-                      </div>
-
-                      <div>
-                        <Input
-                          label="Telefone*"
-                          name="phone"
-                          value={formData.phone}
-                          onChange={handleChange}
-                          placeholder="(11) 98765-4321"
-                          error={errors.phone}
-                        />
-                      </div>
-
-                      <div>
-                        <Input
-                          label="E-mail"
-                          name="email"
-                          type="email"
-                          value={formData.email}
-                          onChange={handleChange}
-                          placeholder="email@exemplo.com"
-                          error={errors.email}
-                        />
-                      </div>
-
-                      <div className="col-span-2">
-                        <Input
-                          label="CPF do Responsável*"
-                          name="cpf"
-                          value={formData.cpf}
-                          onChange={handleChange}
-                          placeholder="000.000.000-00"
-                          error={errors.cpf}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    className="rounded-3xl p-6 mb-6"
-                    style={{
-                      background: "#fff",
-                      border: "1.5px solid #DBEAFE",
-                    }}
-                  >
-                    <h3
-                      className="flex items-center gap-2 mb-6"
-                      style={{
-                        fontSize: 18,
-                        fontWeight: 600,
-                        color: "#1A2B5F",
-                      }}
-                    >
-                      <User size={20} color="#0052CC" />
-                      Paciente
-                    </h3>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="col-span-2">
-                        <Input
-                          label="Nome Completo*"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleChange}
-                          placeholder="Ex: Maria Silva Santos"
-                          error={errors.name}
-                        />
-                      </div>
-
-                      <div>
-                        <Input
-                          label="Data de Nascimento*"
-                          name="birthDate"
-                          type="date"
-                          value={formData.birthDate}
-                          onChange={handleChange}
-                          error={errors.birthDate}
-                        />
-                      </div>
-
-                      <div>
-                        <label
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 500,
-                            color: "#000073",
-                            marginBottom: 8,
-                            display: "block",
-                          }}
-                        >
-                          Idade
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.age}
-                          readOnly
-                          placeholder="Calculada automaticamente"
-                          className="w-full px-4 py-3 rounded-2xl"
-                          style={{
-                            border: "1.5px solid #DBEAFE",
-                            fontSize: 14,
-                            outline: "none",
-                            background: "#F8FAFC",
-                            fontFamily: "'Poppins', sans-serif",
-                          }}
-                        />
-                      </div>
-
-                      <div className="col-span-2">
-                        <label
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 500,
-                            color: "#000073",
-                            marginBottom: 8,
-                            display: "block",
-                          }}
-                        >
-                          Observações
-                        </label>
-                        <textarea
-                          value={formData.observations}
-                          onChange={handleChange}
-                          name="observations"
-                          placeholder="Informações adicionais sobre o paciente..."
-                          rows={3}
-                          className="w-full px-4 py-3 rounded-2xl resize-none"
-                          style={{
-                            border: "1.5px solid #DBEAFE",
-                            fontSize: 14,
-                            outline: "none",
-                            fontFamily: "'Poppins', sans-serif",
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 justify-end">
-                    <button
-                      onClick={() => navigate("/admin")}
-                      className="px-8 py-3.5 rounded-2xl transition-all hover:bg-gray-100"
-                      style={{
-                        background: "#B90000",
-                        border: "2px solid #DBEAFE",
-                        fontSize: 15,
-                        fontWeight: 600,
-                        color: "#fff",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={handleSave}
-                      className="px-8 py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all hover:opacity-90"
-                      style={{
-                        background: "#007200",
-                        fontSize: 15,
-                        fontWeight: 600,
-                        color: "#fff",
-                        border: "none",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <Save size={20} />
-                      Salvar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="md:hidden flex flex-col flex-1 min-h-screen"
-              style={{ background: "#F4F7FF" }}
+      <div
+        className="min-h-screen"
+        style={{ fontFamily: "'Poppins', sans-serif", background: "#F4F7FF" }}
+      >
+        <div className="mx-auto w-full max-w-[1600px]">
+          <div className="xl:grid xl:min-h-screen xl:grid-cols-[340px_minmax(0,1fr)]">
+            <aside
+              className="hidden xl:block"
+              style={{
+                background:
+                  "linear-gradient(180deg, #003884 0%, #0052CC 60%, #0065FF 100%)",
+              }}
             >
-              <div
-                className="px-6 pt-14 pb-6 relative overflow-hidden"
-                style={{
-                  background:
-                    "linear-gradient(150deg, #003884 0%, #0052CC 60%, #0065FF 100%)",
-                }}
-              >
-                <div
-                  className="absolute -top-8 -right-8 w-32 h-32 rounded-full opacity-15"
-                  style={{ background: "#fff" }}
-                />
-
+              <div className="sticky top-0 flex min-h-screen flex-col p-8">
                 <button
-                  onClick={() => navigate("/admin")}
-                  className="flex items-center gap-2 mb-5"
+                  onClick={() => navigate(-1)}
+                  className="mb-8 flex items-center gap-2 transition-all hover:opacity-80"
                   style={{
                     background: "none",
                     border: "none",
                     cursor: "pointer",
                   }}
                 >
-                  <ArrowLeft size={20} color="rgba(255,255,255,0.85)" />
+                  <ArrowLeft size={20} color="rgba(255,255,255,0.9)" />
                   <span
-                    style={{
-                      fontSize: 14,
-                      color: "rgba(255,255,255,0.85)",
-                      fontWeight: 400,
-                    }}
+                    style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}
                   >
                     Voltar
                   </span>
                 </button>
 
-                <div className="flex items-center gap-4">
+                <div
+                  className="rounded-[28px] p-6"
+                  style={{ background: "rgba(255,255,255,0.14)" }}
+                >
                   <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                    style={{ background: "rgba(255,255,255,0.2)" }}
+                    className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl"
+                    style={{ background: "rgba(255,255,255,0.18)" }}
                   >
-                    <User size={26} color="#fff" strokeWidth={1.8} />
+                    <Baby size={28} color="#fff" />
                   </div>
-                  <div>
+
+                  <h1
+                    style={{
+                      fontSize: 28,
+                      fontWeight: 700,
+                      color: "#fff",
+                      lineHeight: 1.15,
+                    }}
+                  >
+                    Novo Paciente
+                  </h1>
+
+                  <p
+                    style={{
+                      fontSize: 14,
+                      color: "rgba(255,255,255,0.78)",
+                      marginTop: 10,
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    Cadastre o responsável e depois os dados do paciente.
+                  </p>
+
+                  <div className="mt-8 space-y-3">
+                    {[
+                      {
+                        label: "Responsável",
+                        value: form.nomeResponsavel.trim() || "-",
+                      },
+                      {
+                        label: "Paciente",
+                        value: form.nomePaciente.trim() || "-",
+                      },
+                      {
+                        label: "Idade",
+                        value: idadePreview ? `${idadePreview} anos` : "-",
+                      },
+                    ].map((item) => (
+                      <div
+                        key={item.label}
+                        className="rounded-2xl p-4"
+                        style={{ background: "rgba(255,255,255,0.12)" }}
+                      >
+                        <p
+                          style={{
+                            fontSize: 11,
+                            color: "rgba(255,255,255,0.72)",
+                          }}
+                        >
+                          {item.label}
+                        </p>
+                        <p
+                          style={{
+                            fontSize: 18,
+                            fontWeight: 700,
+                            color: "#fff",
+                            marginTop: 2,
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {item.value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </aside>
+
+            <main className="min-w-0">
+              <div
+                className="xl:hidden px-4 sm:px-6 md:px-8 pt-10 sm:pt-12 pb-8"
+                style={{
+                  background:
+                    "linear-gradient(150deg, #003884 0%, #0052CC 60%, #0065FF 100%)",
+                }}
+              >
+                <button
+                  onClick={() => navigate(-1)}
+                  className="mb-6 flex items-center gap-2"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  <ArrowLeft size={20} color="rgba(255,255,255,0.9)" />
+                  <span
+                    style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}
+                  >
+                    Voltar
+                  </span>
+                </button>
+
+                <div className="flex items-start gap-4">
+                  <div
+                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl sm:h-16 sm:w-16"
+                    style={{ background: "rgba(255,255,255,0.18)" }}
+                  >
+                    <Baby size={24} color="#fff" />
+                  </div>
+
+                  <div className="min-w-0">
                     <h1
-                      style={{ fontSize: 20, fontWeight: 700, color: "#fff" }}
+                      style={{
+                        fontSize: 22,
+                        fontWeight: 700,
+                        color: "#fff",
+                        lineHeight: 1.2,
+                      }}
                     >
-                      Novo Paciente
+                      Cadastrar Paciente
                     </h1>
                     <p
                       style={{
                         fontSize: 13,
                         color: "rgba(255,255,255,0.75)",
-                        fontWeight: 400,
+                        marginTop: 6,
+                        lineHeight: 1.5,
                       }}
                     >
-                      Cadastro completo
+                      Primeiro responsável, depois paciente
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-6 pt-5 pb-10">
-                {errors.general && (
-                  <div
-                    className="mb-4 px-4 py-3 rounded-2xl"
-                    style={{
-                      background: "#FEF2F2",
-                      border: "1px solid #FCA5A5",
-                      color: "#B91C1C",
-                      fontSize: 13,
-                      fontWeight: 500,
-                    }}
-                  >
-                    {errors.general}
-                  </div>
-                )}
-
-                <div
-                  className="rounded-3xl p-5 mb-4"
-                  style={{ background: "#fff", border: "1.5px solid #DBEAFE" }}
-                >
-                  <h3
-                    className="flex items-center gap-2 mb-4"
-                    style={{
-                      fontSize: 15,
-                      fontWeight: 600,
-                      color: "#1A2B5F",
-                    }}
-                  >
-                    <User size={18} color="#0052CC" />
-                    Dados Pessoais
-                  </h3>
-
-                  <div className="space-y-3">
-                    <Input
-                      label="Nome Completo*"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      placeholder="Ex: Maria Silva Santos"
-                      error={errors.name}
-                    />
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <Input
-                        label="Nascimento*"
-                        name="birthDate"
-                        type="date"
-                        value={formData.birthDate}
-                        onChange={handleChange}
-                        error={errors.birthDate}
+              <div className="px-4 sm:px-6 md:px-8 xl:px-10 2xl:px-12 pb-8 xl:py-10">
+                <div className="mx-auto max-w-7xl">
+                  {generalError && (
+                    <div
+                      className="mb-5 rounded-[24px] p-4 flex items-start gap-3"
+                      style={{
+                        background: "#FEF2F2",
+                        border: "1.5px solid #FECACA",
+                        color: "#B91C1C",
+                      }}
+                    >
+                      <AlertCircle
+                        size={18}
+                        style={{ flexShrink: 0, marginTop: 1 }}
                       />
+                      <span style={{ fontSize: 14, fontWeight: 500 }}>
+                        {generalError}
+                      </span>
+                    </div>
+                  )}
 
-                      <div>
-                        <label
+                  <form
+                    onSubmit={handleSubmit}
+                    className="grid grid-cols-1 gap-5 lg:gap-6 2xl:grid-cols-[minmax(0,1fr)_360px]"
+                  >
+                    <div className="min-w-0 space-y-5 lg:space-y-6">
+                      <section
+                        className="rounded-[24px] sm:rounded-[28px] p-4 sm:p-6 lg:p-8"
+                        style={{
+                          background: "#fff",
+                          border: "1.5px solid #DBEAFE",
+                          boxShadow: "0 4px 16px rgba(0,82,204,0.05)",
+                        }}
+                      >
+                        <h2
                           style={{
-                            fontSize: 12,
-                            fontWeight: 500,
-                            color: "#6B7A99",
-                            marginBottom: 6,
-                            display: "block",
+                            fontSize: 22,
+                            fontWeight: 700,
+                            color: "#1A2B5F",
+                            marginBottom: 20,
                           }}
                         >
-                          Idade
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.age}
-                          readOnly
-                          placeholder="Auto"
-                          className="w-full px-3 py-3 rounded-2xl"
+                          Dados do responsável
+                        </h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                          <div className="md:col-span-2">
+                            <Field
+                              label="Nome do responsável"
+                              icon={<Shield size={16} color="#0052CC" />}
+                            >
+                              <input
+                                value={form.nomeResponsavel}
+                                onChange={(e) =>
+                                  updateField(
+                                    "nomeResponsavel",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="Digite o nome do responsável"
+                                className="w-full"
+                                style={inputStyle(!!fieldErrors.nomeResponsavel)}
+                              />
+                              {fieldErrors.nomeResponsavel && (
+                                <FieldError message={fieldErrors.nomeResponsavel} />
+                              )}
+                            </Field>
+                          </div>
+
+                          <Field
+                            label="CPF"
+                            icon={<Shield size={16} color="#0052CC" />}
+                          >
+                            <input
+                              value={form.cpfResponsavel}
+                              onChange={(e) =>
+                                updateField(
+                                  "cpfResponsavel",
+                                  formatCPF(e.target.value)
+                                )
+                              }
+                              placeholder="000.000.000-00"
+                              className="w-full"
+                              style={inputStyle(!!fieldErrors.cpfResponsavel)}
+                            />
+                            {fieldErrors.cpfResponsavel && (
+                              <FieldError message={fieldErrors.cpfResponsavel} />
+                            )}
+                          </Field>
+
+                          <Field
+                            label="Telefone"
+                            icon={<Phone size={16} color="#0052CC" />}
+                          >
+                            <input
+                              value={form.telefoneResponsavel}
+                              onChange={(e) =>
+                                updateField(
+                                  "telefoneResponsavel",
+                                  formatPhone(e.target.value)
+                                )
+                              }
+                              placeholder="(00) 00000-0000"
+                              className="w-full"
+                              style={inputStyle(!!fieldErrors.telefoneResponsavel)}
+                            />
+                            {fieldErrors.telefoneResponsavel && (
+                              <FieldError message={fieldErrors.telefoneResponsavel} />
+                            )}
+                          </Field>
+
+                          <div className="md:col-span-2">
+                            <Field
+                              label="Email"
+                              icon={<Mail size={16} color="#0052CC" />}
+                            >
+                              <input
+                                value={form.emailResponsavel}
+                                onChange={(e) =>
+                                  updateField(
+                                    "emailResponsavel",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="email@exemplo.com"
+                                className="w-full"
+                                style={inputStyle(!!fieldErrors.emailResponsavel)}
+                              />
+                              {fieldErrors.emailResponsavel && (
+                                <FieldError message={fieldErrors.emailResponsavel} />
+                              )}
+                            </Field>
+                          </div>
+                        </div>
+                      </section>
+
+                      <section
+                        className="rounded-[24px] sm:rounded-[28px] p-4 sm:p-6 lg:p-8"
+                        style={{
+                          background: "#fff",
+                          border: "1.5px solid #DBEAFE",
+                          boxShadow: "0 4px 16px rgba(0,82,204,0.05)",
+                        }}
+                      >
+                        <h2
                           style={{
-                            border: "1.5px solid #DBEAFE",
-                            fontSize: 14,
-                            outline: "none",
-                            background: "#F8FAFC",
-                            fontFamily: "'Poppins', sans-serif",
+                            fontSize: 22,
+                            fontWeight: 700,
+                            color: "#1A2B5F",
+                            marginBottom: 20,
                           }}
-                        />
+                        >
+                          Dados do paciente
+                        </h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                          <div className="md:col-span-2">
+                            <Field
+                              label="Nome do paciente"
+                              icon={<UserRound size={16} color="#0052CC" />}
+                            >
+                              <input
+                                value={form.nomePaciente}
+                                onChange={(e) =>
+                                  updateField("nomePaciente", e.target.value)
+                                }
+                                placeholder="Digite o nome do paciente"
+                                className="w-full"
+                                style={inputStyle(!!fieldErrors.nomePaciente)}
+                              />
+                              {fieldErrors.nomePaciente && (
+                                <FieldError message={fieldErrors.nomePaciente} />
+                              )}
+                            </Field>
+                          </div>
+
+                          <Field
+                            label="Data de nascimento"
+                            icon={<Calendar size={16} color="#0052CC" />}
+                          >
+                            <input
+                              type="date"
+                              value={form.dataNascimento}
+                              onChange={(e) =>
+                                updateField(
+                                  "dataNascimento",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full"
+                              style={inputStyle(!!fieldErrors.dataNascimento)}
+                            />
+                            {fieldErrors.dataNascimento && (
+                              <FieldError message={fieldErrors.dataNascimento} />
+                            )}
+                          </Field>
+
+                          <Field
+                            label="Idade"
+                            icon={<Baby size={16} color="#0052CC" />}
+                          >
+                            <div
+                              style={{
+                                ...inputStyle(false),
+                                display: "flex",
+                                alignItems: "center",
+                                color: "#6B7A99",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {idadePreview
+                                ? `${idadePreview} anos`
+                                : "Será calculada automaticamente"}
+                            </div>
+                          </Field>
+
+                          <div className="md:col-span-2">
+                            <Field
+                              label="Observações clínicas"
+                              icon={<FileText size={16} color="#0052CC" />}
+                            >
+                              <textarea
+                                value={form.observacoes}
+                                onChange={(e) =>
+                                  updateField("observacoes", e.target.value)
+                                }
+                                rows={5}
+                                placeholder="Digite observações importantes sobre o paciente"
+                                className="w-full resize-none"
+                                style={{
+                                  ...inputStyle(false),
+                                  height: "auto",
+                                  minHeight: 132,
+                                  paddingTop: 14,
+                                }}
+                              />
+                            </Field>
+                          </div>
+                        </div>
+                      </section>
+
+                      <div className="flex justify-end">
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className="w-full sm:w-auto rounded-2xl px-6 py-4 flex items-center justify-center gap-2"
+                          style={{
+                            background: "linear-gradient(135deg, #0A8F3D, #00A337)",
+                            color: "#fff",
+                            border: "none",
+                            cursor: loading ? "not-allowed" : "pointer",
+                            fontSize: 15,
+                            fontWeight: 700,
+                            boxShadow: "0 12px 28px rgba(10,143,61,0.22)",
+                            minWidth: 240,
+                            maxWidth: "100%",
+                            opacity: loading ? 0.75 : 1,
+                          }}
+                        >
+                          <Save size={18} />
+                          {loading ? "Salvando..." : "Cadastrar paciente"}
+                        </button>
                       </div>
                     </div>
 
-                    <div>
-                      <label
+                    <aside className="min-w-0">
+                      <div
+                        className="rounded-[24px] sm:rounded-[28px] p-4 sm:p-6 2xl:sticky 2xl:top-8"
                         style={{
-                          fontSize: 12,
-                          fontWeight: 500,
-                          color: "#6B7A99",
-                          marginBottom: 6,
-                          display: "block",
+                          background: "#fff",
+                          border: "1.5px solid #DBEAFE",
+                          boxShadow: "0 4px 16px rgba(0,82,204,0.05)",
                         }}
                       >
-                        Observações
-                      </label>
-                      <textarea
-                        value={formData.observations}
-                        onChange={handleChange}
-                        name="observations"
-                        placeholder="Informações adicionais sobre o paciente..."
-                        rows={3}
-                        className="w-full px-4 py-3 rounded-2xl resize-none"
-                        style={{
-                          border: "1.5px solid #DBEAFE",
-                          fontSize: 14,
-                          outline: "none",
-                          fontFamily: "'Poppins', sans-serif",
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
+                        <h3
+                          style={{
+                            fontSize: 18,
+                            fontWeight: 700,
+                            color: "#1A2B5F",
+                            marginBottom: 16,
+                          }}
+                        >
+                          Pré-visualização
+                        </h3>
 
-                <div
-                  className="rounded-3xl p-5 mb-4"
-                  style={{ background: "#fff", border: "1.5px solid #DBEAFE" }}
-                >
-                  <h3
-                    className="flex items-center gap-2 mb-4"
-                    style={{
-                      fontSize: 15,
-                      fontWeight: 600,
-                      color: "#1A2B5F",
-                    }}
-                  >
-                    <Phone size={18} color="#0052CC" />
-                    Responsável
-                  </h3>
+                        <div
+                          className="rounded-3xl p-5"
+                          style={{
+                            background:
+                              "linear-gradient(135deg, #0052CC, #0065FF)",
+                            color: "#fff",
+                          }}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div
+                              className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                              style={{ background: "rgba(255,255,255,0.16)" }}
+                            >
+                              <span
+                                style={{
+                                  fontSize: 18,
+                                  fontWeight: 700,
+                                  color: "#fff",
+                                }}
+                              >
+                                {iniciaisPaciente}
+                              </span>
+                            </div>
 
-                  <div className="space-y-3">
-                    <Input
-                      label="Nome do Responsável*"
-                      name="parentName"
-                      value={formData.parentName}
-                      onChange={handleChange}
-                      placeholder="Ex: João Silva Santos"
-                      error={errors.parentName}
-                    />
+                            <div className="min-w-0">
+                              <p style={{ fontSize: 12, opacity: 0.75 }}>
+                                Paciente
+                              </p>
+                              <h4
+                                style={{
+                                  fontSize: 20,
+                                  fontWeight: 700,
+                                  marginTop: 4,
+                                  wordBreak: "break-word",
+                                }}
+                              >
+                                {form.nomePaciente.trim() || "Novo paciente"}
+                              </h4>
+                            </div>
+                          </div>
 
-                    <Input
-                      label="Telefone*"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="(11) 98765-4321"
-                      error={errors.phone}
-                    />
+                          <div className="mt-5 space-y-3">
+                            <PreviewItem
+                              label="Idade"
+                              value={idadePreview ? `${idadePreview} anos` : "-"}
+                            />
+                            <PreviewItem
+                              label="Responsável"
+                              value={form.nomeResponsavel.trim() || "-"}
+                            />
+                            <PreviewItem
+                              label="Telefone"
+                              value={form.telefoneResponsavel || "-"}
+                            />
+                          </div>
+                        </div>
 
-                    <Input
-                      label="E-mail"
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      placeholder="email@exemplo.com"
-                      error={errors.email}
-                    />
+                        <div className="mt-5">
+                          <p
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 600,
+                              color: "#1A2B5F",
+                              marginBottom: 10,
+                            }}
+                          >
+                            Observações clínicas
+                          </p>
 
-                    <Input
-                      label="CPF do Responsável*"
-                      name="cpf"
-                      value={formData.cpf}
-                      onChange={handleChange}
-                      placeholder="000.000.000-00"
-                      error={errors.cpf}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => navigate("/admin")}
-                    className="px-6 py-3.5 rounded-2xl"
-                    style={{
-                      background: "#B90000",
-                      border: "2px solid #DBEAFE",
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: "#fff",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    className="flex-1 px-6 py-3.5 rounded-2xl flex items-center justify-center gap-2"
-                    style={{
-                      background: "#007200",
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: "#fff",
-                      border: "none",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <Save size={18} />
-                    Salvar
-                  </button>
+                          <div
+                            className="rounded-2xl p-4"
+                            style={{
+                              background: "#F8FBFF",
+                              border: "1.5px solid #E3EEFF",
+                            }}
+                          >
+                            <p
+                              style={{
+                                fontSize: 13,
+                                color: "#4C5B7C",
+                                whiteSpace: "pre-wrap",
+                                lineHeight: 1.6,
+                                wordBreak: "break-word",
+                              }}
+                            >
+                              {form.observacoes.trim() ||
+                                "Nenhuma observação informada ainda."}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </aside>
+                  </form>
                 </div>
               </div>
-            </div>
+            </main>
           </div>
         </div>
 
@@ -812,110 +791,174 @@ export function AddPatient() {
             style={{
               position: "fixed",
               inset: 0,
-              background: "rgba(0,0,0,0.45)",
+              background: "rgba(15, 23, 42, 0.45)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               zIndex: 9999,
-              padding: 16,
+              padding: 20,
             }}
           >
             <div
               style={{
                 width: "100%",
-                maxWidth: 420,
+                maxWidth: 460,
                 background: "#fff",
-                borderRadius: 24,
-                padding: 24,
-                boxShadow: "0 20px 50px rgba(0,0,0,0.18)",
-                fontFamily: "'Poppins', sans-serif",
+                borderRadius: 28,
+                border: "1.5px solid #DBEAFE",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+                padding: 28,
+                position: "relative",
               }}
             >
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                style={{
+                  position: "absolute",
+                  top: 16,
+                  right: 16,
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                }}
+              >
+                <X size={20} color="#6B7A99" />
+              </button>
+
               <div
                 style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 16,
-                  background: "#E8FFF1",
+                  width: 58,
+                  height: 58,
+                  borderRadius: 18,
+                  background: "#ECFDF5",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   marginBottom: 16,
                 }}
               >
-                <span style={{ fontSize: 28 }}>✅</span>
+                <CheckCircle2 size={30} color="#0A8F3D" />
               </div>
 
               <h3
                 style={{
-                  fontSize: 22,
+                  fontSize: 24,
                   fontWeight: 700,
                   color: "#1A2B5F",
                   marginBottom: 8,
                 }}
               >
-                Paciente cadastrado
+                Cadastro concluído
               </h3>
 
               <p
                 style={{
                   fontSize: 14,
                   color: "#6B7A99",
-                  lineHeight: 1.6,
+                  lineHeight: 1.7,
                   marginBottom: 24,
                 }}
               >
-                O paciente foi cadastrado com sucesso. Deseja cadastrar outro
-                paciente ou finalizar?
+                O paciente foi cadastrado com sucesso. Deseja continuar cadastrando
+                outro paciente ou encerrar?
               </p>
 
-              <div
-                style={{
-                  display: "flex",
-                  gap: 12,
-                  justifyContent: "flex-end",
-                  flexWrap: "wrap",
-                }}
-              >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
-                  onClick={() => navigate("/admin")}
+                  onClick={handleContinueRegistering}
                   style={{
-                    padding: "12px 18px",
+                    minHeight: 48,
                     borderRadius: 16,
-                    border: "1.5px solid #DBEAFE",
-                    background: "#fff",
-                    color: "#1A2B5F",
+                    border: "1.5px solid #CFE0FF",
+                    background: "#EEF4FF",
+                    color: "#0052CC",
                     fontSize: 14,
-                    fontWeight: 600,
+                    fontWeight: 700,
                     cursor: "pointer",
                   }}
                 >
-                  Finalizar
+                  Continuar cadastrando
                 </button>
 
                 <button
-                  onClick={() => {
-                    setShowSuccessModal(false);
-                    resetForm();
-                  }}
+                  onClick={handleFinishRegistering}
                   style={{
-                    padding: "12px 18px",
+                    minHeight: 48,
                     borderRadius: 16,
                     border: "none",
-                    background: "linear-gradient(135deg, #0052CC, #0065FF)",
+                    background: "linear-gradient(135deg, #0A8F3D, #00A337)",
                     color: "#fff",
                     fontSize: 14,
-                    fontWeight: 600,
+                    fontWeight: 700,
                     cursor: "pointer",
                   }}
                 >
-                  Cadastrar outro
+                  Encerrar
                 </button>
               </div>
             </div>
           </div>
         )}
-      </>
+      </div>
     </MobileWrapper>
+  );
+}
+
+function Field({
+  label,
+  icon,
+  children,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="min-w-0">
+      <label
+        className="mb-2 flex items-center gap-2"
+        style={{ fontSize: 13, fontWeight: 600, color: "#1A2B5F" }}
+      >
+        {icon}
+        <span className="min-w-0 break-words">{label}</span>
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function FieldError({ message }: { message: string }) {
+  return (
+    <p
+      style={{
+        marginTop: 8,
+        fontSize: 12,
+        color: "#DC2626",
+        fontWeight: 500,
+      }}
+    >
+      {message}
+    </p>
+  );
+}
+
+function PreviewItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      className="rounded-2xl px-4 py-3"
+      style={{ background: "rgba(255,255,255,0.12)" }}
+    >
+      <p style={{ fontSize: 11, opacity: 0.72 }}>{label}</p>
+      <p
+        style={{
+          fontSize: 14,
+          fontWeight: 700,
+          marginTop: 2,
+          wordBreak: "break-word",
+        }}
+      >
+        {value}
+      </p>
+    </div>
   );
 }

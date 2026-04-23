@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 
-type Level = "Fácil" | "Médio" | "Avançado";
+type Level = "Fácil" | "Médio" | "Dificíl";
 
 type ContentItem = {
   id: number;
@@ -55,7 +55,7 @@ export function AddExercise() {
     const nivelMap = {
       "Fácil": "FAC",
       "Médio": "MED",
-      "Avançado": "DIF",
+      "Dificíl": "DIF",
     };
     const payload = {
       categoria: newCategory,
