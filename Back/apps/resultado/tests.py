@@ -6,7 +6,7 @@ from .models import Resultado
 class ResultadoModelTest(TestCase):
     def test_criacao_resultado(self):
         exercicio = Exercicio.objects.create(
-            nivel='Médio',
+            nivel='MED',
             categoria='Escrita',
             conteudo='Outro texto',
             objetivo='Melhorar escrita',

@@ -5,7 +5,6 @@ import {
   Search,
   Plus,
   Users,
-  BarChart2,
   Settings,
   ChevronRight,
   Bell,
@@ -16,6 +15,39 @@ import {
   Crown,
 } from "lucide-react";
 import { listarPacientes } from "../services/pacientes";
+import { listarFonoaudiologos } from "../services/fonoaudiologos";
+import { listarAtendimentos } from "../services/atendimentos";
+
+type ApiFono = {
+  id: string;
+  nome: string;
+  cpf: string;
+  crfa: string;
+  telefone: string;
+  email: string;
+};
+
+type ApiAtendimento = {
+  id: string;
+  paciente: string;
+  fonoaudiologo: string;
+  exercicio: string;
+  observacoes?: string;
+  concluido: boolean;
+  updated_at?: string;
+};
+
+type DashboardStats = {
+  totalPacientes: number;
+  sessoesHoje: number;
+  mediaProgresso: number;
+};
+
+type DashboardFono = {
+  nome: string;
+  crfa: string;
+  iniciais: string;
+};
 
 type ApiPaciente = {
   id: string;
@@ -40,11 +72,6 @@ type DashboardPatient = {
   numberExercises: number;
   statusColor: string;
 };
-
-const tabs = [
-  { id: "patients", label: "Pacientes", icon: Users },
-  { id: "stats", label: "Estatísticas", icon: BarChart2 },
-];
 
 const colors = ["#4C9AFF", "#FF7452", "#57D9A3", "#998DD9", "#F99CDB", "#36B37E"];
 
@@ -74,10 +101,38 @@ const getInitials = (name: string) => {
     .join("");
 };
 
+const formatLastSession = (date?: string) => {
+  if (!date) return "Sem sessões";
+
+  const d = new Date(date);
+
+  if (Number.isNaN(d.getTime())) return "Sem sessões";
+
+  return d.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
+const isToday = (dateString?: string) => {
+  if (!dateString) return false;
+
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return false;
+
+  const today = new Date();
+
+  return (
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+  );
+};
+
 const mapPacienteToCard = (patient: ApiPaciente, index: number): DashboardPatient => {
   const total = patient.total_exercicios ?? 0;
   const done = patient.exercicios_concluidos ?? 0;
-
   const progress = total > 0 ? Math.round((done / total) * 100) : 0;
 
   return {
@@ -93,48 +148,80 @@ const mapPacienteToCard = (patient: ApiPaciente, index: number): DashboardPatien
   };
 };
 
-const formatLastSession = (date?: string) => {
-  if (!date) return "Sem sessões";
-
-  const d = new Date(date);
-
-  return d.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-};
-
 export function AdminDashboard() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("patients");
+
   const [searchQuery, setSearchQuery] = useState("");
   const [patients, setPatients] = useState<DashboardPatient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [fono, setFono] = useState<DashboardFono>({
+    nome: "Fonoaudiólogo",
+    crfa: "-",
+    iniciais: "FO",
+  });
+
+  const [stats, setStats] = useState<DashboardStats>({
+    totalPacientes: 0,
+    sessoesHoje: 0,
+    mediaProgresso: 0,
+  });
+
   useEffect(() => {
-    async function loadPatients() {
+    async function loadDashboard() {
       try {
         setLoading(true);
         setError("");
 
-        const data = await listarPacientes();
-        const mapped = data.map((patient: ApiPaciente, index: number) =>
-          mapPacienteToCard(patient, index)
+        const [pacientesData, fonoData, atendimentosData] = await Promise.all([
+          listarPacientes(),
+          listarFonoaudiologos(),
+          listarAtendimentos(),
+        ]);
+
+        const mappedPatients = pacientesData.map(
+          (patient: ApiPaciente, index: number) => mapPacienteToCard(patient, index)
         );
 
-        setPatients(mapped);
+        setPatients(mappedPatients);
+
+        const fonoAtual = fonoData?.[0];
+        if (fonoAtual) {
+          setFono({
+            nome: fonoAtual.nome,
+            crfa: fonoAtual.crfa,
+            iniciais: getInitials(fonoAtual.nome),
+          });
+        }
+
+        const sessoesHoje = atendimentosData.filter((at: ApiAtendimento) =>
+          isToday(at.updated_at)
+        ).length;
+
+        const mediaProgresso =
+          mappedPatients.length > 0
+            ? Math.round(
+                mappedPatients.reduce((acc, patient) => acc + patient.progress, 0) /
+                  mappedPatients.length
+              )
+            : 0;
+
+        setStats({
+          totalPacientes: mappedPatients.length,
+          sessoesHoje,
+          mediaProgresso,
+        });
       } catch (err) {
         const message =
-          err instanceof Error ? err.message : "Erro ao carregar pacientes.";
+          err instanceof Error ? err.message : "Erro ao carregar dashboard.";
         setError(message);
       } finally {
         setLoading(false);
       }
     }
 
-    loadPatients();
+    loadDashboard();
   }, []);
 
   const filtered = useMemo(() => {
@@ -166,9 +253,9 @@ export function AdminDashboard() {
                 style={{ background: "rgba(255,255,255,0.2)" }}
               >
                 <img
-                src="https://res.cloudinary.com/dqkpkmicx/image/upload/q_auto/f_auto/v1775585373/logo_fono_ia_ppzb2r.png"
-                alt="Logo Fono IA"
-                className="w-full h-full object-cover rounded-[16px]"
+                  src="https://res.cloudinary.com/dqkpkmicx/image/upload/q_auto/f_auto/v1775585373/logo_fono_ia_ppzb2r.png"
+                  alt="Logo Fono IA"
+                  className="w-full h-full object-cover rounded-[16px]"
                 />
               </div>
               <div>
@@ -202,12 +289,12 @@ export function AdminDashboard() {
                 style={{ background: "rgba(255,255,255,0.2)" }}
               >
                 <span style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>
-                  PA
+                  {fono.iniciais}
                 </span>
               </div>
               <div className="flex-1">
                 <p style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>
-                  Dr. Paulo Andrade
+                  {fono.nome}
                 </p>
                 <p
                   style={{
@@ -216,7 +303,7 @@ export function AdminDashboard() {
                     fontWeight: 400,
                   }}
                 >
-                  CRFa 6-7832
+                  {fono.crfa}
                 </p>
               </div>
             </div>
@@ -231,39 +318,7 @@ export function AdminDashboard() {
             </div>
           </div>
 
-          <nav className="flex-1 p-4 space-y-1">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200"
-                  style={{
-                    background: isActive ? "rgba(255,255,255,0.2)" : "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  <Icon
-                    size={20}
-                    color={isActive ? "#fff" : "rgba(255,255,255,0.6)"}
-                    strokeWidth={isActive ? 2.5 : 1.8}
-                  />
-                  <span
-                    style={{
-                      fontSize: 14,
-                      fontWeight: isActive ? 600 : 400,
-                      color: isActive ? "#fff" : "rgba(255,255,255,0.7)",
-                    }}
-                  >
-                    {tab.label}
-                  </span>
-                </button>
-              );
-            })}
-          </nav>
+          <div className="flex-1" />
 
           <div className="p-4 border-t border-white/10 space-y-2">
             <button
@@ -324,7 +379,7 @@ export function AdminDashboard() {
                       marginTop: 4,
                     }}
                   >
-                    Olá, Dr. Paulo
+                    Olá, {fono.nome}
                   </h1>
                 </div>
                 <div className="flex items-center gap-3">
@@ -360,15 +415,21 @@ export function AdminDashboard() {
                 {[
                   {
                     label: "Total de Pacientes",
-                    value: String(patients.length),
+                    value: String(stats.totalPacientes),
                     icon: Users,
                     color: "#0052CC",
                   },
                   {
                     label: "Sessões Hoje",
-                    value: "0",
+                    value: String(stats.sessoesHoje),
                     icon: Calendar,
                     color: "#FFAB00",
+                  },
+                  {
+                    label: "Média de Progresso",
+                    value: `${stats.mediaProgresso}%`,
+                    icon: TrendingUp,
+                    color: "#36B37E",
                   },
                 ].map((stat) => (
                   <div
@@ -381,7 +442,7 @@ export function AdminDashboard() {
                   >
                     <div
                       className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                      style={{ background: stat.color + "15" }}
+                      style={{ background: `${stat.color}15` }}
                     >
                       <stat.icon size={24} color={stat.color} />
                     </div>
@@ -411,220 +472,185 @@ export function AdminDashboard() {
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto px-8 lg:px-12 py-6">
-              {activeTab === "patients" && (
-                <>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2
-                      style={{
-                        fontSize: 20,
-                        fontWeight: 600,
-                        color: "#1A2B5F",
-                      }}
-                    >
-                      Meus Pacientes
-                    </h2>
-                    <div
-                      className="flex items-center gap-3 px-4 py-2.5 rounded-2xl w-96"
-                      style={{
-                        background: "#fff",
-                        border: "1.5px solid #DBEAFE",
-                      }}
-                    >
-                      <Search size={18} color="#6B7A99" />
-                      <input
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Buscar paciente..."
-                        style={{
-                          flex: 1,
-                          border: "none",
-                          outline: "none",
-                          fontSize: 14,
-                          fontWeight: 400,
-                          color: "#1A2B5F",
-                          background: "transparent",
-                        }}
-                      />
-                    </div>
-                  </div>
+              <div className="flex items-center justify-between mb-6">
+                <h2
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 600,
+                    color: "#1A2B5F",
+                  }}
+                >
+                  Meus Pacientes
+                </h2>
+                <div
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-2xl w-96"
+                  style={{
+                    background: "#fff",
+                    border: "1.5px solid #DBEAFE",
+                  }}
+                >
+                  <Search size={18} color="#6B7A99" />
+                  <input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar paciente..."
+                    style={{
+                      flex: 1,
+                      border: "none",
+                      outline: "none",
+                      fontSize: 14,
+                      fontWeight: 400,
+                      color: "#1A2B5F",
+                      background: "transparent",
+                    }}
+                  />
+                </div>
+              </div>
 
-                  {loading && <p style={{ color: "#6B7A99" }}>Carregando pacientes...</p>}
+              {loading && <p style={{ color: "#6B7A99" }}>Carregando pacientes...</p>}
 
-                  {!loading && error && (
-                    <div
-                      className="rounded-2xl p-4 mb-4"
-                      style={{
-                        background: "#FEF2F2",
-                        border: "1px solid #FECACA",
-                        color: "#B91C1C",
-                      }}
-                    >
-                      {error}
-                    </div>
-                  )}
-
-                  {!loading && !error && filtered.length === 0 && (
-                    <div
-                      className="rounded-3xl p-8 text-center"
-                      style={{
-                        background: "#fff",
-                        border: "1.5px solid #DBEAFE",
-                      }}
-                    >
-                      <p
-                        style={{
-                          fontSize: 16,
-                          fontWeight: 600,
-                          color: "#1A2B5F",
-                          marginBottom: 8,
-                        }}
-                      >
-                        Nenhum paciente encontrado
-                      </p>
-                      <p style={{ fontSize: 14, color: "#6B7A99" }}>
-                        Cadastre um paciente para ele aparecer aqui.
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-6">
-                    {filtered.map((patient) => (
-                      <button
-                        key={patient.id}
-                        onClick={() => navigate(`/patient/${patient.id}`)}
-                        className="text-left rounded-3xl p-5 flex items-center gap-4 transition-all hover:shadow-lg"
-                        style={{
-                          background: "#fff",
-                          border: "1.5px solid #DBEAFE",
-                          boxShadow: "0 2px 12px rgba(0,82,204,0.06)",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <div
-                          className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
-                          style={{ background: patient.color + "22" }}
-                        >
-                          <span
-                            style={{
-                              fontSize: 20,
-                              fontWeight: 700,
-                              color: patient.color,
-                            }}
-                          >
-                            {patient.initials}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-2">
-                            <p
-                              style={{
-                                fontSize: 16,
-                                fontWeight: 600,
-                                color: "#1A2B5F",
-                              }}
-                            >
-                              {patient.name}
-                            </p>
-                            <ChevronRight size={18} color="#B0BAD3" />
-                          </div>
-
-                          <div className="flex items-center gap-2 mb-3">
-                            <span
-                              className="px-2.5 py-1 rounded-full"
-                              style={{
-                                background: "#EBF3FF",
-                                fontSize: 11,
-                                fontWeight: 500,
-                                color: "#0052CC",
-                              }}
-                            >
-                              {patient.age} anos
-                            </span>
-                            <Clock size={11} color={patient.statusColor} />
-                            <span
-                              style={{
-                                fontSize: 12,
-                                color: "#6B7A99",
-                                fontWeight: 400,
-                              }}
-                            >
-                              Última Sessão: {patient.lastSession}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="flex-1 rounded-full overflow-hidden"
-                              style={{ height: 6, background: "#EBF3FF" }}
-                            >
-                              <div
-                                className="h-full rounded-full"
-                                style={{
-                                  width: `${patient.progress}%`,
-                                  background:
-                                    "linear-gradient(90deg, #0052CC, #0065FF)",
-                                }}
-                              />
-                            </div>
-                            <span
-                              style={{
-                                fontSize: 12,
-                                fontWeight: 600,
-                                color: "#0052CC",
-                              }}
-                            >
-                              {patient.progress}%
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-2 mt-2">
-                            <span
-                              style={{
-                                fontSize: 11,
-                                color: patient.statusColor,
-                                fontWeight: 500,
-                              }}
-                            >
-                              {`Exercícios: ${patient.numberExercises}`}
-                            </span>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </>
+              {!loading && error && (
+                <div
+                  className="rounded-2xl p-4 mb-4"
+                  style={{
+                    background: "#FEF2F2",
+                    border: "1px solid #FECACA",
+                    color: "#B91C1C",
+                  }}
+                >
+                  {error}
+                </div>
               )}
 
-              {activeTab === "stats" && (
-                <div className="flex flex-col items-center justify-center pt-20 gap-6 pb-10">
-                  <div
-                    className="w-24 h-24 rounded-3xl flex items-center justify-center"
-                    style={{ background: "#EBF3FF" }}
-                  >
-                    <BarChart2 size={48} color="#0052CC" strokeWidth={1.5} />
-                  </div>
-                  <h2
-                    style={{
-                      fontSize: 24,
-                      fontWeight: 600,
-                      color: "#1A2B5F",
-                    }}
-                  >
-                    Estatísticas
-                  </h2>
+              {!loading && !error && filtered.length === 0 && (
+                <div
+                  className="rounded-3xl p-8 text-center"
+                  style={{
+                    background: "#fff",
+                    border: "1.5px solid #DBEAFE",
+                  }}
+                >
                   <p
                     style={{
-                      fontSize: 15,
-                      color: "#6B7A99",
-                      fontWeight: 400,
-                      textAlign: "center",
-                      maxWidth: 400,
+                      fontSize: 16,
+                      fontWeight: 600,
+                      color: "#1A2B5F",
+                      marginBottom: 8,
                     }}
                   >
-                    Acompanhe o desempenho geral de todos os seus pacientes.
+                    Nenhum paciente encontrado
+                  </p>
+                  <p style={{ fontSize: 14, color: "#6B7A99" }}>
+                    Cadastre um paciente para ele aparecer aqui.
                   </p>
                 </div>
               )}
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-6">
+                {filtered.map((patient) => (
+                  <button
+                    key={patient.id}
+                    onClick={() => navigate(`/patient/${patient.id}`)}
+                    className="text-left rounded-3xl p-5 flex items-center gap-4 transition-all hover:shadow-lg"
+                    style={{
+                      background: "#fff",
+                      border: "1.5px solid #DBEAFE",
+                      boxShadow: "0 2px 12px rgba(0,82,204,0.06)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div
+                      className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: `${patient.color}22` }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 20,
+                          fontWeight: 700,
+                          color: patient.color,
+                        }}
+                      >
+                        {patient.initials}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <p
+                          style={{
+                            fontSize: 16,
+                            fontWeight: 600,
+                            color: "#1A2B5F",
+                          }}
+                        >
+                          {patient.name}
+                        </p>
+                        <ChevronRight size={18} color="#B0BAD3" />
+                      </div>
+
+                      <div className="flex items-center gap-2 mb-3">
+                        <span
+                          className="px-2.5 py-1 rounded-full"
+                          style={{
+                            background: "#EBF3FF",
+                            fontSize: 11,
+                            fontWeight: 500,
+                            color: "#0052CC",
+                          }}
+                        >
+                          {patient.age} anos
+                        </span>
+                        <Clock size={11} color={patient.statusColor} />
+                        <span
+                          style={{
+                            fontSize: 12,
+                            color: "#6B7A99",
+                            fontWeight: 400,
+                          }}
+                        >
+                          Última Sessão: {patient.lastSession}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="flex-1 rounded-full overflow-hidden"
+                          style={{ height: 6, background: "#EBF3FF" }}
+                        >
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${patient.progress}%`,
+                              background:
+                                "linear-gradient(90deg, #0052CC, #0065FF)",
+                            }}
+                          />
+                        </div>
+                        <span
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: "#0052CC",
+                          }}
+                        >
+                          {patient.progress}%
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-2">
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: patient.statusColor,
+                            fontWeight: 500,
+                          }}
+                        >
+                          {`Exercícios: ${patient.numberExercises}`}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -661,7 +687,7 @@ export function AdminDashboard() {
                       lineHeight: 1.3,
                     }}
                   >
-                    Olá, Dr. Paulo 👋
+                    Olá, {fono.nome} 👋
                   </h1>
                   <p
                     style={{
@@ -670,7 +696,7 @@ export function AdminDashboard() {
                       fontWeight: 400,
                     }}
                   >
-                    {patients.length} pacientes cadastrados
+                    {stats.totalPacientes} pacientes cadastrados
                   </p>
                 </div>
                 <button
@@ -687,9 +713,9 @@ export function AdminDashboard() {
 
               <div className="flex gap-3 relative z-10 mb-1">
                 {[
-                  { label: "Pacientes", value: String(patients.length), icon: Users },
-                  { label: "Sessões hoje", value: "0", icon: Calendar },
-                  { label: "Média", value: "0%", icon: TrendingUp },
+                  { label: "Pacientes", value: String(stats.totalPacientes), icon: Users },
+                  { label: "Sessões hoje", value: String(stats.sessoesHoje), icon: Calendar },
+                  { label: "Média", value: `${stats.mediaProgresso}%`, icon: TrendingUp },
                 ].map((stat) => (
                   <div
                     key={stat.label}
@@ -747,172 +773,169 @@ export function AdminDashboard() {
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 pt-5 pb-32">
-              {activeTab === "patients" && (
-                <>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2
-                      style={{
-                        fontSize: 16,
-                        fontWeight: 600,
-                        color: "#1A2B5F",
-                      }}
-                    >
-                      Meus Pacientes
-                    </h2>
-                    <span
-                      style={{
-                        fontSize: 12,
-                        color: "#6B7A99",
-                        fontWeight: 400,
-                      }}
-                    >
-                      {filtered.length} pacientes
-                    </span>
-                  </div>
+              <div className="flex items-center justify-between mb-4">
+                <h2
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 600,
+                    color: "#1A2B5F",
+                  }}
+                >
+                  Meus Pacientes
+                </h2>
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: "#6B7A99",
+                    fontWeight: 400,
+                  }}
+                >
+                  {filtered.length} pacientes
+                </span>
+              </div>
 
-                  {loading && <p style={{ color: "#6B7A99" }}>Carregando pacientes...</p>}
+              {loading && <p style={{ color: "#6B7A99" }}>Carregando pacientes...</p>}
 
-                  {!loading && error && (
-                    <div
-                      className="rounded-2xl p-4 mb-4"
-                      style={{
-                        background: "#FEF2F2",
-                        border: "1px solid #FECACA",
-                        color: "#B91C1C",
-                      }}
-                    >
-                      {error}
-                    </div>
-                  )}
-
-                  <div className="flex flex-col gap-3">
-                    {filtered.map((patient) => (
-                      <button
-                        key={patient.id}
-                        onClick={() => navigate(`/patient/${patient.id}`)}
-                        className="w-full text-left rounded-3xl p-4 flex items-center gap-4"
-                        style={{
-                          background: "#ffffff",
-                          border: "1.5px solid #DBEAFE",
-                          boxShadow: "0 2px 12px rgba(0,82,204,0.06)",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <div
-                          className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                          style={{ background: patient.color + "22" }}
-                        >
-                          <span
-                            style={{
-                              fontSize: 15,
-                              fontWeight: 700,
-                              color: patient.color,
-                            }}
-                          >
-                            {patient.initials}
-                          </span>
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <p
-                              style={{
-                                fontSize: 14,
-                                fontWeight: 600,
-                                color: "#1A2B5F",
-                              }}
-                            >
-                              {patient.name}
-                            </p>
-                            <ChevronRight size={16} color="#B0BAD3" />
-                          </div>
-
-                          <div className="flex items-center gap-2 mb-2">
-                            <span
-                              className="px-2 py-0.5 rounded-full"
-                              style={{
-                                background: "#EBF3FF",
-                                fontSize: 10,
-                                fontWeight: 500,
-                                color: "#0052CC",
-                              }}
-                            >
-                              {patient.age} anos
-                            </span>
-                            <span
-                              style={{
-                                fontSize: 11,
-                                color: "#6B7A99",
-                                fontWeight: 400,
-                              }}
-                            >
-                              · Última sessão: {patient.lastSession}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="flex-1 rounded-full overflow-hidden"
-                              style={{ height: 5, background: "#EBF3FF" }}
-                            >
-                              <div
-                                className="h-full rounded-full"
-                                style={{
-                                  width: `${patient.progress}%`,
-                                  background:
-                                    "linear-gradient(90deg, #0052CC, #0065FF)",
-                                }}
-                              />
-                            </div>
-                            <span
-                              style={{
-                                fontSize: 11,
-                                fontWeight: 600,
-                                color: "#0052CC",
-                              }}
-                            >
-                              {patient.progress}%
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-1 mt-1.5">
-                            <Clock size={10} color={patient.statusColor} />
-                            <span
-                              style={{
-                                fontSize: 10,
-                                color: patient.statusColor,
-                                fontWeight: 500,
-                              }}
-                            >
-                              {`Exercícios: ${patient.numberExercises}`}
-                            </span>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              {activeTab === "stats" && (
-                <div className="flex flex-col items-center justify-center pt-16 gap-4">
-                  <div
-                    className="w-20 h-20 rounded-3xl flex items-center justify-center"
-                    style={{ background: "#EBF3FF" }}
-                  >
-                    <BarChart2 size={40} color="#0052CC" strokeWidth={1.5} />
-                  </div>
-                  <h2
-                    style={{
-                      fontSize: 18,
-                      fontWeight: 600,
-                      color: "#1A2B5F",
-                    }}
-                  >
-                    Estatísticas
-                  </h2>
+              {!loading && error && (
+                <div
+                  className="rounded-2xl p-4 mb-4"
+                  style={{
+                    background: "#FEF2F2",
+                    border: "1px solid #FECACA",
+                    color: "#B91C1C",
+                  }}
+                >
+                  {error}
                 </div>
               )}
+
+              {!loading && !error && filtered.length === 0 && (
+                <div
+                  className="rounded-3xl p-8 text-center"
+                  style={{
+                    background: "#fff",
+                    border: "1.5px solid #DBEAFE",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 600,
+                      color: "#1A2B5F",
+                      marginBottom: 8,
+                    }}
+                  >
+                    Nenhum paciente encontrado
+                  </p>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-3">
+                {filtered.map((patient) => (
+                  <button
+                    key={patient.id}
+                    onClick={() => navigate(`/patient/${patient.id}`)}
+                    className="w-full text-left rounded-3xl p-4 flex items-center gap-4"
+                    style={{
+                      background: "#ffffff",
+                      border: "1.5px solid #DBEAFE",
+                      boxShadow: "0 2px 12px rgba(0,82,204,0.06)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: `${patient.color}22` }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 700,
+                          color: patient.color,
+                        }}
+                      >
+                        {patient.initials}
+                      </span>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <p
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: "#1A2B5F",
+                          }}
+                        >
+                          {patient.name}
+                        </p>
+                        <ChevronRight size={16} color="#B0BAD3" />
+                      </div>
+
+                      <div className="flex items-center gap-2 mb-2">
+                        <span
+                          className="px-2 py-0.5 rounded-full"
+                          style={{
+                            background: "#EBF3FF",
+                            fontSize: 10,
+                            fontWeight: 500,
+                            color: "#0052CC",
+                          }}
+                        >
+                          {patient.age} anos
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: "#6B7A99",
+                            fontWeight: 400,
+                          }}
+                        >
+                          · Última sessão: {patient.lastSession}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="flex-1 rounded-full overflow-hidden"
+                          style={{ height: 5, background: "#EBF3FF" }}
+                        >
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${patient.progress}%`,
+                              background:
+                                "linear-gradient(90deg, #0052CC, #0065FF)",
+                            }}
+                          />
+                        </div>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: "#0052CC",
+                          }}
+                        >
+                          {patient.progress}%
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 mt-1.5">
+                        <Clock size={10} color={patient.statusColor} />
+                        <span
+                          style={{
+                            fontSize: 10,
+                            color: patient.statusColor,
+                            fontWeight: 500,
+                          }}
+                        >
+                          {`Exercícios: ${patient.numberExercises}`}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <button
@@ -932,57 +955,6 @@ export function AdminDashboard() {
             >
               <Plus size={28} color="white" strokeWidth={2.5} />
             </button>
-
-            <div
-              className="fixed md:hidden bottom-0 left-0 right-0 flex items-center px-6 pb-6 pt-3"
-              style={{
-                background: "#ffffff",
-                borderTop: "1.5px solid #DBEAFE",
-                boxShadow: "0 -4px 20px rgba(0,82,204,0.08)",
-                zIndex: 20,
-              }}
-            >
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className="flex-1 flex flex-col items-center gap-1 py-1"
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <div
-                      className="flex items-center justify-center rounded-xl"
-                      style={{
-                        width: 42,
-                        height: 32,
-                        background: isActive ? "#EBF3FF" : "transparent",
-                      }}
-                    >
-                      <Icon
-                        size={20}
-                        color={isActive ? "#0052CC" : "#B0BAD3"}
-                        strokeWidth={isActive ? 2.5 : 1.8}
-                      />
-                    </div>
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: isActive ? 600 : 400,
-                        color: isActive ? "#0052CC" : "#B0BAD3",
-                      }}
-                    >
-                      {tab.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
           </div>
         </div>
       </div>

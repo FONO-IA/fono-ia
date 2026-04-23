@@ -1,4 +1,4 @@
-// src/utils/formatters.ts
+//formatação para campos de cpf, telefone e cálculo de idade a partir da data de nascimento
 
 export const onlyDigits = (value: string) => value.replace(/\D/g, "");
 
@@ -16,7 +16,7 @@ export const formatPhone = (value: string) => {
 
   if (digits.length <= 10) {
     return digits
-      .replace(/^(\d{2})(\d)/, "($1) $2")
+      .replace(/^(\d{2})(\d)/, "($1) $2")                                                                         
       .replace(/(\d{4})(\d)/, "$1-$2");
   }
 
