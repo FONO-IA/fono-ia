@@ -7,6 +7,7 @@ class FonoaudiologoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fonoaudiologo
         fields = [
+            'id',
             'nome',
             'cpf',
             'crfa',

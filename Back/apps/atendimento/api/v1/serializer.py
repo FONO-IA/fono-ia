@@ -7,9 +7,11 @@ class AtendimentoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Atendimento
         fields = [
+            'id',
             'paciente',
             'fonoaudiologo',
             'exercicio',
             'observacoes',
+            'concluido',
         ]
         read_only_fields = ['id']
