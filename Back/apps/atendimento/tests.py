@@ -1,8 +1,5 @@
 from django.test import TestCase
 
-# Create your tests here.
-from django.test import TestCase
-
 from apps.atendimento.models import Atendimento
 from apps.exercicio.models import Exercicio
 from apps.fonoaudiologo.models import Fonoaudiologo
@@ -34,7 +31,7 @@ class AtendimentoModelTest(TestCase):
         )
 
         self.exercicio = Exercicio.objects.create(
-            nivel='FAC',
+            nivel='FACA',
             categoria='Leitura',
             conteudo='Texto base',
             objetivo='Melhorar leitura',

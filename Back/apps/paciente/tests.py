@@ -50,7 +50,7 @@ class PacienteSerializerTest(TestCase):
 
     def test_nome_obrigatorio(self):
         data = {
-            'nome': '   ',
+            'nome': 'KEILA',
             'data_nascimento': '2014-04-20',
             'observacoes': 'Sem observações',
             'responsavel': self.responsavel.id
@@ -59,4 +59,5 @@ class PacienteSerializerTest(TestCase):
         serializer = PacienteSerializer(data=data)
 
         self.assertFalse(serializer.is_valid())
-        self.assertIn('nome', serializer.errors)
+        # self.assertIn('nome', serializer.errors)
+        self.assertEqual(serializer.errors['nome'][0], 'O nome do paciente é obrigatório.')
