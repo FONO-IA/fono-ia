@@ -2,12 +2,18 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from apps.exercicio.models import Exercicio
 from apps.exercicio.api.v1.serializer import ExercicioSerializer
+from apps.core.permissions import IsFonoaudiologo
 
 
 class ExercicioViewSet(viewsets.ModelViewSet):
 
     serializer_class = ExercicioSerializer
-    permission_classes = [permissions.AllowAny]
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.IsAuthenticated()]
+        else:
+            return [permissions.IsAuthenticated(), IsFonoaudiologo()]
 
     def get_queryset(self):
 

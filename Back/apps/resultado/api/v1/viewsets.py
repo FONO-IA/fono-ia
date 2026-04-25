@@ -1,12 +1,19 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, permissions
 from rest_framework.response import Response
 from apps.resultado.models import Resultado
 from apps.resultado.api.v1.serializer import ResultadoSerializer
+from apps.core.permissions import IsFonoaudiologo, IsPaciente
 
 
 class ResultadoViewSet(viewsets.ModelViewSet):
     queryset = Resultado.objects.actives()
     serializer_class = ResultadoSerializer
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.IsAuthenticated(), IsPaciente()]
+        else:
+            return [permissions.IsAuthenticated(), IsFonoaudiologo()]
 
     def perform_destroy(self, instance):
         instance.soft_delete(self.request.user)

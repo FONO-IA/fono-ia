@@ -2,12 +2,13 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from apps.responsavel.models import Responsavel
 from apps.responsavel.api.v1.serializer import ResponsavelSerializer
+from apps.core.permissions import IsFonoaudiologo
 
 
 class ResponsavelViewSet(viewsets.ModelViewSet):
 
     serializer_class = ResponsavelSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated, IsFonoaudiologo]
 
     def get_queryset(self):
         queryset = Responsavel.objects.actives()

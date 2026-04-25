@@ -2,13 +2,18 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from apps.fonoaudiologo.models import Fonoaudiologo
 from apps.fonoaudiologo.api.v1.serializer import FonoaudiologoSerializer
+from apps.core.permissions import IsFonoaudiologo
 
 
 class FonoaudiologoViewSet(viewsets.ModelViewSet):
 
     serializer_class = FonoaudiologoSerializer
 
-    permission_classes = [permissions.AllowAny]
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.IsAuthenticated()]
+        else:
+            return [permissions.IsAuthenticated(), IsFonoaudiologo()]
 
     def get_queryset(self):
 

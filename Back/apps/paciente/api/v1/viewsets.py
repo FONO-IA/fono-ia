@@ -3,12 +3,13 @@ from rest_framework.response import Response
 from apps.paciente.models import Paciente
 from apps.paciente.api.v1.serializer import PacienteSerializer
 from django.db.models import Count, Q, OuterRef, Subquery
+from apps.core.permissions import IsFonoaudiologo
 
 
 class PacienteViewSet(viewsets.ModelViewSet):
 
     serializer_class = PacienteSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated, IsFonoaudiologo]
 
     def get_queryset(self):
         queryset = Paciente.objects.actives()
