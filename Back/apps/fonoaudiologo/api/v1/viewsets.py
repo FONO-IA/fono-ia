@@ -10,7 +10,9 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
     serializer_class = FonoaudiologoSerializer
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
+        if self.action == 'create':
+            return [permissions.AllowAny()]
+        elif self.action in ['list', 'retrieve']:
             return [permissions.IsAuthenticated()]
         else:
             return [permissions.IsAuthenticated(), IsFonoaudiologo()]
