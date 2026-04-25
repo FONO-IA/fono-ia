@@ -36,7 +36,6 @@ urlpatterns = [
     # ========================================================================
     # Admin e APIs
     path('admin/', admin.site.urls),
-    path('api/v1/', include('apps.atendimento.api.v1.router')),
     path('api/v1/', include('apps.exercicio.api.v1.router')),
     path('api/v1/', include('apps.fonoaudiologo.api.v1.router')),
     path('api/v1/', include('apps.paciente.api.v1.router')),

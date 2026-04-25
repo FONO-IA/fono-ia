@@ -54,12 +54,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'drf_yasg',
-    'apps.atendimento',
     'apps.fonoaudiologo',
     'apps.responsavel',
     'apps.paciente',
     'apps.exercicio',
     'apps.resultado',
+    'apps.perfis',
 ]
 
 MIDDLEWARE = [

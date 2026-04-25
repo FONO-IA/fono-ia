@@ -3,7 +3,6 @@ from rest_framework.response import Response
 from apps.paciente.models import Paciente
 from apps.paciente.api.v1.serializer import PacienteSerializer
 from django.db.models import Count, Q, OuterRef, Subquery
-from apps.atendimento.models import Atendimento
 
 
 class PacienteViewSet(viewsets.ModelViewSet):
@@ -23,8 +22,8 @@ class PacienteViewSet(viewsets.ModelViewSet):
         if data_nascimento:
             queryset = queryset.filter(data_nascimento=data_nascimento)
 
-        ultimo_atendimento = Atendimento.objects.filter(
-            paciente=OuterRef('pk')
+        ultimo_atendimento = Paciente.objects.filter(
+            id=OuterRef('id')
         ).order_by('-updated_at')
 
         queryset = queryset.annotate(
@@ -36,6 +35,9 @@ class PacienteViewSet(viewsets.ModelViewSet):
             ultima_sessao=Subquery(ultimo_atendimento.values('updated_at')[:1])
         )
         return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(criado_por=self.request.user)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

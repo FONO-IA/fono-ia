@@ -1,8 +1,17 @@
 from django.db import models
+from django.conf import settings
 from apps.core.models import BaseModel
 
 
 class Fonoaudiologo(BaseModel):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='fonoaudiologo_profile',
+        null=True,
+        blank=True,
+        verbose_name="Usuário associado"
+    )
     nome = models.CharField(max_length=255, verbose_name="Nome completo")
     cpf = models.CharField(max_length=14, unique=True, verbose_name="CPF")
     crfa = models.CharField(max_length=20, unique=True, verbose_name="CRFa")

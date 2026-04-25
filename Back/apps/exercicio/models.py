@@ -1,6 +1,7 @@
 from django.db import models
 from apps.core.models import BaseModel
 from apps.exercicio.enums import NivelEnum
+from apps.paciente.models import Paciente
 
 
 class Exercicio(BaseModel):
@@ -13,6 +14,12 @@ class Exercicio(BaseModel):
     conteudo = models.TextField(verbose_name="Conteúdo")
     objetivo = models.TextField(verbose_name="Objetivo")
     instrucao = models.TextField(verbose_name="Instrução")
+    paciente = models.ManyToManyField(
+        Paciente,
+        blank=True,
+        verbose_name="Pacientes",
+        related_name="exercicios"
+    )
 
     class Meta:
         verbose_name = "Exercício"
