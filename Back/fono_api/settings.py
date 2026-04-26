@@ -59,7 +59,6 @@ INSTALLED_APPS = [
     'apps.paciente',
     'apps.exercicio',
     'apps.resultado',
-    'apps.perfis',
 ]
 
 MIDDLEWARE = [
