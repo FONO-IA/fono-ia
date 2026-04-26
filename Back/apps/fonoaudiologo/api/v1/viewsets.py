@@ -1,4 +1,5 @@
-from rest_framework import viewsets, permissions, status
+from django.contrib.auth import get_user_model
+from rest_framework import viewsets, permissions, status, serializers
 from rest_framework.response import Response
 from apps.fonoaudiologo.models import Fonoaudiologo
 from apps.fonoaudiologo.api.v1.serializer import FonoaudiologoSerializer
@@ -29,6 +30,29 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(cpf__icontains=cpf)
 
         return queryset
+
+    def perform_create(self, serializer):
+        # Extrai username e password do request.data
+        username = self.request.data.get('username')
+        password = self.request.data.get('password')
+        email = self.request.data.get('email')
+
+        if not username or not password:
+            raise serializers.ValidationError({
+                "username": "Este campo é obrigatório",
+                "password": "Este campo é obrigatório"
+            })
+
+        # Cria o usuário
+        User = get_user_model()
+        user = User.objects.create_user(
+            username=username,
+            password=password,
+            email=email
+        )
+
+        # Salva o fonoaudiólogo com o usuário associado
+        serializer.save(user=user)
 
     def create(self, request, *args, **kwargs):
 
