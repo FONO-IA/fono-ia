@@ -1,30 +1,50 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
-import { Eye, EyeOff, ChevronRight, Hash } from "lucide-react";
+import { Eye, EyeOff, ChevronRight, Hash, AlertCircle, X } from "lucide-react";
 import { login } from "../services/auth";
 
 export function EntryPortal() {
   const navigate = useNavigate();
+
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [activePortal, setActivePortal] = useState<"pro" | "patient" | null>(null);
 
-  const handleProfessionalLogin = async(e: React.FormEvent) => {
+  const [activePortal, setActivePortal] = useState<"pro" | "patient" | null>(
+    null,
+  );
+
+  const [loading, setLoading] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginModalMessage, setLoginModalMessage] = useState("");
+
+  function openLoginModal(message: string) {
+    setLoginModalMessage(message);
+    setShowLoginModal(true);
+  }
+
+  const handleProfessionalLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-      
-    try {
-      await login(email, password);
-      navigate("/admin");
-    } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao fazer login.");
+
+    if (!email.trim() || !password.trim()) {
+      openLoginModal("Preencha o e-mail e a senha para continuar.");
+      return;
     }
-};
+
+    try {
+      setLoading(true);
+      await login(email.trim(), password);
+      navigate("/admin");
+    } catch {
+      openLoginModal("Usuário não cadastrado ou dados de acesso inválidos.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <MobileWrapper bgColor="#EBF3FF" desktopMode="full">
-      {/* Background decoration */}
       <div className="absolute top-0 left-0 right-0 h-64 md:h-full overflow-hidden pointer-events-none">
         <div
           className="absolute -top-20 -right-20 md:-top-40 md:-right-40 w-64 h-64 md:w-[600px] md:h-[600px] rounded-full opacity-20"
@@ -41,10 +61,8 @@ export function EntryPortal() {
       </div>
 
       <div className="flex flex-col md:flex-row flex-1 md:h-screen relative z-10">
-        {/* Left side - Desktop only branding */}
         <div className="hidden md:flex md:w-1/2 lg:w-2/5 flex-col items-center justify-center p-12 lg:p-20 relative">
           <div className="max-w-lg">
-            {/* CORREÇÃO: Container da Logo Desktop */}
             <div
               className="w-28 h-28 lg:w-32 lg:h-32 rounded-[32px] flex items-center justify-center mb-8 shadow-2xl overflow-hidden"
               style={{ background: "#0052CC" }}
@@ -67,8 +85,7 @@ export function EntryPortal() {
                 lineHeight: 1.1,
               }}
             >
-              FONO
-              <span style={{ color: "#003884" }}>-IA</span>
+              FONO<span style={{ color: "#003884" }}>-IA</span>
             </h1>
 
             <p
@@ -106,12 +123,9 @@ export function EntryPortal() {
           </div>
         </div>
 
-        {/* Right side - Forms */}
         <div className="flex flex-col flex-1 md:w-1/2 lg:w-3/5 md:items-center md:justify-center md:bg-white/40 md:backdrop-blur-sm overflow-y-auto px-6 md:px-12 lg:px-20 pt-16 md:pt-0 pb-8">
           <div className="w-full max-w-md md:py-12">
-            {/* Logo Section - Mobile only */}
             <div className="flex flex-col items-center mb-10 md:hidden">
-              {/* CORREÇÃO: Container da Logo Mobile */}
               <div
                 className="w-20 h-20 rounded-3xl flex items-center justify-center mb-4 shadow-lg overflow-hidden"
                 style={{ background: "#0052CC" }}
@@ -133,8 +147,7 @@ export function EntryPortal() {
                   letterSpacing: 2,
                 }}
               >
-                FONO
-                <span style={{ color: "#003884" }}>-IA</span>
+                FONO<span style={{ color: "#003884" }}>-IA</span>
               </h1>
 
               <p
@@ -150,7 +163,6 @@ export function EntryPortal() {
               </p>
             </div>
 
-            {/* Portal toggle */}
             <div
               className="flex rounded-2xl p-1 mb-6"
               style={{ background: "#EBF3FF" }}
@@ -194,7 +206,6 @@ export function EntryPortal() {
               </button>
             </div>
 
-            {/* Professional Portal Card */}
             {(activePortal === null || activePortal === "pro") && (
               <div
                 className="rounded-3xl p-6 md:p-8 mb-4 shadow-md md:shadow-xl"
@@ -340,6 +351,7 @@ export function EntryPortal() {
 
                   <button
                     type="submit"
+                    disabled={loading}
                     className="flex items-center justify-center gap-2 py-4 rounded-2xl transition-all duration-200 active:scale-95"
                     style={{
                       background: "linear-gradient(135deg, #0052CC, #0065FF)",
@@ -348,11 +360,12 @@ export function EntryPortal() {
                       fontSize: 15,
                       fontWeight: 600,
                       border: "none",
-                      cursor: "pointer",
+                      cursor: loading ? "not-allowed" : "pointer",
+                      opacity: loading ? 0.75 : 1,
                       boxShadow: "0 4px 15px rgba(0,82,204,0.35)",
                     }}
                   >
-                    Entrar
+                    {loading ? "Entrando..." : "Entrar"}
                     <ChevronRight size={18} />
                   </button>
 
@@ -376,7 +389,6 @@ export function EntryPortal() {
               </div>
             )}
 
-            {/* Patient Portal Card */}
             {activePortal === "patient" && (
               <div
                 className="rounded-3xl p-6 mb-4 shadow-md"
@@ -501,6 +513,105 @@ export function EntryPortal() {
           </div>
         </div>
       </div>
+
+      {showLoginModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.48)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 420,
+              background: "#fff",
+              borderRadius: 28,
+              border: "1.5px solid #DBEAFE",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+              padding: 28,
+              position: "relative",
+              textAlign: "center",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setShowLoginModal(false)}
+              style={{
+                position: "absolute",
+                top: 16,
+                right: 16,
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+              }}
+            >
+              <X size={20} color="#6B7A99" />
+            </button>
+
+            <div
+              style={{
+                width: 58,
+                height: 58,
+                borderRadius: 18,
+                background: "#FEF2F2",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 16px",
+              }}
+            >
+              <AlertCircle size={30} color="#DC2626" />
+            </div>
+
+            <h3
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                color: "#1A2B5F",
+                marginBottom: 8,
+              }}
+            >
+              Não foi possível entrar
+            </h3>
+
+            <p
+              style={{
+                fontSize: 14,
+                color: "#6B7A99",
+                lineHeight: 1.7,
+                marginBottom: 22,
+              }}
+            >
+              {loginModalMessage}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setShowLoginModal(false)}
+              style={{
+                width: "100%",
+                minHeight: 48,
+                borderRadius: 16,
+                border: "none",
+                background: "linear-gradient(135deg, #0052CC, #0065FF)",
+                color: "#fff",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Entendi
+            </button>
+          </div>
+        </div>
+      )}
     </MobileWrapper>
   );
 }
