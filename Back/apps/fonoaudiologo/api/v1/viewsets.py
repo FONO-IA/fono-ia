@@ -17,10 +17,11 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'create':
             return [permissions.AllowAny()]
-        elif self.action in ['list', 'retrieve']:
+
+        if self.action in ['list', 'retrieve', 'me']:
             return [permissions.IsAuthenticated()]
-        else:
-            return [permissions.IsAuthenticated(), IsFonoaudiologo()]
+
+        return [permissions.IsAuthenticated(), IsFonoaudiologo()]
 
     def get_queryset(self):
 
@@ -123,15 +124,14 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
             status=status.HTTP_204_NO_CONTENT
         )
 
-    @action(
-        detail=False, methods=['get'], permission_classes=[IsAuthenticated]
-    )
+    @action(detail=False, methods=['get'])
     def me(self, request):
         try:
             fono = Fonoaudiologo.objects.get(user=request.user)
         except Fonoaudiologo.DoesNotExist:
             return Response(
-                {"detail": "Fonoaudiólogo não encontrado"}, status=404
+                {"detail": "Fonoaudiólogo não encontrado"},
+                status=404
             )
 
         serializer = self.get_serializer(fono)

@@ -142,7 +142,7 @@ export function CadastroFonoPage() {
         password,
       });
 
-      navigate("/admin");
+      navigate("/");
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Erro ao cadastrar fonoaudiólogo.";
