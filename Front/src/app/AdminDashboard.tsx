@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
+import { listarPacientes } from "../services/pacientes";
+import { getMe } from "../services/auth";
 import {
   Search,
   Plus,
@@ -10,37 +12,13 @@ import {
   Bell,
   Calendar,
   Clock,
-  TrendingUp,
   LogOut,
   Crown,
 } from "lucide-react";
-import { listarPacientes } from "../services/pacientes";
-import { listarFonoaudiologos } from "../services/fonoaudiologos";
-import { listarAtendimentos } from "../services/atendimentos";
-
-type ApiFono = {
-  id: string;
-  nome: string;
-  cpf: string;
-  crfa: string;
-  telefone: string;
-  email: string;
-};
-
-type ApiAtendimento = {
-  id: string;
-  paciente: string;
-  fonoaudiologo: string;
-  exercicio: string;
-  observacoes?: string;
-  concluido: boolean;
-  updated_at?: string;
-};
 
 type DashboardStats = {
   totalPacientes: number;
   sessoesHoje: number;
-  mediaProgresso: number;
 };
 
 type DashboardFono = {
@@ -73,7 +51,14 @@ type DashboardPatient = {
   statusColor: string;
 };
 
-const colors = ["#4C9AFF", "#FF7452", "#57D9A3", "#998DD9", "#F99CDB", "#36B37E"];
+const colors = [
+  "#4C9AFF",
+  "#FF7452",
+  "#57D9A3",
+  "#998DD9",
+  "#F99CDB",
+  "#36B37E",
+];
 
 const calculateAge = (birthDate: string) => {
   if (!birthDate) return 0;
@@ -115,22 +100,10 @@ const formatLastSession = (date?: string) => {
   });
 };
 
-const isToday = (dateString?: string) => {
-  if (!dateString) return false;
-
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) return false;
-
-  const today = new Date();
-
-  return (
-    date.getDate() === today.getDate() &&
-    date.getMonth() === today.getMonth() &&
-    date.getFullYear() === today.getFullYear()
-  );
-};
-
-const mapPacienteToCard = (patient: ApiPaciente, index: number): DashboardPatient => {
+const mapPacienteToCard = (
+  patient: ApiPaciente,
+  index: number,
+): DashboardPatient => {
   const total = patient.total_exercicios ?? 0;
   const done = patient.exercicios_concluidos ?? 0;
   const progress = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -162,10 +135,9 @@ export function AdminDashboard() {
     iniciais: "FO",
   });
 
-  const [stats, setStats] = useState<DashboardStats>({
+  const [stats] = useState<DashboardStats>({
     totalPacientes: 0,
     sessoesHoje: 0,
-    mediaProgresso: 0,
   });
 
   useEffect(() => {
@@ -174,19 +146,19 @@ export function AdminDashboard() {
         setLoading(true);
         setError("");
 
-        const [pacientesData, fonoData, atendimentosData] = await Promise.all([
+        const [pacientesData, fonoData] = await Promise.all([
           listarPacientes(),
-          listarFonoaudiologos(),
-          listarAtendimentos(),
+          getMe(),
         ]);
 
         const mappedPatients = pacientesData.map(
-          (patient: ApiPaciente, index: number) => mapPacienteToCard(patient, index)
+          (patient: ApiPaciente, index: number) =>
+            mapPacienteToCard(patient, index),
         );
 
         setPatients(mappedPatients);
 
-        const fonoAtual = fonoData?.[0];
+        const fonoAtual = fonoData;
         if (fonoAtual) {
           setFono({
             nome: fonoAtual.nome,
@@ -194,24 +166,6 @@ export function AdminDashboard() {
             iniciais: getInitials(fonoAtual.nome),
           });
         }
-
-        const sessoesHoje = atendimentosData.filter((at: ApiAtendimento) =>
-          isToday(at.updated_at)
-        ).length;
-
-        const mediaProgresso =
-          mappedPatients.length > 0
-            ? Math.round(
-                mappedPatients.reduce((acc, patient) => acc + patient.progress, 0) /
-                  mappedPatients.length
-              )
-            : 0;
-
-        setStats({
-          totalPacientes: mappedPatients.length,
-          sessoesHoje,
-          mediaProgresso,
-        });
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Erro ao carregar dashboard.";
@@ -226,7 +180,7 @@ export function AdminDashboard() {
 
   const filtered = useMemo(() => {
     return patients.filter((p) =>
-      p.name.toLowerCase().includes(searchQuery.toLowerCase())
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [patients, searchQuery]);
 
@@ -324,7 +278,11 @@ export function AdminDashboard() {
             <button
               onClick={() => navigate("/settings/perfil")}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all"
-              style={{ background: "transparent", border: "none", cursor: "pointer" }}
+              style={{
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
             >
               <Settings size={20} color="rgba(255,255,255,0.6)" />
               <span
@@ -425,12 +383,6 @@ export function AdminDashboard() {
                     icon: Calendar,
                     color: "#FFAB00",
                   },
-                  {
-                    label: "Média de Progresso",
-                    value: `${stats.mediaProgresso}%`,
-                    icon: TrendingUp,
-                    color: "#36B37E",
-                  },
                 ].map((stat) => (
                   <div
                     key={stat.label}
@@ -507,7 +459,9 @@ export function AdminDashboard() {
                 </div>
               </div>
 
-              {loading && <p style={{ color: "#6B7A99" }}>Carregando pacientes...</p>}
+              {loading && (
+                <p style={{ color: "#6B7A99" }}>Carregando pacientes...</p>
+              )}
 
               {!loading && error && (
                 <div
@@ -713,9 +667,16 @@ export function AdminDashboard() {
 
               <div className="flex gap-3 relative z-10 mb-1">
                 {[
-                  { label: "Pacientes", value: String(stats.totalPacientes), icon: Users },
-                  { label: "Sessões hoje", value: String(stats.sessoesHoje), icon: Calendar },
-                  { label: "Média", value: `${stats.mediaProgresso}%`, icon: TrendingUp },
+                  {
+                    label: "Pacientes",
+                    value: String(stats.totalPacientes),
+                    icon: Users,
+                  },
+                  {
+                    label: "Sessões hoje",
+                    value: String(stats.sessoesHoje),
+                    icon: Calendar,
+                  },
                 ].map((stat) => (
                   <div
                     key={stat.label}
@@ -794,7 +755,9 @@ export function AdminDashboard() {
                 </span>
               </div>
 
-              {loading && <p style={{ color: "#6B7A99" }}>Carregando pacientes...</p>}
+              {loading && (
+                <p style={{ color: "#6B7A99" }}>Carregando pacientes...</p>
+              )}
 
               {!loading && error && (
                 <div

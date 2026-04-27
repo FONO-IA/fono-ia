@@ -2,8 +2,9 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from apps.paciente.models import Paciente
 from apps.paciente.api.v1.serializer import PacienteSerializer
-from django.db.models import Count, Q, OuterRef, Subquery
 from apps.core.permissions import IsFonoaudiologo
+from apps.fonoaudiologo.models import Fonoaudiologo
+from rest_framework import serializers
 
 
 class PacienteViewSet(viewsets.ModelViewSet):
@@ -12,33 +13,23 @@ class PacienteViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsFonoaudiologo]
 
     def get_queryset(self):
-        queryset = Paciente.objects.actives()
-        nome = self.request.query_params.get('nome', None)
-        data_nascimento = self.request.query_params.get(
-            'data_nascimento', None
-        )
+        user = self.request.user
 
-        if nome:
-            queryset = queryset.filter(nome__icontains=nome)
-        if data_nascimento:
-            queryset = queryset.filter(data_nascimento=data_nascimento)
-
-        ultimo_atendimento = Paciente.objects.filter(
-            id=OuterRef('id')
-        ).order_by('-updated_at')
-
-        queryset = queryset.annotate(
-            total_exercicios=Count('atendimentos'),
-            exercicios_concluidos=Count(
-                'atendimentos',
-                filter=Q(atendimentos__concluido=True)
-            ),
-            ultima_sessao=Subquery(ultimo_atendimento.values('updated_at')[:1])
-        )
-        return queryset
+        try:
+            fono = Fonoaudiologo.objects.get(user=user)
+            return Paciente.objects.filter(fonoaudiologo=fono)
+        except Fonoaudiologo.DoesNotExist:
+            return Paciente.objects.none()
 
     def perform_create(self, serializer):
-        serializer.save(criado_por=self.request.user)
+        user = self.request.user
+
+        try:
+            fono = Fonoaudiologo.objects.get(user=user)
+        except Fonoaudiologo.DoesNotExist:
+            raise serializers.ValidationError("Fonoaudiólogo não encontrado")
+
+        serializer.save(fonoaudiologo=fono)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

@@ -61,11 +61,7 @@ export function AddPatient() {
     setGeneralError("");
   }
 
-  function validateField(
-    field: keyof FormState,
-    value: string,
-    allValues: FormState
-  ): string {
+  function validateField(field: keyof FormState, value: string): string {
     switch (field) {
       case "nomeResponsavel":
         return !value.trim() ? "Nome do responsável é obrigatório." : "";
@@ -78,7 +74,8 @@ export function AddPatient() {
         }
 
         const digits = onlyDigits(value);
-        if (digits.length !== 11) return "CPF do responsável deve ter 11 dígitos.";
+        if (digits.length !== 11)
+          return "CPF do responsável deve ter 11 dígitos.";
         return "";
       }
 
@@ -116,32 +113,18 @@ export function AddPatient() {
 
   function validateForm(values: FormState) {
     const nextErrors: FieldErrors = {
-      nomeResponsavel: validateField(
-        "nomeResponsavel",
-        values.nomeResponsavel,
-        values
-      ),
-      cpfResponsavel: validateField(
-        "cpfResponsavel",
-        values.cpfResponsavel,
-        values
-      ),
+      nomeResponsavel: validateField("nomeResponsavel", values.nomeResponsavel),
+      cpfResponsavel: validateField("cpfResponsavel", values.cpfResponsavel),
       telefoneResponsavel: validateField(
         "telefoneResponsavel",
         values.telefoneResponsavel,
-        values
       ),
       emailResponsavel: validateField(
         "emailResponsavel",
         values.emailResponsavel,
-        values
       ),
-      nomePaciente: validateField("nomePaciente", values.nomePaciente, values),
-      dataNascimento: validateField(
-        "dataNascimento",
-        values.dataNascimento,
-        values
-      ),
+      nomePaciente: validateField("nomePaciente", values.nomePaciente),
+      dataNascimento: validateField("dataNascimento", values.dataNascimento),
       observacoes: "",
     };
 
@@ -456,17 +439,18 @@ export function AddPatient() {
                               <input
                                 value={form.nomeResponsavel}
                                 onChange={(e) =>
-                                  updateField(
-                                    "nomeResponsavel",
-                                    e.target.value
-                                  )
+                                  updateField("nomeResponsavel", e.target.value)
                                 }
                                 placeholder="Digite o nome do responsável"
                                 className="w-full"
-                                style={inputStyle(!!fieldErrors.nomeResponsavel)}
+                                style={inputStyle(
+                                  !!fieldErrors.nomeResponsavel,
+                                )}
                               />
                               {fieldErrors.nomeResponsavel && (
-                                <FieldError message={fieldErrors.nomeResponsavel} />
+                                <FieldError
+                                  message={fieldErrors.nomeResponsavel}
+                                />
                               )}
                             </Field>
                           </div>
@@ -480,7 +464,7 @@ export function AddPatient() {
                               onChange={(e) =>
                                 updateField(
                                   "cpfResponsavel",
-                                  formatCPF(e.target.value)
+                                  formatCPF(e.target.value),
                                 )
                               }
                               placeholder="000.000.000-00"
@@ -488,7 +472,9 @@ export function AddPatient() {
                               style={inputStyle(!!fieldErrors.cpfResponsavel)}
                             />
                             {fieldErrors.cpfResponsavel && (
-                              <FieldError message={fieldErrors.cpfResponsavel} />
+                              <FieldError
+                                message={fieldErrors.cpfResponsavel}
+                              />
                             )}
                           </Field>
 
@@ -501,15 +487,19 @@ export function AddPatient() {
                               onChange={(e) =>
                                 updateField(
                                   "telefoneResponsavel",
-                                  formatPhone(e.target.value)
+                                  formatPhone(e.target.value),
                                 )
                               }
                               placeholder="(00) 00000-0000"
                               className="w-full"
-                              style={inputStyle(!!fieldErrors.telefoneResponsavel)}
+                              style={inputStyle(
+                                !!fieldErrors.telefoneResponsavel,
+                              )}
                             />
                             {fieldErrors.telefoneResponsavel && (
-                              <FieldError message={fieldErrors.telefoneResponsavel} />
+                              <FieldError
+                                message={fieldErrors.telefoneResponsavel}
+                              />
                             )}
                           </Field>
 
@@ -523,15 +513,19 @@ export function AddPatient() {
                                 onChange={(e) =>
                                   updateField(
                                     "emailResponsavel",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 placeholder="email@exemplo.com"
                                 className="w-full"
-                                style={inputStyle(!!fieldErrors.emailResponsavel)}
+                                style={inputStyle(
+                                  !!fieldErrors.emailResponsavel,
+                                )}
                               />
                               {fieldErrors.emailResponsavel && (
-                                <FieldError message={fieldErrors.emailResponsavel} />
+                                <FieldError
+                                  message={fieldErrors.emailResponsavel}
+                                />
                               )}
                             </Field>
                           </div>
@@ -573,7 +567,9 @@ export function AddPatient() {
                                 style={inputStyle(!!fieldErrors.nomePaciente)}
                               />
                               {fieldErrors.nomePaciente && (
-                                <FieldError message={fieldErrors.nomePaciente} />
+                                <FieldError
+                                  message={fieldErrors.nomePaciente}
+                                />
                               )}
                             </Field>
                           </div>
@@ -586,16 +582,15 @@ export function AddPatient() {
                               type="date"
                               value={form.dataNascimento}
                               onChange={(e) =>
-                                updateField(
-                                  "dataNascimento",
-                                  e.target.value
-                                )
+                                updateField("dataNascimento", e.target.value)
                               }
                               className="w-full"
                               style={inputStyle(!!fieldErrors.dataNascimento)}
                             />
                             {fieldErrors.dataNascimento && (
-                              <FieldError message={fieldErrors.dataNascimento} />
+                              <FieldError
+                                message={fieldErrors.dataNascimento}
+                              />
                             )}
                           </Field>
 
@@ -649,7 +644,8 @@ export function AddPatient() {
                           disabled={loading}
                           className="w-full sm:w-auto rounded-2xl px-6 py-4 flex items-center justify-center gap-2"
                           style={{
-                            background: "linear-gradient(135deg, #0A8F3D, #00A337)",
+                            background:
+                              "linear-gradient(135deg, #0A8F3D, #00A337)",
                             color: "#fff",
                             border: "none",
                             cursor: loading ? "not-allowed" : "pointer",
@@ -731,7 +727,9 @@ export function AddPatient() {
                           <div className="mt-5 space-y-3">
                             <PreviewItem
                               label="Idade"
-                              value={idadePreview ? `${idadePreview} anos` : "-"}
+                              value={
+                                idadePreview ? `${idadePreview} anos` : "-"
+                              }
                             />
                             <PreviewItem
                               label="Responsável"
@@ -859,8 +857,8 @@ export function AddPatient() {
                   marginBottom: 24,
                 }}
               >
-                O paciente foi cadastrado com sucesso. Deseja continuar cadastrando
-                outro paciente ou encerrar?
+                O paciente foi cadastrado com sucesso. Deseja continuar
+                cadastrando outro paciente ou encerrar?
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

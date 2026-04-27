@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from apps.fonoaudiologo.models import Fonoaudiologo
 from apps.fonoaudiologo.api.v1.serializer import FonoaudiologoSerializer
 from apps.core.permissions import IsFonoaudiologo
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 
 
 class FonoaudiologoViewSet(viewsets.ModelViewSet):
@@ -92,3 +94,17 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
             {"message": "Fonoaudiólogo excluído com sucesso"},
             status=status.HTTP_204_NO_CONTENT
         )
+
+    @action(
+        detail=False, methods=['get'], permission_classes=[IsAuthenticated]
+    )
+    def me(self, request):
+        try:
+            fono = Fonoaudiologo.objects.get(user=request.user)
+        except Fonoaudiologo.DoesNotExist:
+            return Response(
+                {"detail": "Fonoaudiólogo não encontrado"}, status=404
+            )
+
+        serializer = self.get_serializer(fono)
+        return Response(serializer.data)

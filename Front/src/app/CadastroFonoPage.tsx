@@ -13,10 +13,24 @@ export function CadastroFonoPage() {
     crfa: "",
     telefone: "",
     email: "",
+    username: "",
+    password: "",
   });
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  function generateRandomString(length: number) {
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "";
+
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    return result;
+  }
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -45,12 +59,17 @@ export function CadastroFonoPage() {
       setLoading(true);
       setError("");
 
+      const username = generateRandomString(8);
+      const password = generateRandomString(8);
+
       await criarFonoaudiologo({
         nome: form.nome.trim(),
         cpf: onlyDigits(form.cpf),
         crfa: form.crfa.trim(),
         telefone: onlyDigits(form.telefone),
         email: form.email.trim(),
+        username: username,
+        password: password,
       });
 
       navigate("/admin");
@@ -112,7 +131,9 @@ export function CadastroFonoPage() {
 
             <input
               value={form.telefone}
-              onChange={(e) => updateField("telefone", formatPhone(e.target.value))}
+              onChange={(e) =>
+                updateField("telefone", formatPhone(e.target.value))
+              }
               placeholder="Telefone"
               className="w-full rounded-2xl border border-[#DBEAFE] px-4 py-3 outline-none"
             />

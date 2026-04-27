@@ -25,9 +25,16 @@ class Paciente(BaseModel):
         on_delete=models.PROTECT,
         verbose_name="Responsável"
     )
-    fonoaudiologo = models.ManyToManyField(
+    # fonoaudiologo = models.ManyToManyField(
+    #     Fonoaudiologo,
+    #     blank=True,
+    #     verbose_name="Fonoaudiólogos",
+    #     related_name="pacientes"
+    # )
+    fonoaudiologo = models.ForeignKey(
         Fonoaudiologo,
         blank=True,
+        on_delete=models.CASCADE,
         verbose_name="Fonoaudiólogos",
         related_name="pacientes"
     )

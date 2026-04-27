@@ -4,11 +4,20 @@ type RequestOptions = RequestInit & {
   body?: unknown;
 };
 
-async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+async function request<T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<T> {
+  const token = localStorage.getItem("token");
+
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...(options.headers || {}),
   };
+
+  if (token) {
+    (headers as any)["Authorization"] = `Bearer ${token}`;
+  }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
@@ -18,23 +27,25 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   const data = await response.json().catch(() => null);
 
-    if (!response.ok) {
+  if (!response.ok) {
     console.error("Erro da API:", response.status, data);
 
     const message =
-        typeof data === "string"
+      typeof data === "string"
         ? data
         : data?.detail ||
-            Object.entries(data || {})
+          Object.entries(data || {})
             .map(([field, messages]) => {
-                const text = Array.isArray(messages) ? messages.join(", ") : String(messages);
-                return `${field}: ${text}`;
+              const text = Array.isArray(messages)
+                ? messages.join(", ")
+                : String(messages);
+              return `${field}: ${text}`;
             })
             .join(" | ") ||
-            `Erro HTTP ${response.status}`;
+          `Erro HTTP ${response.status}`;
 
     throw new Error(message);
-    }
+  }
 
   return data as T;
 }
