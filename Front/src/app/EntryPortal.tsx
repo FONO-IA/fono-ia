@@ -331,24 +331,6 @@ export function EntryPortal() {
                     </div>
                   </div>
 
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      style={{
-                        fontFamily: "'Poppins', sans-serif",
-                        fontSize: 12,
-                        fontWeight: 500,
-                        color: "#0052CC",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 0,
-                      }}
-                    >
-                      Esqueceu a senha?
-                    </button>
-                  </div>
-
                   <button
                     type="submit"
                     className="flex items-center justify-center gap-2 py-4 rounded-2xl transition-all duration-200 active:scale-95"
