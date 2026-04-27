@@ -1,0 +1,11 @@
+AUDIO COMPARISON METRICS
+========================================
+
+Reference Audio: ./uva.wav
+Test Audio: ./luva.wav
+
+MSE: 149.217072
+Similarity Score: 0.0%
+MAE: 7.905023
+Correlation: 0.674938
+Verdict: DIFFERENT
