@@ -40,16 +40,16 @@ export function CadastroFonoPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function generateRandomString(length: number) {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let result = "";
+  // function generateRandomString(length: number) {
+  //   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  //   let result = "";
 
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
+  //   for (let i = 0; i < length; i++) {
+  //     result += chars.charAt(Math.floor(Math.random() * chars.length));
+  //   }
 
-    return result;
-  }
+  //   return result;
+  // }
 
   function updateField(field: keyof FormState, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -128,7 +128,7 @@ export function CadastroFonoPage() {
       setLoading(true);
       setError("");
 
-      const password = generateRandomString(8);
+      const password = "11111111";
 
 
 
