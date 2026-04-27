@@ -6,6 +6,8 @@ from apps.fonoaudiologo.api.v1.serializer import FonoaudiologoSerializer
 from apps.core.permissions import IsFonoaudiologo
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from django.core.mail import send_mail
+from django.conf import settings
 
 
 class FonoaudiologoViewSet(viewsets.ModelViewSet):
@@ -48,9 +50,35 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
         # Cria o usuário
         User = get_user_model()
         user = User.objects.create_user(
-            username=username,
+            username=email,
             password=password,
             email=email
+        )
+
+        fonoaudiologo = serializer.save(user=user)
+
+        send_mail(
+            subject="Bem-vindo(a) ao Fono IA - Dados de acesso",
+            message=f"""
+        Olá, {fonoaudiologo.nome}!
+
+        Seja bem-vindo(a) ao Fono IA.
+
+        Seu cadastro foi realizado com sucesso. Abaixo estão seus dados de acesso:
+
+        Usuário: {username}
+        Senha: {password}
+
+        Acesse o sistema e faça login com essas informações.
+
+        Por segurança, recomendamos alterar sua senha após o primeiro acesso.
+
+        Atenciosamente,
+        Equipe Fono IA
+        """,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[fonoaudiologo.email],
+            fail_silently=True,
         )
 
         # Salva o fonoaudiólogo com o usuário associado

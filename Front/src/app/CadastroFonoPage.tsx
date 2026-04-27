@@ -13,6 +13,7 @@ import {
 import { criarFonoaudiologo } from "../services/fonoaudiologos";
 import { formatCPF, formatPhone, onlyDigits } from "../utils/formatters";
 
+
 type FormState = {
   nome: string;
   cpf: string;
@@ -127,8 +128,9 @@ export function CadastroFonoPage() {
       setLoading(true);
       setError("");
 
-      const username = generateRandomString(8);
       const password = generateRandomString(8);
+
+
 
       await criarFonoaudiologo({
         nome: form.nome.trim(),
@@ -136,7 +138,7 @@ export function CadastroFonoPage() {
         crfa: form.crfa.trim(),
         telefone: onlyDigits(form.telefone),
         email: form.email.trim().toLowerCase(),
-        username,
+        username: form.email.trim().toLowerCase(),
         password,
       });
 

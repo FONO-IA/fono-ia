@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
 import { Eye, EyeOff, ChevronRight, Hash } from "lucide-react";
+import { login } from "../services/auth";
 
 export function EntryPortal() {
   const navigate = useNavigate();
@@ -10,10 +11,16 @@ export function EntryPortal() {
   const [password, setPassword] = useState("");
   const [activePortal, setActivePortal] = useState<"pro" | "patient" | null>(null);
 
-  const handleProfessionalLogin = (e: React.FormEvent) => {
+  const handleProfessionalLogin = async(e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/admin");
-  };
+      
+    try {
+      await login(email, password);
+      navigate("/admin");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Erro ao fazer login.");
+    }
+};
 
   return (
     <MobileWrapper bgColor="#EBF3FF" desktopMode="full">

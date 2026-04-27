@@ -8,7 +8,7 @@ async function request<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("access");
 
   const headers: HeadersInit = {
     "Content-Type": "application/json",
