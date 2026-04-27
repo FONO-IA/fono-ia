@@ -55,17 +55,16 @@ export function AddPatient() {
   const [generalError, setGeneralError] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+  const [responsavelCadastrado, setResponsavelCadastrado] = useState<any>(null);
+  const [pacientesCadastrados, setPacientesCadastrados] = useState(0);
+
   function updateField(field: keyof FormState, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
     setFieldErrors((prev) => ({ ...prev, [field]: "" }));
     setGeneralError("");
   }
 
-  function validateField(
-    field: keyof FormState,
-    value: string,
-    allValues: FormState
-  ): string {
+  function validateField(field: keyof FormState, value: string): string {
     switch (field) {
       case "nomeResponsavel":
         return !value.trim() ? "Nome do responsável é obrigatório." : "";
@@ -73,24 +72,22 @@ export function AddPatient() {
       case "cpfResponsavel": {
         if (!value.trim()) return "CPF do responsável é obrigatório.";
 
-        if (/[A-Za-z]/.test(value)) {
-          return "CPF aceita apenas números.";
+        const digits = onlyDigits(value);
+        if (digits.length !== 11) {
+          return "CPF do responsável deve ter 11 dígitos.";
         }
 
-        const digits = onlyDigits(value);
-        if (digits.length !== 11) return "CPF do responsável deve ter 11 dígitos.";
         return "";
       }
 
       case "telefoneResponsavel": {
         if (!value.trim()) return "Telefone do responsável é obrigatório.";
 
-        if (/[A-Za-z]/.test(value)) {
-          return "Telefone aceita apenas números.";
+        const digits = onlyDigits(value);
+        if (digits.length < 10 || digits.length > 11) {
+          return "Telefone do responsável inválido.";
         }
 
-        const digits = onlyDigits(value);
-        if (digits.length < 10) return "Telefone do responsável inválido.";
         return "";
       }
 
@@ -116,32 +113,18 @@ export function AddPatient() {
 
   function validateForm(values: FormState) {
     const nextErrors: FieldErrors = {
-      nomeResponsavel: validateField(
-        "nomeResponsavel",
-        values.nomeResponsavel,
-        values
-      ),
-      cpfResponsavel: validateField(
-        "cpfResponsavel",
-        values.cpfResponsavel,
-        values
-      ),
+      nomeResponsavel: validateField("nomeResponsavel", values.nomeResponsavel),
+      cpfResponsavel: validateField("cpfResponsavel", values.cpfResponsavel),
       telefoneResponsavel: validateField(
         "telefoneResponsavel",
         values.telefoneResponsavel,
-        values
       ),
       emailResponsavel: validateField(
         "emailResponsavel",
         values.emailResponsavel,
-        values
       ),
-      nomePaciente: validateField("nomePaciente", values.nomePaciente, values),
-      dataNascimento: validateField(
-        "dataNascimento",
-        values.dataNascimento,
-        values
-      ),
+      nomePaciente: validateField("nomePaciente", values.nomePaciente),
+      dataNascimento: validateField("dataNascimento", values.dataNascimento),
       observacoes: "",
     };
 
@@ -167,12 +150,18 @@ export function AddPatient() {
       setLoading(true);
       setGeneralError("");
 
-      const responsavel = await criarResponsavel({
-        nome: form.nomeResponsavel.trim(),
-        cpf: onlyDigits(form.cpfResponsavel),
-        email: form.emailResponsavel.trim(),
-        telefone: onlyDigits(form.telefoneResponsavel),
-      });
+      let responsavel = responsavelCadastrado;
+
+      if (!responsavel) {
+        responsavel = await criarResponsavel({
+          nome: form.nomeResponsavel.trim(),
+          cpf: onlyDigits(form.cpfResponsavel),
+          email: form.emailResponsavel.trim(),
+          telefone: onlyDigits(form.telefoneResponsavel),
+        });
+
+        setResponsavelCadastrado(responsavel);
+      }
 
       await criarPaciente({
         nome: form.nomePaciente.trim(),
@@ -181,6 +170,7 @@ export function AddPatient() {
         responsavel: String(responsavel.id),
       });
 
+      setPacientesCadastrados((prev) => prev + 1);
       setShowSuccessModal(true);
     } catch (err) {
       const message =
@@ -192,7 +182,13 @@ export function AddPatient() {
   }
 
   function handleContinueRegistering() {
-    setForm(initialForm);
+    setForm((prev) => ({
+      ...prev,
+      nomePaciente: "",
+      dataNascimento: "",
+      observacoes: "",
+    }));
+
     setFieldErrors({});
     setGeneralError("");
     setShowSuccessModal(false);
@@ -219,17 +215,22 @@ export function AddPatient() {
       .join("");
   }, [form.nomePaciente]);
 
-  const inputStyle = (hasError?: boolean): React.CSSProperties => ({
+  const inputStyle = (
+    hasError?: boolean,
+    disabled?: boolean,
+  ): React.CSSProperties => ({
     width: "100%",
     minHeight: 52,
     borderRadius: 16,
     border: hasError ? "1.5px solid #DC2626" : "1.5px solid #DBEAFE",
-    background: hasError ? "#FEF2F2" : "#F8FBFF",
+    background: hasError ? "#FEF2F2" : disabled ? "#EEF4FF" : "#F8FBFF",
     padding: "0 16px",
     fontFamily: "'Poppins', sans-serif",
     fontSize: 14,
     color: "#1A2B5F",
     outline: "none",
+    opacity: disabled ? 0.78 : 1,
+    cursor: disabled ? "not-allowed" : "text",
   });
 
   return (
@@ -258,9 +259,7 @@ export function AddPatient() {
                   }}
                 >
                   <ArrowLeft size={20} color="rgba(255,255,255,0.9)" />
-                  <span
-                    style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}
-                  >
+                  <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}>
                     Voltar
                   </span>
                 </button>
@@ -295,7 +294,7 @@ export function AddPatient() {
                       lineHeight: 1.6,
                     }}
                   >
-                    Cadastre o responsável e depois os dados do paciente.
+                    Cadastre o responsável uma vez e adicione um ou mais pacientes.
                   </p>
 
                   <div className="mt-8 space-y-3">
@@ -305,12 +304,12 @@ export function AddPatient() {
                         value: form.nomeResponsavel.trim() || "-",
                       },
                       {
-                        label: "Paciente",
+                        label: "Paciente atual",
                         value: form.nomePaciente.trim() || "-",
                       },
                       {
-                        label: "Idade",
-                        value: idadePreview ? `${idadePreview} anos` : "-",
+                        label: "Pacientes cadastrados",
+                        value: String(pacientesCadastrados),
                       },
                     ].map((item) => (
                       <div
@@ -318,12 +317,7 @@ export function AddPatient() {
                         className="rounded-2xl p-4"
                         style={{ background: "rgba(255,255,255,0.12)" }}
                       >
-                        <p
-                          style={{
-                            fontSize: 11,
-                            color: "rgba(255,255,255,0.72)",
-                          }}
-                        >
+                        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.72)" }}>
                           {item.label}
                         </p>
                         <p
@@ -362,9 +356,7 @@ export function AddPatient() {
                   }}
                 >
                   <ArrowLeft size={20} color="rgba(255,255,255,0.9)" />
-                  <span
-                    style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}
-                  >
+                  <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}>
                     Voltar
                   </span>
                 </button>
@@ -396,7 +388,7 @@ export function AddPatient() {
                         lineHeight: 1.5,
                       }}
                     >
-                      Primeiro responsável, depois paciente
+                      Um responsável pode ter vários pacientes
                     </p>
                   </div>
                 </div>
@@ -413,12 +405,25 @@ export function AddPatient() {
                         color: "#B91C1C",
                       }}
                     >
-                      <AlertCircle
-                        size={18}
-                        style={{ flexShrink: 0, marginTop: 1 }}
-                      />
+                      <AlertCircle size={18} style={{ flexShrink: 0, marginTop: 1 }} />
                       <span style={{ fontSize: 14, fontWeight: 500 }}>
                         {generalError}
+                      </span>
+                    </div>
+                  )}
+
+                  {responsavelCadastrado && (
+                    <div
+                      className="mb-5 rounded-[24px] p-4 flex items-start gap-3"
+                      style={{
+                        background: "#ECFDF5",
+                        border: "1.5px solid #BBF7D0",
+                        color: "#047857",
+                      }}
+                    >
+                      <CheckCircle2 size={18} style={{ flexShrink: 0, marginTop: 1 }} />
+                      <span style={{ fontSize: 14, fontWeight: 600 }}>
+                        Responsável cadastrado. Agora você pode adicionar mais pacientes para ele.
                       </span>
                     </div>
                   )}
@@ -455,15 +460,16 @@ export function AddPatient() {
                             >
                               <input
                                 value={form.nomeResponsavel}
+                                disabled={!!responsavelCadastrado}
                                 onChange={(e) =>
-                                  updateField(
-                                    "nomeResponsavel",
-                                    e.target.value
-                                  )
+                                  updateField("nomeResponsavel", e.target.value)
                                 }
                                 placeholder="Digite o nome do responsável"
                                 className="w-full"
-                                style={inputStyle(!!fieldErrors.nomeResponsavel)}
+                                style={inputStyle(
+                                  !!fieldErrors.nomeResponsavel,
+                                  !!responsavelCadastrado,
+                                )}
                               />
                               {fieldErrors.nomeResponsavel && (
                                 <FieldError message={fieldErrors.nomeResponsavel} />
@@ -471,42 +477,45 @@ export function AddPatient() {
                             </Field>
                           </div>
 
-                          <Field
-                            label="CPF"
-                            icon={<Shield size={16} color="#0052CC" />}
-                          >
+                          <Field label="CPF" icon={<Shield size={16} color="#0052CC" />}>
                             <input
                               value={form.cpfResponsavel}
+                              disabled={!!responsavelCadastrado}
                               onChange={(e) =>
-                                updateField(
-                                  "cpfResponsavel",
-                                  formatCPF(e.target.value)
-                                )
+                                updateField("cpfResponsavel", formatCPF(e.target.value))
                               }
                               placeholder="000.000.000-00"
                               className="w-full"
-                              style={inputStyle(!!fieldErrors.cpfResponsavel)}
+                              maxLength={14}
+                              inputMode="numeric"
+                              style={inputStyle(
+                                !!fieldErrors.cpfResponsavel,
+                                !!responsavelCadastrado,
+                              )}
                             />
                             {fieldErrors.cpfResponsavel && (
                               <FieldError message={fieldErrors.cpfResponsavel} />
                             )}
                           </Field>
 
-                          <Field
-                            label="Telefone"
-                            icon={<Phone size={16} color="#0052CC" />}
-                          >
+                          <Field label="Telefone" icon={<Phone size={16} color="#0052CC" />}>
                             <input
                               value={form.telefoneResponsavel}
+                              disabled={!!responsavelCadastrado}
                               onChange={(e) =>
                                 updateField(
                                   "telefoneResponsavel",
-                                  formatPhone(e.target.value)
+                                  formatPhone(e.target.value),
                                 )
                               }
                               placeholder="(00) 00000-0000"
                               className="w-full"
-                              style={inputStyle(!!fieldErrors.telefoneResponsavel)}
+                              maxLength={15}
+                              inputMode="numeric"
+                              style={inputStyle(
+                                !!fieldErrors.telefoneResponsavel,
+                                !!responsavelCadastrado,
+                              )}
                             />
                             {fieldErrors.telefoneResponsavel && (
                               <FieldError message={fieldErrors.telefoneResponsavel} />
@@ -514,21 +523,23 @@ export function AddPatient() {
                           </Field>
 
                           <div className="md:col-span-2">
-                            <Field
-                              label="Email"
-                              icon={<Mail size={16} color="#0052CC" />}
-                            >
+                            <Field label="Email" icon={<Mail size={16} color="#0052CC" />}>
                               <input
                                 value={form.emailResponsavel}
+                                disabled={!!responsavelCadastrado}
                                 onChange={(e) =>
                                   updateField(
                                     "emailResponsavel",
-                                    e.target.value
+                                    e.target.value.toLowerCase(),
                                   )
                                 }
                                 placeholder="email@exemplo.com"
                                 className="w-full"
-                                style={inputStyle(!!fieldErrors.emailResponsavel)}
+                                type="email"
+                                style={inputStyle(
+                                  !!fieldErrors.emailResponsavel,
+                                  !!responsavelCadastrado,
+                                )}
                               />
                               {fieldErrors.emailResponsavel && (
                                 <FieldError message={fieldErrors.emailResponsavel} />
@@ -586,10 +597,7 @@ export function AddPatient() {
                               type="date"
                               value={form.dataNascimento}
                               onChange={(e) =>
-                                updateField(
-                                  "dataNascimento",
-                                  e.target.value
-                                )
+                                updateField("dataNascimento", e.target.value)
                               }
                               className="w-full"
                               style={inputStyle(!!fieldErrors.dataNascimento)}
@@ -599,10 +607,7 @@ export function AddPatient() {
                             )}
                           </Field>
 
-                          <Field
-                            label="Idade"
-                            icon={<Baby size={16} color="#0052CC" />}
-                          >
+                          <Field label="Idade" icon={<Baby size={16} color="#0052CC" />}>
                             <div
                               style={{
                                 ...inputStyle(false),
@@ -656,13 +661,17 @@ export function AddPatient() {
                             fontSize: 15,
                             fontWeight: 700,
                             boxShadow: "0 12px 28px rgba(10,143,61,0.22)",
-                            minWidth: 240,
+                            minWidth: 260,
                             maxWidth: "100%",
                             opacity: loading ? 0.75 : 1,
                           }}
                         >
                           <Save size={18} />
-                          {loading ? "Salvando..." : "Cadastrar paciente"}
+                          {loading
+                            ? "Salvando..."
+                            : responsavelCadastrado
+                              ? "Adicionar paciente"
+                              : "Cadastrar responsável e paciente"}
                         </button>
                       </div>
                     </div>
@@ -690,8 +699,7 @@ export function AddPatient() {
                         <div
                           className="rounded-3xl p-5"
                           style={{
-                            background:
-                              "linear-gradient(135deg, #0052CC, #0065FF)",
+                            background: "linear-gradient(135deg, #0052CC, #0065FF)",
                             color: "#fff",
                           }}
                         >
@@ -713,7 +721,7 @@ export function AddPatient() {
 
                             <div className="min-w-0">
                               <p style={{ fontSize: 12, opacity: 0.75 }}>
-                                Paciente
+                                Paciente atual
                               </p>
                               <h4
                                 style={{
@@ -740,6 +748,10 @@ export function AddPatient() {
                             <PreviewItem
                               label="Telefone"
                               value={form.telefoneResponsavel || "-"}
+                            />
+                            <PreviewItem
+                              label="Total cadastrado"
+                              value={`${pacientesCadastrados} paciente(s)`}
                             />
                           </div>
                         </div>
@@ -848,7 +860,7 @@ export function AddPatient() {
                   marginBottom: 8,
                 }}
               >
-                Cadastro concluído
+                Paciente cadastrado
               </h3>
 
               <p
@@ -859,8 +871,8 @@ export function AddPatient() {
                   marginBottom: 24,
                 }}
               >
-                O paciente foi cadastrado com sucesso. Deseja continuar cadastrando
-                outro paciente ou encerrar?
+                Paciente cadastrado com sucesso para este responsável. Deseja
+                adicionar outro paciente para o mesmo responsável?
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -877,7 +889,7 @@ export function AddPatient() {
                     cursor: "pointer",
                   }}
                 >
-                  Continuar cadastrando
+                  Adicionar outro
                 </button>
 
                 <button

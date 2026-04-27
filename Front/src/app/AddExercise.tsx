@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
+import { api } from "../services/api";
 import {
   ArrowLeft,
   Dumbbell,
@@ -46,66 +47,64 @@ export function AddExercise() {
   };
 
   const totalConteudos = conteudos.length;
+  const location = useLocation();
+  const pacienteId = location.state?.pacienteId;
 
   const previewConteudo = useMemo(() => {
     return conteudos.map((item) => item.texto).join(", ");
   }, [conteudos]);
 
   const handleSave = async () => {
-    const nivelMap = {
-      "Fácil": "FAC",
-      "Médio": "MED",
-      "Dificíl": "DIF",
-    };
-    const payload = {
-      categoria: newCategory,
-      nivel: nivelMap[form.nivel],
-      objetivo: form.objetivo,
-      instrucao: instrucaoItem,
-      conteudo: conteudo,
-      conteudos: [
-        {
-          texto: conteudo,
-          instrucao: instrucaoItem,
-        },
-      ],
-    };
-
-    console.log("PAYLOAD:", payload);
-
-    try {
-      const response = await fetch("http://localhost:8000/api/v1/exercicios/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      console.log("STATUS:", response.status);
-      console.log("RESPOSTA:", JSON.stringify(data, null, 2));
-
-      if (response.ok) {
-        setNewCategory("");
-        setConteudo("");
-        setInstrucaoItem("");
-        setForm({
-          nome: "",
-          objetivo: "",
-          nivel: "Médio",
-          instrucoesGuia: "",
-          ativo: true,
-        });
-        alert("Exercício salvo com sucesso!");
-      } else {
-        console.error("Erro do backend:", data);
-      }
-    } catch (e) {
-      console.error("Erro ao salvar exercício:", e);
-    }
+  const nivelMap = {
+    "Fácil": "FAC",
+    "Médio": "MED",
+    "Dificíl": "DIF",
   };
+
+  if (!pacienteId) {
+    alert("Paciente não identificado. Volte ao paciente e clique em Criar Exercício novamente.");
+    return;
+  }
+
+  const payload = {
+    categoria: newCategory.trim(),
+    nivel: nivelMap[form.nivel],
+    objetivo: form.objetivo.trim(),
+    instrucao: instrucaoItem.trim(),
+    conteudo: conteudo.trim(),
+    paciente: [pacienteId],
+    conteudos: [
+      {
+        texto: conteudo.trim(),
+        instrucao: instrucaoItem.trim(),
+      },
+    ],
+  };
+
+  try {
+    await api.post("/exercicios/", payload);
+
+    setNewCategory("");
+    setConteudo("");
+    setInstrucaoItem("");
+    setConteudos([]);
+    setForm({
+      nome: "",
+      objetivo: "",
+      nivel: "Médio",
+      instrucoesGuia: `Guia de texto para cada palavra:
+- Diga a palavra
+- Repita devagar
+- Use a dica visual quando necessário`,
+      ativo: true,
+    });
+
+    alert("Exercício salvo com sucesso!");
+  } catch (e) {
+    console.error("Erro ao salvar exercício:", e);
+    alert(e instanceof Error ? e.message : "Erro ao salvar exercício.");
+  }
+};
 
   const handleGenerateWithAI = () => {
     const prompt = aiPrompt.trim();

@@ -13,6 +13,19 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -137,6 +150,18 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+#terminal para envio de email
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = "Fono IA <nao-responda@fonoia.com>"
+
+# Configurações para envio real de email 
+# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_HOST = "smtp.gmail.com"
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = "seuemail@gmail.com"
+# EMAIL_HOST_PASSWORD = "sua_senha_de_app"
+# DEFAULT_FROM_EMAIL = "Fono IA <seuemail@gmail.com>"
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/

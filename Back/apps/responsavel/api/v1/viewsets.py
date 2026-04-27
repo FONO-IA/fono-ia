@@ -1,22 +1,23 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
+
 from apps.responsavel.models import Responsavel
 from apps.responsavel.api.v1.serializer import ResponsavelSerializer
-from apps.core.permissions import IsFonoaudiologo
 
 
 class ResponsavelViewSet(viewsets.ModelViewSet):
-
     serializer_class = ResponsavelSerializer
-    permission_classes = [permissions.IsAuthenticated, IsFonoaudiologo]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         queryset = Responsavel.objects.actives()
-        nome = self.request.query_params.get('nome', None)
-        cpf = self.request.query_params.get('cpf', None)
+
+        nome = self.request.query_params.get("nome")
+        cpf = self.request.query_params.get("cpf")
 
         if nome:
             queryset = queryset.filter(nome__icontains=nome)
+
         if cpf:
             queryset = queryset.filter(cpf__icontains=cpf)
 
@@ -26,24 +27,24 @@ class ResponsavelViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
+
         return Response(
             serializer.data,
             status=status.HTTP_201_CREATED,
-            headers=headers
+            headers=self.get_success_headers(serializer.data),
         )
 
     def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
+        partial = kwargs.pop("partial", False)
         instance = self.get_object()
+
         serializer = self.get_serializer(
-            instance, data=request.data, partial=partial
+            instance,
+            data=request.data,
+            partial=partial,
         )
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
-
-        if getattr(instance, '_prefetched_objects_cache', None):
-            instance._prefetched_objects_cache = {}
 
         return Response(serializer.data)
 
@@ -53,7 +54,8 @@ class ResponsavelViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         self.perform_destroy(instance)
+
         return Response(
             {"message": "Responsável excluído com sucesso"},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_204_NO_CONTENT,
         )

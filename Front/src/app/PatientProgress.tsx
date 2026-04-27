@@ -24,6 +24,7 @@ import {
 } from "recharts";
 import { listarPacientes } from "../services/pacientes";
 import { listarAtendimentos } from "../services/atendimentos";
+import { listarExercicios, type Exercicio } from "../services/exercicios";
 
 type ApiPaciente = {
   id: string;
@@ -41,7 +42,7 @@ type ApiAtendimento = {
   id: string;
   paciente: string;
   paciente_nome?: string;
-  fonoaudiologo: string;
+  fonoaudiologo?: string;
   fonoaudiologo_nome?: string;
   exercicio: string;
   exercicio_categoria?: string;
@@ -178,42 +179,53 @@ export function PatientProgress() {
 
   const [patient, setPatient] = useState<ApiPaciente | null>(null);
   const [sessions, setSessions] = useState<ApiAtendimento[]>([]);
+  const [exercicios, setExercicios] = useState<Exercicio[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    async function loadPatientDashboard() {
-      try {
-        setLoading(true);
-        setError("");
+  async function loadPatientDashboard() {
+    try {
+      setLoading(true);
+      setError("");
 
-        const patients = await listarPacientes();
-        const found = patients.find(
-          (item: ApiPaciente) => String(item.id) === String(id)
-        );
+      const patients = await listarPacientes();
 
-        if (!found) {
-          setError("Paciente não encontrado.");
-          setPatient(null);
-          setSessions([]);
-          return;
-        }
+      const found = patients.find(
+        (item: ApiPaciente) => String(item.id) === String(id)
+      );
 
-        setPatient(found);
-
-        const atendimentos = await listarAtendimentos({ paciente: String(found.id) });
-        setSessions(atendimentos);
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Erro ao carregar relatório do paciente.";
-        setError(message);
-      } finally {
-        setLoading(false);
+      if (!found) {
+        setError("Paciente não encontrado.");
+        setPatient(null);
+        setSessions([]);
+        setExercicios([]);
+        return;
       }
-    }
 
-    loadPatientDashboard();
-  }, [id]);
+      setPatient(found);
+
+      const [atendimentos, exerciciosData] = await Promise.all([
+        listarAtendimentos({ paciente: String(found.id) }),
+        listarExercicios({ paciente: String(found.id) }),
+      ]);
+
+      setSessions(atendimentos);
+      setExercicios(exerciciosData);
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Erro ao carregar relatório do paciente.";
+
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  loadPatientDashboard();
+}, [id]);
 
   const patientName = patient?.nome || "Paciente";
   const patientAge = patient?.data_nascimento
@@ -452,7 +464,14 @@ export function PatientProgress() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <button
-                    onClick={() => navigate("/exercise")}
+                    onClick={() =>
+                      navigate("/exercise", {
+                        state: {
+                          origem: "fono",
+                          pacienteId: patient.id,
+                        },
+                      })
+                    }
                     className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:opacity-90"
                     style={{
                       background: "#fff",
@@ -469,7 +488,7 @@ export function PatientProgress() {
                   </button>
 
                   <button
-                    onClick={() => navigate("/add-exercise")}
+                    onClick={() => navigate("/add-exercise", { state: { pacienteId: patient.id } })}
                     className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:opacity-90"
                     style={{
                       background: "linear-gradient(135deg, #00A337, #00B561)",
@@ -673,6 +692,71 @@ export function PatientProgress() {
                     {patient.observacoes?.trim() || "Sem observações clínicas registradas."}
                   </p>
                 </div>
+              </div>
+              
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 style={{ fontSize: 20, fontWeight: 600, color: "#1A2B5F" }}>
+                    Exercícios cadastrados
+                  </h3>
+
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: "#0052CC",
+                      fontWeight: 600,
+                      background: "#EBF3FF",
+                      padding: "6px 12px",
+                      borderRadius: 12,
+                    }}
+                  >
+                    {exercicios.length} exercícios
+                  </span>
+                </div>
+
+                {exercicios.length === 0 ? (
+                  <div
+                    className="rounded-3xl p-8 text-center"
+                    style={{
+                      background: "#ffffff",
+                      border: "1.5px solid #DBEAFE",
+                    }}
+                  >
+                    <p style={{ fontSize: 16, fontWeight: 600, color: "#1A2B5F" }}>
+                      Nenhum exercício cadastrado para este paciente
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {exercicios.map((exercicio) => (
+                      <div
+                        key={exercicio.id}
+                        className="rounded-3xl p-5"
+                        style={{
+                          background: "#ffffff",
+                          border: "1.5px solid #DBEAFE",
+                          boxShadow: "0 2px 8px rgba(0,82,204,0.05)",
+                        }}
+                      >
+                        <p style={{ fontSize: 16, fontWeight: 700, color: "#1A2B5F" }}>
+                          {exercicio.categoria}
+                        </p>
+
+                        <p style={{ fontSize: 12, color: "#0052CC", marginTop: 4 }}>
+                          Nível: {exercicio.nivel}
+                        </p>
+
+                        <p style={{ fontSize: 13, color: "#6B7A99", marginTop: 10 }}>
+                          <strong>Objetivo:</strong> {exercicio.objetivo}
+                        </p>
+
+                        <p style={{ fontSize: 13, color: "#6B7A99", marginTop: 8 }}>
+                          <strong>Conteúdo:</strong> {exercicio.conteudo}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -1196,7 +1280,14 @@ export function PatientProgress() {
             <div className="flex flex-col gap-3 mt-5">
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => navigate("/exercise")}
+                  onClick={() =>
+                    navigate("/exercise", {
+                      state: {
+                        origem: "fono",
+                        pacienteId: patient.id,
+                      },
+                    })
+                  }
                   className="py-4 rounded-2xl flex items-center justify-center gap-2"
                   style={{
                     background: "linear-gradient(135deg, #0052CC, #0065FF)",
@@ -1213,7 +1304,11 @@ export function PatientProgress() {
                 </button>
 
                 <button
-                  onClick={() => navigate("/add-exercise")}
+                  onClick={() =>
+                    navigate("/add-exercise", {
+                      state: { pacienteId: patient.id },
+                    })
+                  }
                   className="py-4 rounded-2xl flex items-center justify-center gap-2"
                   style={{
                     background: "linear-gradient(135deg, #36B37E, #57D9A3)",

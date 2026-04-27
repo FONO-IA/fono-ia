@@ -4,7 +4,7 @@ export type Atendimento = {
   id: string;
   paciente: string;
   paciente_nome?: string;
-  fonoaudiologo: string;
+  fonoaudiologo?: string;
   fonoaudiologo_nome?: string;
   exercicio: string;
   exercicio_categoria?: string;
@@ -25,5 +25,6 @@ export async function listarAtendimentos(params?: {
   if (params?.fonoaudiologo) search.set("fonoaudiologo", params.fonoaudiologo);
 
   const query = search.toString();
-  return api.get<Atendimento[]>(`/atendimentos/${query ? `?${query}` : ""}`);
+
+  return api.get<Atendimento[]>(`/resultados/${query ? `?${query}` : ""}`);
 }

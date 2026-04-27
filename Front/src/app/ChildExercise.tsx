@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useState, useEffect, useRef } from "react";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
 import { Home, Volume2, Mic, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { exerciseSets, type ExerciseSet } from "./data/exercises";
 
-// ─── Phase result overlay ────────────────────────────────────────────────────
+
+
+
 function PhaseResultOverlay({
   result,
   word,
@@ -244,6 +246,10 @@ export function ChildExercise() {
   const navigate = useNavigate();
   const { exerciseId } = useParams<{ exerciseId: string }>();
 
+  const location = useLocation();
+  const pacienteId = location.state?.pacienteId;
+  const origem = location.state?.origem;
+  
   const exercise =
     exerciseSets.find((e) => e.id === exerciseId) ?? exerciseSets[0];
   const currentExerciseIdx = exerciseSets.findIndex(
@@ -311,7 +317,14 @@ export function ChildExercise() {
     }, 60);
   };
 
-  const handleHome = () => navigate("/child/home");
+  const handleHome = () => {
+    if (origem === "fono" && pacienteId) {
+      navigate(`/patient/${pacienteId}`);
+      return;
+    }
+
+    navigate("/child/home");
+  };
   const handleContinue = () => {
     const next = exerciseSets[(currentExerciseIdx + 1) % exerciseSets.length];
     navigate(`/child/exercise/${next.id}`);
