@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from django.core.mail import send_mail
 from django.conf import settings
+from django.contrib.auth.models import Group
 
 
 class FonoaudiologoViewSet(viewsets.ModelViewSet):
@@ -55,6 +56,10 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
             password=password,
             email=email
         )
+
+        # Adicionando o fono criado ao grupo de fonoaudiólogos
+        fono_group = Group.objects.get(name='Fonoaudiólogos')
+        user.groups.add(fono_group)
 
         fonoaudiologo = serializer.save(user=user)
 
