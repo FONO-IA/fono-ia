@@ -65,7 +65,8 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
 
         Seja bem-vindo(a) ao Fono IA.
 
-        Seu cadastro foi realizado com sucesso. Abaixo estão seus dados de acesso:
+        Seu cadastro foi realizado com sucesso.
+        Abaixo estão seus dados de acesso:
 
         Usuário: {username}
         Senha: {password}
@@ -137,7 +138,10 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(fono)
         return Response(serializer.data)
 
-    @action(detail=False, methods=["post"], permission_classes=[IsAuthenticated])
+    @action(
+            detail=False, methods=["post"],
+            permission_classes=[IsAuthenticated]
+    )
     def alterar_senha(self, request):
         senha_atual = request.data.get("senha_atual")
         nova_senha = request.data.get("nova_senha")
