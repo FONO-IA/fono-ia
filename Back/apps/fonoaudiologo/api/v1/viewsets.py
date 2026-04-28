@@ -144,7 +144,7 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
 
     @action(
             detail=False, methods=["post"],
-            permission_classes=[IsAuthenticated]
+            permission_classes=[permissions.IsAuthenticated]
     )
     def alterar_senha(self, request):
         senha_atual = request.data.get("senha_atual")
