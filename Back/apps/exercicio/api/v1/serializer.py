@@ -10,6 +10,9 @@ class ConteudoExercicioSerializer(serializers.ModelSerializer):
 
 class ExercicioSerializer(serializers.ModelSerializer):
     conteudos = ConteudoExercicioSerializer(many=True, required=False)
+    nivel_display = serializers.CharField(
+        source='get_nivel_display', read_only=True
+    )
 
     class Meta:
         model = Exercicio

@@ -20,6 +20,7 @@ class Exercicio(BaseModel):
         verbose_name="Pacientes",
         related_name="exercicios"
     )
+    concluido = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Exercício"
