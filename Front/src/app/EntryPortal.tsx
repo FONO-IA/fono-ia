@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
-import { Eye, EyeOff, ChevronRight, Hash, AlertCircle, X } from "lucide-react";
+import { Eye, EyeOff, ChevronRight, AlertCircle, X } from "lucide-react";
 import { login } from "../services/auth";
 
 export function EntryPortal() {
@@ -114,7 +114,9 @@ export function EntryPortal() {
                   >
                     <span className="text-2xl">{item.icon}</span>
                   </div>
-                  <p style={{ fontSize: 16, fontWeight: 500, color: "#1A2B5F" }}>
+                  <p
+                    style={{ fontSize: 16, fontWeight: 500, color: "#1A2B5F" }}
+                  >
                     {item.text}
                   </p>
                 </div>
@@ -196,7 +198,8 @@ export function EntryPortal() {
                   fontFamily: "'Poppins', sans-serif",
                   fontSize: 14,
                   fontWeight: 600,
-                  background: activePortal === "patient" ? "#0052CC" : "transparent",
+                  background:
+                    activePortal === "patient" ? "#0052CC" : "transparent",
                   color: activePortal === "patient" ? "#fff" : "#6B7A99",
                   border: "none",
                   cursor: "pointer",
@@ -252,7 +255,10 @@ export function EntryPortal() {
                   </div>
                 </div>
 
-                <form onSubmit={handleProfessionalLogin} className="flex flex-col gap-4">
+                <form
+                  onSubmit={handleProfessionalLogin}
+                  className="flex flex-col gap-4"
+                >
                   <div>
                     <label
                       style={{
@@ -325,7 +331,9 @@ export function EntryPortal() {
                           boxSizing: "border-box",
                           transition: "border-color 0.2s",
                         }}
-                        onFocus={(e) => (e.target.style.borderColor = "#0052CC")}
+                        onFocus={(e) =>
+                          (e.target.style.borderColor = "#0052CC")
+                        }
                         onBlur={(e) => (e.target.style.borderColor = "#DBEAFE")}
                       />
 
@@ -391,7 +399,7 @@ export function EntryPortal() {
 
             {activePortal === "patient" && (
               <div
-                className="rounded-3xl p-6 mb-4 shadow-md"
+                className="rounded-3xl p-6 md:p-8 mb-4 shadow-md md:shadow-xl"
                 style={{
                   background: "#ffffff",
                   border: "1.5px solid #DBEAFE",
@@ -400,11 +408,15 @@ export function EntryPortal() {
                 <div className="flex items-center gap-3 mb-5">
                   <div
                     className="w-10 h-10 rounded-2xl flex items-center justify-center"
-                    style={{ background: "#FFF8E1" }}
+                    style={{ background: "#EBF3FF" }}
                   >
-                    <span style={{ fontSize: 20 }}>😊</span>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path
+                        d="M10 2l2.45 5.27L18 8.12l-4.14 4.25L14.82 18 10 15.35 5.18 18l.96-5.63L2 8.12l5.55-.85L10 2z"
+                        fill="#0052CC"
+                      />
+                    </svg>
                   </div>
-
                   <div>
                     <h2
                       style={{
@@ -415,7 +427,7 @@ export function EntryPortal() {
                         lineHeight: 1.2,
                       }}
                     >
-                      Portal do Paciente
+                      Portal do Responsável
                     </h2>
                     <p
                       style={{
@@ -425,66 +437,133 @@ export function EntryPortal() {
                         fontWeight: 400,
                       }}
                     >
-                      Acesso simples e seguro
+                      Acesso para o Responsável
                     </p>
                   </div>
                 </div>
 
-                <p
-                  style={{
-                    fontFamily: "'Poppins', sans-serif",
-                    fontSize: 13,
-                    fontWeight: 400,
-                    color: "#6B7A99",
-                    textAlign: "center",
-                    marginBottom: 20,
-                  }}
+                <form
+                  onSubmit={handleProfessionalLogin}
+                  className="flex flex-col gap-4"
                 >
-                  Entre com seu nome e PIN de 4 dígitos 🔑
-                </p>
-
-                <button
-                  onClick={() => navigate("/child-login")}
-                  className="flex items-center gap-4 p-5 rounded-2xl transition-all duration-200 active:scale-95 w-full"
-                  style={{
-                    background: "linear-gradient(135deg, #0052CC, #0065FF)",
-                    border: "none",
-                    cursor: "pointer",
-                    boxShadow: "0 4px 15px rgba(0,82,204,0.3)",
-                  }}
-                >
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center"
-                    style={{ background: "rgba(255,255,255,0.2)" }}
-                  >
-                    <Hash size={24} color="white" />
-                  </div>
-
-                  <div className="text-left flex-1">
-                    <p
-                      style={{
-                        fontFamily: "'Poppins', sans-serif",
-                        fontSize: 15,
-                        fontWeight: 600,
-                        color: "#fff",
-                      }}
-                    >
-                      Entrar com PIN
-                    </p>
-                    <p
+                  <div>
+                    <label
                       style={{
                         fontFamily: "'Poppins', sans-serif",
                         fontSize: 12,
-                        fontWeight: 400,
-                        color: "rgba(255,255,255,0.75)",
+                        fontWeight: 500,
+                        color: "#1A2B5F",
+                        display: "block",
+                        marginBottom: 6,
                       }}
                     >
-                      Selecione seu nome e digite o PIN
-                    </p>
+                      E-mail
+                    </label>
+
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="responsavel@email.com"
+                      style={{
+                        width: "100%",
+                        padding: "12px 16px",
+                        borderRadius: 14,
+                        border: "2px solid #DBEAFE",
+                        fontFamily: "'Poppins', sans-serif",
+                        fontSize: 14,
+                        fontWeight: 400,
+                        color: "#1A2B5F",
+                        outline: "none",
+                        background: "#FAFCFF",
+                        boxSizing: "border-box",
+                        transition: "border-color 0.2s",
+                      }}
+                      onFocus={(e) => (e.target.style.borderColor = "#0052CC")}
+                      onBlur={(e) => (e.target.style.borderColor = "#DBEAFE")}
+                    />
                   </div>
 
-                  <ChevronRight size={20} color="rgba(255,255,255,0.7)" />
-                </button>
+                  <div>
+                    <label
+                      style={{
+                        fontFamily: "'Poppins', sans-serif",
+                        fontSize: 12,
+                        fontWeight: 500,
+                        color: "#1A2B5F",
+                        display: "block",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Senha
+                    </label>
+
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        style={{
+                          width: "100%",
+                          padding: "12px 44px 12px 16px",
+                          borderRadius: 14,
+                          border: "2px solid #DBEAFE",
+                          fontFamily: "'Poppins', sans-serif",
+                          fontSize: 14,
+                          fontWeight: 400,
+                          color: "#1A2B5F",
+                          outline: "none",
+                          background: "#FAFCFF",
+                          boxSizing: "border-box",
+                          transition: "border-color 0.2s",
+                        }}
+                        onFocus={(e) =>
+                          (e.target.style.borderColor = "#0052CC")
+                        }
+                        onBlur={(e) => (e.target.style.borderColor = "#DBEAFE")}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 4,
+                        }}
+                      >
+                        {showPassword ? (
+                          <EyeOff size={18} color="#6B7A99" />
+                        ) : (
+                          <Eye size={18} color="#6B7A99" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex items-center justify-center gap-2 py-4 rounded-2xl transition-all duration-200 active:scale-95"
+                    style={{
+                      background: "linear-gradient(135deg, #0052CC, #0065FF)",
+                      color: "#fff",
+                      fontFamily: "'Poppins', sans-serif",
+                      fontSize: 15,
+                      fontWeight: 600,
+                      border: "none",
+                      cursor: loading ? "not-allowed" : "pointer",
+                      opacity: loading ? 0.75 : 1,
+                      boxShadow: "0 4px 15px rgba(0,82,204,0.35)",
+                    }}
+                  >
+                    {loading ? "Entrando..." : "Entrar"}
+                    <ChevronRight size={18} />
+                  </button>
+                </form>
               </div>
             )}
 
