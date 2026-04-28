@@ -867,7 +867,7 @@ export function PatientProgress() {
                             marginTop: 4,
                           }}
                         >
-                          Nível: {exercicio.nivel}
+                          Nível: {exercicio.nivel_display}
                         </p>
 
                         <p

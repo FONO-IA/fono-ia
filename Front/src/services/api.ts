@@ -6,7 +6,7 @@ type RequestOptions = Omit<RequestInit, "body"> & {
 
 async function request<T>(
   path: string,
-  options: RequestOptions = {}
+  options: RequestOptions = {},
 ): Promise<T> {
   const token = localStorage.getItem("token");
 
