@@ -126,7 +126,7 @@ const buildProgressData = (sessions: ApiAtendimento[]): ChartPoint[] => {
   return ordered.map((session, index) => {
     if (session.concluido) completedCount += 1;
 
-    const accuracy = Math.round(((completedCount / (index + 1)) * 100));
+    const accuracy = Math.round((completedCount / (index + 1)) * 100);
 
     return {
       week: getWeekLabel(index),
@@ -184,48 +184,48 @@ export function PatientProgress() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-  async function loadPatientDashboard() {
-    try {
-      setLoading(true);
-      setError("");
+    async function loadPatientDashboard() {
+      try {
+        setLoading(true);
+        setError("");
 
-      const patients = await listarPacientes();
+        const patients = await listarPacientes();
 
-      const found = patients.find(
-        (item: ApiPaciente) => String(item.id) === String(id)
-      );
+        const found = patients.find(
+          (item: ApiPaciente) => String(item.id) === String(id),
+        );
 
-      if (!found) {
-        setError("Paciente não encontrado.");
-        setPatient(null);
-        setSessions([]);
-        setExercicios([]);
-        return;
+        if (!found) {
+          setError("Paciente não encontrado.");
+          setPatient(null);
+          setSessions([]);
+          setExercicios([]);
+          return;
+        }
+
+        setPatient(found);
+
+        const [atendimentos, exerciciosData] = await Promise.all([
+          listarAtendimentos({ paciente: String(found.id) }),
+          listarExercicios({ paciente: String(found.id) }),
+        ]);
+
+        setSessions(atendimentos);
+        setExercicios(exerciciosData);
+      } catch (err) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Erro ao carregar relatório do paciente.";
+
+        setError(message);
+      } finally {
+        setLoading(false);
       }
-
-      setPatient(found);
-
-      const [atendimentos, exerciciosData] = await Promise.all([
-        listarAtendimentos({ paciente: String(found.id) }),
-        listarExercicios({ paciente: String(found.id) }),
-      ]);
-
-      setSessions(atendimentos);
-      setExercicios(exerciciosData);
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Erro ao carregar relatório do paciente.";
-
-      setError(message);
-    } finally {
-      setLoading(false);
     }
-  }
 
-  loadPatientDashboard();
-}, [id]);
+    loadPatientDashboard();
+  }, [id]);
 
   const patientName = patient?.nome || "Paciente";
   const patientAge = patient?.data_nascimento
@@ -234,11 +234,19 @@ export function PatientProgress() {
   const patientInitials = patient?.nome ? getInitials(patient.nome) : "--";
 
   const totalSessions = sessions.length;
-  const completedSessions = sessions.filter((session) => session.concluido).length;
+  const completedSessions = sessions.filter(
+    (session) => session.concluido,
+  ).length;
   const currentProgress =
-    totalSessions > 0 ? Math.round((completedSessions / totalSessions) * 100) : 0;
+    totalSessions > 0
+      ? Math.round((completedSessions / totalSessions) * 100)
+      : 0;
   const bestResult =
-    sessions.length > 0 ? (sessions.some((session) => session.concluido) ? 100 : 0) : 0;
+    sessions.length > 0
+      ? sessions.some((session) => session.concluido)
+        ? 100
+        : 0
+      : 0;
 
   const latestSession = useMemo(() => {
     if (!sessions.length) return null;
@@ -347,7 +355,11 @@ export function PatientProgress() {
               <button
                 onClick={() => navigate("/admin")}
                 className="flex items-center gap-2 mb-8 transition-all hover:opacity-80"
-                style={{ background: "none", border: "none", cursor: "pointer" }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                }}
               >
                 <ArrowLeft size={20} color="rgba(255,255,255,0.85)" />
                 <span
@@ -366,7 +378,9 @@ export function PatientProgress() {
                   className="w-20 h-20 rounded-3xl flex items-center justify-center"
                   style={{ background: "rgba(255,255,255,0.2)" }}
                 >
-                  <span style={{ fontSize: 26, fontWeight: 700, color: "#fff" }}>
+                  <span
+                    style={{ fontSize: 26, fontWeight: 700, color: "#fff" }}
+                  >
                     {patientInitials}
                   </span>
                 </div>
@@ -395,9 +409,16 @@ export function PatientProgress() {
 
               <div className="space-y-3">
                 {[
-                  { label: "Sessões Realizadas", value: String(totalSessions), icon: Calendar },
-                  { label: "Melhor Resultado", value: `${bestResult}%`, icon: Award },
-                  { label: "Progresso Atual", value: `${currentProgress}%`, icon: TrendingUp },
+                  {
+                    label: "Sessões Realizadas",
+                    value: String(totalSessions),
+                    icon: Calendar,
+                  },
+                  {
+                    label: "Melhor Resultado",
+                    value: `${bestResult}%`,
+                    icon: Award,
+                  },
                 ].map((s) => (
                   <div
                     key={s.label}
@@ -411,7 +432,9 @@ export function PatientProgress() {
                       <s.icon size={18} color="#fff" />
                     </div>
                     <div className="flex-1">
-                      <p style={{ fontSize: 20, fontWeight: 700, color: "#fff" }}>
+                      <p
+                        style={{ fontSize: 20, fontWeight: 700, color: "#fff" }}
+                      >
                         {s.value}
                       </p>
                       <p
@@ -447,7 +470,8 @@ export function PatientProgress() {
                       marginBottom: 8,
                     }}
                   >
-                    <strong>Responsável:</strong> {patient.responsavel_nome || "Não informado"}
+                    <strong>Responsável:</strong>{" "}
+                    {patient.responsavel_nome || "Não informado"}
                   </p>
 
                   <p
@@ -458,7 +482,8 @@ export function PatientProgress() {
                     }}
                   >
                     <strong>Observações:</strong>{" "}
-                    {patient.observacoes?.trim() || "Sem observações clínicas registradas."}
+                    {patient.observacoes?.trim() ||
+                      "Sem observações clínicas registradas."}
                   </p>
                 </div>
 
@@ -488,7 +513,11 @@ export function PatientProgress() {
                   </button>
 
                   <button
-                    onClick={() => navigate("/add-exercise", { state: { pacienteId: patient.id } })}
+                    onClick={() =>
+                      navigate("/add-exercise", {
+                        state: { pacienteId: patient.id },
+                      })
+                    }
                     className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:opacity-90"
                     style={{
                       background: "linear-gradient(135deg, #00A337, #00B561)",
@@ -538,12 +567,20 @@ export function PatientProgress() {
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h3
-                      style={{ fontSize: 18, fontWeight: 600, color: "#1A2B5F" }}
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 600,
+                        color: "#1A2B5F",
+                      }}
                     >
                       Evolução terapêutica
                     </h3>
                     <p
-                      style={{ fontSize: 13, color: "#6B7A99", fontWeight: 400 }}
+                      style={{
+                        fontSize: 13,
+                        color: "#6B7A99",
+                        fontWeight: 400,
+                      }}
                     >
                       Taxa acumulada de sessões concluídas nas últimas 8 sessões
                     </p>
@@ -554,7 +591,11 @@ export function PatientProgress() {
                   >
                     <TrendingUp size={14} color="#36B37E" />
                     <span
-                      style={{ fontSize: 13, fontWeight: 600, color: "#36B37E" }}
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "#36B37E",
+                      }}
                     >
                       {currentProgress}%
                     </span>
@@ -575,8 +616,16 @@ export function PatientProgress() {
                           x2="0"
                           y2="1"
                         >
-                          <stop offset="5%" stopColor="#0052CC" stopOpacity={0.18} />
-                          <stop offset="95%" stopColor="#0052CC" stopOpacity={0.01} />
+                          <stop
+                            offset="5%"
+                            stopColor="#0052CC"
+                            stopOpacity={0.18}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="#0052CC"
+                            stopOpacity={0.01}
+                          />
                         </linearGradient>
                       </defs>
                       <CartesianGrid
@@ -636,7 +685,9 @@ export function PatientProgress() {
               >
                 <div className="flex items-center gap-2 mb-4">
                   <ClipboardList size={18} color="#0052CC" />
-                  <h3 style={{ fontSize: 18, fontWeight: 600, color: "#1A2B5F" }}>
+                  <h3
+                    style={{ fontSize: 18, fontWeight: 600, color: "#1A2B5F" }}
+                  >
                     Resumo clínico
                   </h3>
                 </div>
@@ -644,38 +695,86 @@ export function PatientProgress() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div
                     className="rounded-2xl p-4"
-                    style={{ background: "#F8FBFF", border: "1px solid #DBEAFE" }}
+                    style={{
+                      background: "#F8FBFF",
+                      border: "1px solid #DBEAFE",
+                    }}
                   >
-                    <p style={{ fontSize: 12, color: "#6B7A99", marginBottom: 4 }}>
+                    <p
+                      style={{
+                        fontSize: 12,
+                        color: "#6B7A99",
+                        marginBottom: 4,
+                      }}
+                    >
                       Responsável
                     </p>
-                    <p style={{ fontSize: 15, fontWeight: 600, color: "#1A2B5F" }}>
+                    <p
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 600,
+                        color: "#1A2B5F",
+                      }}
+                    >
                       {patient.responsavel_nome || "Não informado"}
                     </p>
                   </div>
 
                   <div
                     className="rounded-2xl p-4"
-                    style={{ background: "#F8FBFF", border: "1px solid #DBEAFE" }}
+                    style={{
+                      background: "#F8FBFF",
+                      border: "1px solid #DBEAFE",
+                    }}
                   >
-                    <p style={{ fontSize: 12, color: "#6B7A99", marginBottom: 4 }}>
+                    <p
+                      style={{
+                        fontSize: 12,
+                        color: "#6B7A99",
+                        marginBottom: 4,
+                      }}
+                    >
                       Última sessão
                     </p>
-                    <p style={{ fontSize: 15, fontWeight: 600, color: "#1A2B5F" }}>
+                    <p
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 600,
+                        color: "#1A2B5F",
+                      }}
+                    >
                       {latestSession
-                        ? formatDate(latestSession.updated_at || latestSession.created_at)
+                        ? formatDate(
+                            latestSession.updated_at ||
+                              latestSession.created_at,
+                          )
                         : "Sem sessões"}
                     </p>
                   </div>
 
                   <div
                     className="rounded-2xl p-4"
-                    style={{ background: "#F8FBFF", border: "1px solid #DBEAFE" }}
+                    style={{
+                      background: "#F8FBFF",
+                      border: "1px solid #DBEAFE",
+                    }}
                   >
-                    <p style={{ fontSize: 12, color: "#6B7A99", marginBottom: 4 }}>
+                    <p
+                      style={{
+                        fontSize: 12,
+                        color: "#6B7A99",
+                        marginBottom: 4,
+                      }}
+                    >
                       Sessões concluídas
                     </p>
-                    <p style={{ fontSize: 15, fontWeight: 600, color: "#1A2B5F" }}>
+                    <p
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 600,
+                        color: "#1A2B5F",
+                      }}
+                    >
                       {completedSessions} de {totalSessions}
                     </p>
                   </div>
@@ -685,18 +784,25 @@ export function PatientProgress() {
                   className="rounded-2xl p-4 mt-4"
                   style={{ background: "#F8FBFF", border: "1px solid #DBEAFE" }}
                 >
-                  <p style={{ fontSize: 12, color: "#6B7A99", marginBottom: 6 }}>
+                  <p
+                    style={{ fontSize: 12, color: "#6B7A99", marginBottom: 6 }}
+                  >
                     Observações clínicas
                   </p>
-                  <p style={{ fontSize: 14, color: "#1A2B5F", lineHeight: 1.7 }}>
-                    {patient.observacoes?.trim() || "Sem observações clínicas registradas."}
+                  <p
+                    style={{ fontSize: 14, color: "#1A2B5F", lineHeight: 1.7 }}
+                  >
+                    {patient.observacoes?.trim() ||
+                      "Sem observações clínicas registradas."}
                   </p>
                 </div>
               </div>
-              
+
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 style={{ fontSize: 20, fontWeight: 600, color: "#1A2B5F" }}>
+                  <h3
+                    style={{ fontSize: 20, fontWeight: 600, color: "#1A2B5F" }}
+                  >
                     Exercícios cadastrados
                   </h3>
 
@@ -722,7 +828,13 @@ export function PatientProgress() {
                       border: "1.5px solid #DBEAFE",
                     }}
                   >
-                    <p style={{ fontSize: 16, fontWeight: 600, color: "#1A2B5F" }}>
+                    <p
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 600,
+                        color: "#1A2B5F",
+                      }}
+                    >
                       Nenhum exercício cadastrado para este paciente
                     </p>
                   </div>
@@ -738,19 +850,43 @@ export function PatientProgress() {
                           boxShadow: "0 2px 8px rgba(0,82,204,0.05)",
                         }}
                       >
-                        <p style={{ fontSize: 16, fontWeight: 700, color: "#1A2B5F" }}>
+                        <p
+                          style={{
+                            fontSize: 16,
+                            fontWeight: 700,
+                            color: "#1A2B5F",
+                          }}
+                        >
                           {exercicio.categoria}
                         </p>
 
-                        <p style={{ fontSize: 12, color: "#0052CC", marginTop: 4 }}>
+                        <p
+                          style={{
+                            fontSize: 12,
+                            color: "#0052CC",
+                            marginTop: 4,
+                          }}
+                        >
                           Nível: {exercicio.nivel}
                         </p>
 
-                        <p style={{ fontSize: 13, color: "#6B7A99", marginTop: 10 }}>
+                        <p
+                          style={{
+                            fontSize: 13,
+                            color: "#6B7A99",
+                            marginTop: 10,
+                          }}
+                        >
                           <strong>Objetivo:</strong> {exercicio.objetivo}
                         </p>
 
-                        <p style={{ fontSize: 13, color: "#6B7A99", marginTop: 8 }}>
+                        <p
+                          style={{
+                            fontSize: 13,
+                            color: "#6B7A99",
+                            marginTop: 8,
+                          }}
+                        >
                           <strong>Conteúdo:</strong> {exercicio.conteudo}
                         </p>
                       </div>
@@ -761,7 +897,9 @@ export function PatientProgress() {
 
               <div>
                 <div className="flex items-center justify-between mb-6">
-                  <h3 style={{ fontSize: 20, fontWeight: 600, color: "#1A2B5F" }}>
+                  <h3
+                    style={{ fontSize: 20, fontWeight: 600, color: "#1A2B5F" }}
+                  >
                     Sessões recentes
                   </h3>
                   <span
@@ -797,13 +935,15 @@ export function PatientProgress() {
                       Nenhum atendimento registrado
                     </p>
                     <p style={{ fontSize: 14, color: "#6B7A99" }}>
-                      Assim que as sessões forem registradas, elas aparecerão aqui.
+                      Assim que as sessões forem registradas, elas aparecerão
+                      aqui.
                     </p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {recentSessions.map((session) => {
-                      const sessionDate = session.updated_at || session.created_at;
+                      const sessionDate =
+                        session.updated_at || session.created_at;
 
                       return (
                         <div
@@ -818,7 +958,9 @@ export function PatientProgress() {
                           <div
                             className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
                             style={{
-                              background: session.concluido ? "#ECFDF5" : "#FFF7E6",
+                              background: session.concluido
+                                ? "#ECFDF5"
+                                : "#FFF7E6",
                             }}
                           >
                             {session.concluido ? (
@@ -837,7 +979,8 @@ export function PatientProgress() {
                                   color: "#1A2B5F",
                                 }}
                               >
-                                {session.exercicio_categoria || "Sessão terapêutica"}
+                                {session.exercicio_categoria ||
+                                  "Sessão terapêutica"}
                               </p>
                               <span
                                 className="px-2 py-0.5 rounded-full"
@@ -860,7 +1003,8 @@ export function PatientProgress() {
                                   fontWeight: 400,
                                 }}
                               >
-                                {formatDate(sessionDate)} · {formatTime(sessionDate)}
+                                {formatDate(sessionDate)} ·{" "}
+                                {formatTime(sessionDate)}
                               </span>
                             </div>
 
@@ -872,14 +1016,19 @@ export function PatientProgress() {
                                 lineHeight: 1.5,
                               }}
                             >
-                              {session.observacoes?.trim() || "Sem observações registradas."}
+                              {session.observacoes?.trim() ||
+                                "Sem observações registradas."}
                             </p>
                           </div>
 
                           <div className="flex flex-col items-end gap-1">
                             <div className="flex items-center gap-1.5">
                               {session.concluido ? (
-                                <CheckCircle size={18} color="#36B37E" fill="#36B37E" />
+                                <CheckCircle
+                                  size={18}
+                                  color="#36B37E"
+                                  fill="#36B37E"
+                                />
                               ) : (
                                 <RefreshCw size={16} color="#FFAB00" />
                               )}
@@ -887,7 +1036,9 @@ export function PatientProgress() {
                                 style={{
                                   fontSize: 14,
                                   fontWeight: 700,
-                                  color: session.concluido ? "#36B37E" : "#FFAB00",
+                                  color: session.concluido
+                                    ? "#36B37E"
+                                    : "#FFAB00",
                                 }}
                               >
                                 {session.concluido ? "100%" : "0%"}
@@ -897,7 +1048,9 @@ export function PatientProgress() {
                               style={{
                                 fontSize: 11,
                                 fontWeight: 500,
-                                color: session.concluido ? "#36B37E" : "#FFAB00",
+                                color: session.concluido
+                                  ? "#36B37E"
+                                  : "#FFAB00",
                               }}
                             >
                               {session.concluido ? "Concluída" : "Pendente"}
@@ -980,9 +1133,17 @@ export function PatientProgress() {
 
             <div className="flex gap-3 mt-5">
               {[
-                { label: "Sessões", value: String(totalSessions), icon: Calendar },
+                {
+                  label: "Sessões",
+                  value: String(totalSessions),
+                  icon: Calendar,
+                },
                 { label: "Melhor", value: `${bestResult}%`, icon: Award },
-                { label: "Atual", value: `${currentProgress}%`, icon: TrendingUp },
+                {
+                  label: "Atual",
+                  value: `${currentProgress}%`,
+                  icon: TrendingUp,
+                },
               ].map((s) => (
                 <div
                   key={s.label}
@@ -1064,8 +1225,16 @@ export function PatientProgress() {
                   >
                     <defs>
                       <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#0052CC" stopOpacity={0.18} />
-                        <stop offset="95%" stopColor="#0052CC" stopOpacity={0.01} />
+                        <stop
+                          offset="5%"
+                          stopColor="#0052CC"
+                          stopOpacity={0.18}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="#0052CC"
+                          stopOpacity={0.01}
+                        />
                       </linearGradient>
                     </defs>
                     <CartesianGrid
@@ -1139,7 +1308,14 @@ export function PatientProgress() {
               <p style={{ fontSize: 12, color: "#6B7A99", marginBottom: 6 }}>
                 Responsável
               </p>
-              <p style={{ fontSize: 14, fontWeight: 600, color: "#1A2B5F", marginBottom: 12 }}>
+              <p
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "#1A2B5F",
+                  marginBottom: 12,
+                }}
+              >
                 {patient.responsavel_nome || "Não informado"}
               </p>
 
@@ -1147,7 +1323,8 @@ export function PatientProgress() {
                 Observações
               </p>
               <p style={{ fontSize: 13, color: "#1A2B5F", lineHeight: 1.7 }}>
-                {patient.observacoes?.trim() || "Sem observações clínicas registradas."}
+                {patient.observacoes?.trim() ||
+                  "Sem observações clínicas registradas."}
               </p>
             </div>
           </div>
@@ -1183,7 +1360,9 @@ export function PatientProgress() {
                     border: "1.5px solid #DBEAFE",
                   }}
                 >
-                  <p style={{ fontSize: 14, fontWeight: 600, color: "#1A2B5F" }}>
+                  <p
+                    style={{ fontSize: 14, fontWeight: 600, color: "#1A2B5F" }}
+                  >
                     Nenhuma sessão registrada
                   </p>
                 </div>
@@ -1208,7 +1387,11 @@ export function PatientProgress() {
                         }}
                       >
                         {session.concluido ? (
-                          <CheckCircle size={16} color="#36B37E" fill="#36B37E" />
+                          <CheckCircle
+                            size={16}
+                            color="#36B37E"
+                            fill="#36B37E"
+                          />
                         ) : (
                           <RefreshCw size={14} color="#FFAB00" />
                         )}
@@ -1223,7 +1406,8 @@ export function PatientProgress() {
                               color: "#1A2B5F",
                             }}
                           >
-                            {session.exercicio_categoria || "Sessão terapêutica"}
+                            {session.exercicio_categoria ||
+                              "Sessão terapêutica"}
                           </p>
                           <span
                             className="px-2 py-0.5 rounded-full"
@@ -1246,7 +1430,8 @@ export function PatientProgress() {
                               fontWeight: 400,
                             }}
                           >
-                            {formatDate(sessionDate)} · {formatTime(sessionDate)}
+                            {formatDate(sessionDate)} ·{" "}
+                            {formatTime(sessionDate)}
                           </span>
                         </div>
                       </div>

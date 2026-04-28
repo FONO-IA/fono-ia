@@ -3,9 +3,9 @@ from apps.paciente.models import Paciente
 
 
 class PacienteSerializer(serializers.ModelSerializer):
-    total_exercicios = serializers.IntegerField(read_only=True)
-    exercicios_concluidos = serializers.IntegerField(read_only=True)
-    ultima_sessao = serializers.DateTimeField(read_only=True)
+    total_exercicios = serializers.SerializerMethodField()
+    exercicios_concluidos = serializers.SerializerMethodField()
+    ultima_sessao = serializers.SerializerMethodField()
     responsavel_nome = serializers.CharField(
         source='responsavel.nome', read_only=True
     )
@@ -29,6 +29,20 @@ class PacienteSerializer(serializers.ModelSerializer):
             'total_exercicios',
             'exercicios_concluidos',
         ]
+
+    def get_total_exercicios(self, obj):
+        return obj.exercicios.count()
+
+    def get_exercicios_concluidos(self, obj):
+        return obj.exercicios.filter(resultados__isnull=False).distinct().count()
+
+    def get_ultima_sessao(self, obj):
+        exercicio = obj.exercicios.order_by('-created_at').first()
+
+        if not exercicio:
+            return None
+
+        return exercicio.created_at
 
     def validate_nome(self, value):
         if not value or not value.strip():
