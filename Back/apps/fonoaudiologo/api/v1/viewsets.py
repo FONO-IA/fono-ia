@@ -5,7 +5,6 @@ from apps.fonoaudiologo.models import Fonoaudiologo
 from apps.fonoaudiologo.api.v1.serializer import FonoaudiologoSerializer
 from apps.core.permissions import IsFonoaudiologo
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
 from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth.models import Group
