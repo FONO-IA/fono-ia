@@ -3,6 +3,8 @@ import { useNavigate } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
 import { listarPacientes } from "../services/pacientes";
 import { getMe } from "../services/auth";
+import { listarExercicios } from "../services/exercicios";
+import type { Exercicio } from "../services/exercicios";
 import {
   Search,
   Plus,
@@ -100,13 +102,33 @@ const formatLastSession = (date?: string) => {
   });
 };
 
+const isToday = (dateString?: string) => {
+  if (!dateString) return false;
+
+  const today = new Date();
+  const date = new Date(dateString);
+
+  return (
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+  );
+};
+
 const mapPacienteToCard = (
   patient: ApiPaciente,
+  exercicios: Exercicio[],
   index: number,
 ): DashboardPatient => {
-  const total = patient.total_exercicios ?? 0;
-  const done = patient.exercicios_concluidos ?? 0;
-  const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+  const exerciciosDoPaciente = exercicios.filter(
+    (e) => String(e.paciente) === String(patient.id),
+  );
+
+  const total = exerciciosDoPaciente.length;
+
+  const concluidos = exerciciosDoPaciente.filter((e) => e.concluido).length;
+
+  const progress = total > 0 ? Math.round((concluidos / total) * 100) : 0;
 
   return {
     id: patient.id,
@@ -128,6 +150,7 @@ export function AdminDashboard() {
   const [patients, setPatients] = useState<DashboardPatient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [exercicios, setExercicios] = useState<Exercicio[]>([]);
 
   const [fono, setFono] = useState<DashboardFono>({
     nome: "Fonoaudiólogo",
@@ -135,7 +158,7 @@ export function AdminDashboard() {
     iniciais: "FO",
   });
 
-  const [stats] = useState<DashboardStats>({
+  const [stats, setStats] = useState<DashboardStats>({
     totalPacientes: 0,
     sessoesHoje: 0,
   });
@@ -146,16 +169,27 @@ export function AdminDashboard() {
         setLoading(true);
         setError("");
 
-        const [pacientesData, fonoData] = await Promise.all([
+        const [pacientesData, fonoData, exerciciosData] = await Promise.all([
           listarPacientes(),
           getMe(),
+          listarExercicios(),
         ]);
+
+        const exerciciosHoje = exerciciosData.filter((e) =>
+          isToday(e.created_at),
+        ).length;
 
         const mappedPatients = pacientesData.map(
           (patient: ApiPaciente, index: number) =>
-            mapPacienteToCard(patient, index),
+            mapPacienteToCard(patient, exerciciosData, index),
         );
 
+        setStats({
+          totalPacientes: pacientesData.length,
+          sessoesHoje: exerciciosHoje,
+        });
+
+        setExercicios(exerciciosData);
         setPatients(mappedPatients);
 
         const fonoAtual = fonoData;
