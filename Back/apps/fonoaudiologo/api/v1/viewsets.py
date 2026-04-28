@@ -18,7 +18,7 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
         if self.action == 'create':
             return [permissions.AllowAny()]
 
-        if self.action in ['list', 'retrieve', 'me']:
+        if self.action in ['list', 'retrieve', 'me', 'alterar_senha']:
             return [permissions.IsAuthenticated()]
 
         return [permissions.IsAuthenticated(), IsFonoaudiologo()]
@@ -136,3 +136,27 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(fono)
         return Response(serializer.data)
+
+    @action(detail=False, methods=["post"], permission_classes=[IsAuthenticated])
+    def alterar_senha(self, request):
+        senha_atual = request.data.get("senha_atual")
+        nova_senha = request.data.get("nova_senha")
+
+        if not senha_atual or not nova_senha:
+            return Response(
+                {"detail": "Informe a senha atual e a nova senha."},
+                status=400,
+            )
+
+        user = request.user
+
+        if not user.check_password(senha_atual):
+            return Response(
+                {"detail": "Senha atual incorreta."},
+                status=400,
+            )
+
+        user.set_password(nova_senha)
+        user.save()
+
+        return Response({"detail": "Senha alterada com sucesso."})

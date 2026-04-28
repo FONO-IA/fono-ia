@@ -87,7 +87,7 @@ const getInitials = (name: string) => {
 };
 
 const formatLastSession = (date?: string) => {
-  if (!date) return "Sem sessões";
+  if (!date) return "Sem Exercícios";
 
   const d = new Date(date);
 
@@ -561,7 +561,7 @@ export function AdminDashboard() {
                             fontWeight: 400,
                           }}
                         >
-                          Última Sessão: {patient.lastSession}
+                          Último exercício: {patient.lastSession}
                         </span>
                       </div>
 
@@ -854,7 +854,7 @@ export function AdminDashboard() {
                             fontWeight: 400,
                           }}
                         >
-                          · Última sessão: {patient.lastSession}
+                          · Último exercício: {patient.lastSession}
                         </span>
                       </div>
 

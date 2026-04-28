@@ -142,47 +142,6 @@ export function SettingsLayout({
             </div>
           </div>
 
-          {/* Profile card */}
-          <div className="p-6 border-b border-white/10">
-            <div className="flex items-center gap-3 mb-3">
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                style={{ background: "rgba(255,255,255,0.2)" }}
-              >
-                <span style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>
-                  PA
-                </span>
-              </div>
-              <div className="flex-1">
-                <p
-                  style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}
-                >
-                  Dr. Paulo Andrade
-                </p>
-                <p
-                  style={{
-                    fontSize: 11,
-                    color: "rgba(255,255,255,0.7)",
-                    fontWeight: 400,
-                  }}
-                >
-                  CRFa 6-7832
-                </p>
-              </div>
-            </div>
-            <div
-              className="flex items-center gap-1 px-3 py-1.5 rounded-xl"
-              style={{ background: "rgba(255,255,255,0.15)" }}
-            >
-              <Crown size={12} color="#FFD700" />
-              <span
-                style={{ fontSize: 11, fontWeight: 600, color: "#FFD700" }}
-              >
-                Plano Pro
-              </span>
-            </div>
-          </div>
-
           {/* Settings Navigation */}
           <div className="flex-1 overflow-y-auto hide-scrollbar">
             <div className="p-4">
