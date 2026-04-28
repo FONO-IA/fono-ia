@@ -14,6 +14,8 @@ import {
   Baby,
   X,
   CheckCircle2,
+  Lock,
+  ShieldCheck,
 } from "lucide-react";
 import { criarResponsavel } from "../services/responsaveis";
 import { criarPaciente } from "../services/pacientes";
@@ -32,6 +34,8 @@ type FormState = {
   cpfResponsavel: string;
   emailResponsavel: string;
   telefoneResponsavel: string;
+  senhaResponsavel: string;
+  confirmarSenhaResponsavel: string;
 };
 
 type FieldErrors = Partial<Record<keyof FormState, string>>;
@@ -44,6 +48,8 @@ const initialForm: FormState = {
   cpfResponsavel: "",
   emailResponsavel: "",
   telefoneResponsavel: "",
+  senhaResponsavel: "",
+  confirmarSenhaResponsavel: "",
 };
 
 export function AddPatient() {
@@ -105,6 +111,17 @@ export function AddPatient() {
 
       case "observacoes":
         return "";
+      
+      case "senhaResponsavel":
+        if (!value) return "Senha é obrigatória.";
+        if (value.length < 8) return "A senha deve ter pelo menos 8 caracteres.";
+        return "";
+      
+      case "confirmarSenhaResponsavel":
+        if (!value) return "Confirmação de Senha é Obrigatória";
+        if (value !== form.senhaResponsavel)
+          return "As Senhas não coincidem.";
+        return "";
 
       default:
         return "";
@@ -125,6 +142,11 @@ export function AddPatient() {
       ),
       nomePaciente: validateField("nomePaciente", values.nomePaciente),
       dataNascimento: validateField("dataNascimento", values.dataNascimento),
+      senhaResponsavel: validateField("senhaResponsavel", values.senhaResponsavel,),
+      confirmarSenhaResponsavel: validateField(
+        "confirmarSenhaResponsavel",
+        values.confirmarSenhaResponsavel,
+      ),
       observacoes: "",
     };
 
@@ -456,7 +478,7 @@ export function AddPatient() {
                           <div className="md:col-span-2">
                             <Field
                               label="Nome do responsável"
-                              icon={<Shield size={16} color="#0052CC" />}
+                              icon={<UserRound size={16} color="#0052CC" />}
                             >
                               <input
                                 value={form.nomeResponsavel}
@@ -546,6 +568,54 @@ export function AddPatient() {
                               )}
                             </Field>
                           </div>
+
+                          {/* Quando configurar cadastro de responsavel descomenta e configura responsaveis.ts*/}
+
+                          {/* <Field
+                            label="Senha do responsável"
+                            icon={<Lock size={16} color="#0052CC" />}
+                          >
+                            <input
+                              type="password"
+                              value={form.senhaResponsavel}
+                              disabled={!!responsavelCadastrado}
+                              onChange={(e) =>
+                                updateField("senhaResponsavel", e.target.value)
+                              }
+                              placeholder="Digite a senha"
+                              className="w-full"
+                              style={inputStyle(
+                                !!fieldErrors.senhaResponsavel,
+                                !!responsavelCadastrado,
+                              )}
+                            />
+                            {fieldErrors.senhaResponsavel && (
+                              <FieldError message={fieldErrors.senhaResponsavel} />
+                            )}
+                          </Field>
+
+                          <Field
+                            label="Confirmação de senha"
+                            icon={<ShieldCheck size={16} color="#0052CC" />}
+                          >
+                            <input
+                              type="password"
+                              value={form.confirmarSenhaResponsavel}
+                              disabled={!!responsavelCadastrado}
+                              onChange={(e) =>
+                                updateField("confirmarSenhaResponsavel", e.target.value)
+                              }
+                              placeholder="Confirme a senha"
+                              className="w-full"
+                              style={inputStyle(
+                                !!fieldErrors.confirmarSenhaResponsavel,
+                                !!responsavelCadastrado,
+                              )}
+                            />
+                            {fieldErrors.confirmarSenhaResponsavel && (
+                              <FieldError message={fieldErrors.confirmarSenhaResponsavel} />
+                            )}
+                          </Field> */}
                         </div>
                       </section>
 
