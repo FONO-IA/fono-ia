@@ -3,7 +3,8 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
-from apps.pacientes.models import Paciente, Responsavel
+from apps.paciente.models import Paciente
+from apps.responsavel.models import Responsavel
 
 
 class Command(BaseCommand):
