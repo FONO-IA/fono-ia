@@ -1,8 +1,17 @@
 from django.db import models
 from apps.core.models import BaseModel
+from django.conf import settings
 
 
 class Responsavel(BaseModel):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='responsavel_profile',
+        null=True,
+        blank=True,
+        verbose_name="Usuário associado"
+    )
 
     nome = models.CharField(
         max_length=255,
