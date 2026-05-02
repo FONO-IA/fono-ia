@@ -386,6 +386,7 @@ export function AdminDashboard() {
                     <Bell size={20} color="#6B7A99" />
                   </button>
                   <button
+                    id="btn-novo-paciente"
                     onClick={() => navigate("/add-patient")}
                     className="px-5 py-2.5 rounded-2xl flex items-center gap-2 transition-all hover:opacity-90"
                     style={{

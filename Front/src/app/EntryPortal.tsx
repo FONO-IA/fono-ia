@@ -274,6 +274,7 @@ export function EntryPortal() {
                     </label>
 
                     <input
+                      id="email-pro"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -313,6 +314,7 @@ export function EntryPortal() {
 
                     <div className="relative">
                       <input
+                        id="senha-pro"
                         type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -338,6 +340,7 @@ export function EntryPortal() {
                       />
 
                       <button
+                        id="exibir-senha-pro"
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2"
@@ -358,6 +361,7 @@ export function EntryPortal() {
                   </div>
 
                   <button
+                    id="btn-login-pro"
                     type="submit"
                     disabled={loading}
                     className="flex items-center justify-center gap-2 py-4 rounded-2xl transition-all duration-200 active:scale-95"
@@ -461,6 +465,7 @@ export function EntryPortal() {
                     </label>
 
                     <input
+                      id="email-paciente"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -500,6 +505,7 @@ export function EntryPortal() {
 
                     <div className="relative">
                       <input
+                        id="senha-paciente"
                         type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -525,6 +531,7 @@ export function EntryPortal() {
                       />
 
                       <button
+                        id="btn-exibir-senha"
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2"
@@ -545,6 +552,7 @@ export function EntryPortal() {
                   </div>
 
                   <button
+                    id="btn-login-paciente"
                     type="submit"
                     disabled={loading}
                     className="flex items-center justify-center gap-2 py-4 rounded-2xl transition-all duration-200 active:scale-95"
