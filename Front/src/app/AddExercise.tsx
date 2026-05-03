@@ -29,14 +29,16 @@ export function AddExercise() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [conteudo, setConteudo] = useState("");
   const [instrucaoItem, setInstrucaoItem] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
   const [form, setForm] = useState({
     nome: "",
     objetivo: "",
     nivel: "Médio" as Level,
     instrucoesGuia: `Guia de texto para cada palavra:
-- Diga a palavra
-- Repita devagar
-- Use a dica visual quando necessário`,
+                    - Diga a palavra
+                    - Repita devagar
+                    - Use a dica visual quando necessário`,
     ativo: true,
   });
 
@@ -55,56 +57,68 @@ export function AddExercise() {
   }, [conteudos]);
 
   const handleSave = async () => {
-  const nivelMap = {
-    "Fácil": "FAC",
-    "Médio": "MED",
-    "Dificíl": "DIF",
+    const nivelMap = {
+      Fácil: "FAC",
+      Médio: "MED",
+      Dificíl: "DIF",
+    };
+
+    if (!pacienteId) {
+      alert(
+        "Paciente não identificado. Volte ao paciente e clique em Criar Exercício novamente.",
+      );
+      return;
+    }
+
+    if (
+      !newCategory.trim() ||
+      !form.objetivo.trim() ||
+      !conteudo.trim() ||
+      !instrucaoItem.trim()
+    ) {
+      setShowErrorModal(true);
+      return;
+    }
+
+    const payload = {
+      categoria: newCategory.trim(),
+      nivel: nivelMap[form.nivel],
+      objetivo: form.objetivo.trim(),
+      instrucao: instrucaoItem.trim(),
+      conteudo: conteudo.trim(),
+      paciente: [pacienteId],
+      conteudos: [
+        {
+          texto: conteudo.trim(),
+          instrucao: instrucaoItem.trim(),
+        },
+      ],
+    };
+
+    try {
+      await api.post("/exercicios/", payload);
+
+      setNewCategory("");
+      setConteudo("");
+      setInstrucaoItem("");
+      setConteudos([]);
+      setForm({
+        nome: "",
+        objetivo: "",
+        nivel: "Médio",
+        instrucoesGuia: `Guia de texto para cada palavra:
+                        - Diga a palavra
+                        - Repita devagar
+                        - Use a dica visual quando necessário`,
+        ativo: true,
+      });
+
+      setShowSuccessModal(true);
+    } catch (e) {
+      console.error("Erro ao salvar exercício:", e);
+      alert(e instanceof Error ? e.message : "Erro ao salvar exercício.");
+    }
   };
-
-  if (!pacienteId) {
-    alert("Paciente não identificado. Volte ao paciente e clique em Criar Exercício novamente.");
-    return;
-  }
-
-  const payload = {
-    categoria: newCategory.trim(),
-    nivel: nivelMap[form.nivel],
-    objetivo: form.objetivo.trim(),
-    instrucao: instrucaoItem.trim(),
-    conteudo: conteudo.trim(),
-    paciente: [pacienteId],
-    conteudos: [
-      {
-        texto: conteudo.trim(),
-        instrucao: instrucaoItem.trim(),
-      },
-    ],
-  };
-
-  try {
-    await api.post("/exercicios/", payload);
-
-    setNewCategory("");
-    setConteudo("");
-    setInstrucaoItem("");
-    setConteudos([]);
-    setForm({
-      nome: "",
-      objetivo: "",
-      nivel: "Médio",
-      instrucoesGuia: `Guia de texto para cada palavra:
-- Diga a palavra
-- Repita devagar
-- Use a dica visual quando necessário`,
-      ativo: true,
-    });
-
-    alert("Exercício salvo com sucesso!");
-  } catch (e) {
-    console.error("Erro ao salvar exercício:", e);
-    alert(e instanceof Error ? e.message : "Erro ao salvar exercício.");
-  }
-};
 
   const handleGenerateWithAI = () => {
     const prompt = aiPrompt.trim();
@@ -149,10 +163,10 @@ I
         prev.objetivo || `Exercício montado com base na solicitação: ${prompt}`,
       nivel: prev.nivel || "Médio",
       instrucoesGuia: `Guia de texto para cada palavra:
-- Leia a palavra para a criança
-- Peça para repetir com clareza
-- Use a dica visual abaixo de cada item
-- Faça reforço positivo após cada acerto`,
+                      - Leia a palavra para a criança
+                      - Peça para repetir com clareza
+                      - Use a dica visual abaixo de cada item
+                      - Faça reforço positivo após cada acerto`,
     }));
 
     setConteudos(generatedItems);
@@ -162,6 +176,96 @@ I
 
   return (
     <MobileWrapper bgColor="#EBF3FF" desktopMode="full">
+      {showSuccessModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+          <div className="bg-white rounded-2xl p-6 w-80 shadow-xl text-center">
+            <h2 className="text-lg font-bold text-[#1A2B5F] mb-2">
+              Exercício Cadastrado!
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">Salvo com sucesso!</p>
+
+            <button
+              onClick={() => {
+                setShowSuccessModal(false);
+              }}
+              className="px-4 py-2 rounded-xl text-white"
+              style={{
+                background: "linear-gradient(135deg, #0052CC, #0065FF)",
+              }}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showErrorModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 460,
+              background: "#fff",
+              borderRadius: 28,
+              border: "1.5px solid #FECACA",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+              padding: 28,
+              position: "relative",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: 24,
+                fontWeight: 700,
+                color: "#1A2B5F",
+                marginBottom: 8,
+              }}
+            >
+              Campos obrigatórios
+            </h3>
+            <p
+              style={{
+                fontSize: 14,
+                color: "#6B7A99",
+                lineHeight: 1.7,
+                marginBottom: 24,
+              }}
+            >
+              Preencha todos os campos obrigatórios antes de salvar o exercício.
+            </p>
+
+            <div className="grid grid-cols-1  justify-items-center">
+              <button
+                onClick={() => setShowErrorModal(false)}
+                style={{
+                  padding: "0 24px",
+                  minHeight: 42,
+                  borderRadius: 16,
+                  border: "none",
+                  background: "#EF4444",
+                  color: "#fff",
+                  fontSize: 16,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                OK!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div
         className="min-h-screen"
         style={{ fontFamily: "'Poppins', sans-serif", background: "#F4F7FF" }}
@@ -580,25 +684,6 @@ I
                               />
                             </Field>
                           </div>
-
-                          <div className="md:col-span-2">
-                            <Field
-                              label="Instruções"
-                              icon={<FileText size={16} color="#0052CC" />}
-                            >
-                              <textarea
-                                rows={5}
-                                placeholder="Guia de texto para cada palavra"
-                                className="w-full resize-none"
-                                style={{
-                                  ...inputStyle,
-                                  height: "auto",
-                                  minHeight: 132,
-                                  paddingTop: 14,
-                                }}
-                              />
-                            </Field>
-                          </div>
                         </div>
                       </section>
 
@@ -630,23 +715,26 @@ I
                             />
                           </div>
                         </div>
-
-                        <div className="space-y-4">
-                          <textarea
-                            value={instrucaoItem}
-                            onChange={(e) => setInstrucaoItem(e.target.value)}
-                            rows={6}
-                            placeholder="Instrução específica deste conteúdo"
-                            className="w-full resize-none"
-                            style={{
-                              ...inputStyle,
-                              height: "auto",
-                              minHeight: 160,
-                              paddingTop: 14,
-                            }}
-                          />
+                        <div className="md:col-span-2">
+                          <Field
+                            label="Instruções"
+                            icon={<FileText size={16} color="#0052CC" />}
+                          >
+                            <textarea
+                              rows={5}
+                              placeholder="Guia de texto para cada palavra"
+                              className="w-full resize-none"
+                              value={instrucaoItem}
+                              onChange={(e) => setInstrucaoItem(e.target.value)}
+                              style={{
+                                ...inputStyle,
+                                height: "auto",
+                                minHeight: 132,
+                                paddingTop: 14,
+                              }}
+                            />
+                          </Field>
                         </div>
-
                         <div className="mt-6 flex justify-end">
                           <button
                             onClick={handleSave}

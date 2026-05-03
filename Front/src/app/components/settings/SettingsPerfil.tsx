@@ -1,14 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { SettingsLayout, SettingsSection } from "./SettingsLayout";
-import {
-  User,
-  Hash,
-  Phone,
-  Mail,
-  Check,
-  Pencil,
-  Lock,
-} from "lucide-react";
+import { User, Hash, Phone, Mail, Check, Pencil, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { getMe, alterarSenha } from "../../../services/auth";
 
@@ -107,6 +99,7 @@ export function SettingsPerfil() {
   const [saved, setSaved] = useState("");
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const [form, setForm] = useState<PerfilForm>({
     nome: "",
@@ -183,21 +176,30 @@ export function SettingsPerfil() {
 
       setSaved("Senha alterada com sucesso!");
       setTimeout(() => setSaved(""), 3000);
+      setShowSuccessModal(true);
     } catch (error) {
-      setSaved(error instanceof Error ? error.message : "Erro ao alterar senha.");
+      setSaved(
+        error instanceof Error ? error.message : "Erro ao alterar senha.",
+      );
     }
   };
 
   if (loading) {
     return (
-      <SettingsLayout title="Perfil Profissional" subtitle="Carregando dados...">
+      <SettingsLayout
+        title="Perfil Profissional"
+        subtitle="Carregando dados..."
+      >
         <p style={{ color: "#6B7A99", padding: 16 }}>Carregando perfil...</p>
       </SettingsLayout>
     );
   }
 
   return (
-    <SettingsLayout title="Perfil Profissional" subtitle="Gerencie suas informações">
+    <SettingsLayout
+      title="Perfil Profissional"
+      subtitle="Gerencie suas informações"
+    >
       <div className="flex flex-col items-center mb-6 pt-2">
         <div
           className="w-24 h-24 rounded-3xl flex items-center justify-center shadow-md"
@@ -208,7 +210,14 @@ export function SettingsPerfil() {
           </span>
         </div>
 
-        <p style={{ fontSize: 16, fontWeight: 600, color: "#1A2B5F", marginTop: 14 }}>
+        <p
+          style={{
+            fontSize: 16,
+            fontWeight: 600,
+            color: "#1A2B5F",
+            marginTop: 14,
+          }}
+        >
           {form.nome || "Fonoaudiólogo"}
         </p>
 
@@ -235,6 +244,28 @@ export function SettingsPerfil() {
               Editar perfil
             </span>
           </button>
+        )}
+
+        {showSuccessModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+            <div className="bg-white rounded-2xl p-6 w-80 shadow-xl text-center">
+              <h2 className="text-lg font-bold text-[#1A2B5F] mb-2">
+                Senha Alterada com Sucesso!
+              </h2>
+
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false);
+                }}
+                className="px-4 py-2 rounded-xl text-white"
+                style={{
+                  background: "linear-gradient(135deg, #0052CC, #0065FF)",
+                }}
+              >
+                OK
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
@@ -362,8 +393,8 @@ export function SettingsPerfil() {
             onClick={handleAlterarSenha}
             className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 mt-2"
             style={{
-              background: "#F4F7FF",
-              color: BLUE,
+              background: "#1A2B5F",
+              color: "#fff",
               fontSize: 15,
               fontWeight: 700,
               border: "2px solid #DBEAFE",

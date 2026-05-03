@@ -13,7 +13,6 @@ import {
 import { criarFonoaudiologo } from "../services/fonoaudiologos";
 import { formatCPF, formatPhone, onlyDigits } from "../utils/formatters";
 
-
 type FormState = {
   nome: string;
   cpf: string;
@@ -39,9 +38,11 @@ export function CadastroFonoPage() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   function generateRandomString(length: number) {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let result = "";
 
     for (let i = 0; i < length; i++) {
@@ -130,8 +131,6 @@ export function CadastroFonoPage() {
 
       const password = generateRandomString(8);
 
-
-
       await criarFonoaudiologo({
         nome: form.nome.trim(),
         cpf: onlyDigits(form.cpf),
@@ -142,7 +141,7 @@ export function CadastroFonoPage() {
         password,
       });
 
-      navigate("/");
+      setShowSuccessModal(true);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Erro ao cadastrar fonoaudiólogo.";
@@ -185,7 +184,8 @@ export function CadastroFonoPage() {
             </h1>
 
             <p className="mt-2 text-sm leading-6 text-[#6B7A99]">
-              Preencha os dados do profissional. CPF e telefone serão formatados automaticamente.
+              Preencha os dados do profissional. CPF e telefone serão formatados
+              automaticamente.
             </p>
           </div>
 
@@ -203,6 +203,7 @@ export function CadastroFonoPage() {
               error={fieldErrors.nome}
             >
               <input
+                id="nome"
                 value={form.nome}
                 onChange={(e) => updateField("nome", e.target.value)}
                 placeholder="Ex: Maria Eduarda Silva"
@@ -219,8 +220,11 @@ export function CadastroFonoPage() {
                 error={fieldErrors.cpf}
               >
                 <input
+                  id="cpf"
                   value={form.cpf}
-                  onChange={(e) => updateField("cpf", formatCPF(e.target.value))}
+                  onChange={(e) =>
+                    updateField("cpf", formatCPF(e.target.value))
+                  }
                   placeholder="000.000.000-00"
                   className={inputClass}
                   style={inputStyle(!!fieldErrors.cpf)}
@@ -235,8 +239,11 @@ export function CadastroFonoPage() {
                 error={fieldErrors.crfa}
               >
                 <input
+                  id="crfa"
                   value={form.crfa}
-                  onChange={(e) => updateField("crfa", formatCRFa(e.target.value))}
+                  onChange={(e) =>
+                    updateField("crfa", formatCRFa(e.target.value))
+                  }
                   placeholder="Ex: 00000-0"
                   className={inputClass}
                   style={inputStyle(!!fieldErrors.crfa)}
@@ -252,6 +259,7 @@ export function CadastroFonoPage() {
                 error={fieldErrors.telefone}
               >
                 <input
+                  id="telefone"
                   value={form.telefone}
                   onChange={(e) =>
                     updateField("telefone", formatPhone(e.target.value))
@@ -271,6 +279,7 @@ export function CadastroFonoPage() {
                 error={fieldErrors.email}
               >
                 <input
+                  id="email"
                   value={form.email}
                   onChange={(e) =>
                     updateField("email", e.target.value.toLowerCase())
@@ -285,6 +294,7 @@ export function CadastroFonoPage() {
             </div>
 
             <button
+              id="btn-cadastrar"
               type="submit"
               disabled={loading}
               className="mt-2 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl font-semibold text-white transition-all disabled:cursor-not-allowed"
@@ -300,6 +310,32 @@ export function CadastroFonoPage() {
           </form>
         </div>
       </div>
+      {showSuccessModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+          <div className="bg-white rounded-2xl p-6 w-80 shadow-xl text-center">
+            <h2 className="text-lg font-bold text-[#1A2B5F] mb-2">
+              Cadastro realizado com sucesso!
+            </h2>
+
+            <p className="text-sm text-[#6B7A99] mb-4">
+              Realize o login para acessar o sistema.
+            </p>
+
+            <button
+              onClick={() => {
+                setShowSuccessModal(false);
+                navigate("/"); // redireciona para login
+              }}
+              className="px-4 py-2 rounded-xl text-white"
+              style={{
+                background: "linear-gradient(135deg, #0052CC, #0065FF)",
+              }}
+            >
+              Realizar login
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -325,9 +361,7 @@ function Field({
       {children}
 
       {error && (
-        <p className="mt-2 text-xs font-medium text-red-600">
-          {error}
-        </p>
+        <p className="mt-2 text-xs font-medium text-red-600">{error}</p>
       )}
     </div>
   );

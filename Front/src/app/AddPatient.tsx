@@ -14,6 +14,8 @@ import {
   Baby,
   X,
   CheckCircle2,
+  Lock,
+  ShieldCheck,
 } from "lucide-react";
 import { criarResponsavel } from "../services/responsaveis";
 import { criarPaciente } from "../services/pacientes";
@@ -32,6 +34,8 @@ type FormState = {
   cpfResponsavel: string;
   emailResponsavel: string;
   telefoneResponsavel: string;
+  senhaResponsavel: string;
+  confirmarSenhaResponsavel: string;
 };
 
 type FieldErrors = Partial<Record<keyof FormState, string>>;
@@ -44,6 +48,8 @@ const initialForm: FormState = {
   cpfResponsavel: "",
   emailResponsavel: "",
   telefoneResponsavel: "",
+  senhaResponsavel: "",
+  confirmarSenhaResponsavel: "",
 };
 
 export function AddPatient() {
@@ -106,6 +112,17 @@ export function AddPatient() {
       case "observacoes":
         return "";
 
+      case "senhaResponsavel":
+        if (!value) return "Senha é obrigatória.";
+        if (value.length < 8)
+          return "A senha deve ter pelo menos 8 caracteres.";
+        return "";
+
+      case "confirmarSenhaResponsavel":
+        if (!value) return "Confirmação de Senha é Obrigatória";
+        if (value !== form.senhaResponsavel) return "As Senhas não coincidem.";
+        return "";
+
       default:
         return "";
     }
@@ -125,6 +142,14 @@ export function AddPatient() {
       ),
       nomePaciente: validateField("nomePaciente", values.nomePaciente),
       dataNascimento: validateField("dataNascimento", values.dataNascimento),
+      senhaResponsavel: validateField(
+        "senhaResponsavel",
+        values.senhaResponsavel,
+      ),
+      confirmarSenhaResponsavel: validateField(
+        "confirmarSenhaResponsavel",
+        values.confirmarSenhaResponsavel,
+      ),
       observacoes: "",
     };
 
@@ -259,7 +284,9 @@ export function AddPatient() {
                   }}
                 >
                   <ArrowLeft size={20} color="rgba(255,255,255,0.9)" />
-                  <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}>
+                  <span
+                    style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}
+                  >
                     Voltar
                   </span>
                 </button>
@@ -294,7 +321,8 @@ export function AddPatient() {
                       lineHeight: 1.6,
                     }}
                   >
-                    Cadastre o responsável uma vez e adicione um ou mais pacientes.
+                    Cadastre o responsável uma vez e adicione um ou mais
+                    pacientes.
                   </p>
 
                   <div className="mt-8 space-y-3">
@@ -317,7 +345,12 @@ export function AddPatient() {
                         className="rounded-2xl p-4"
                         style={{ background: "rgba(255,255,255,0.12)" }}
                       >
-                        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.72)" }}>
+                        <p
+                          style={{
+                            fontSize: 11,
+                            color: "rgba(255,255,255,0.72)",
+                          }}
+                        >
                           {item.label}
                         </p>
                         <p
@@ -356,7 +389,9 @@ export function AddPatient() {
                   }}
                 >
                   <ArrowLeft size={20} color="rgba(255,255,255,0.9)" />
-                  <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}>
+                  <span
+                    style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}
+                  >
                     Voltar
                   </span>
                 </button>
@@ -405,7 +440,10 @@ export function AddPatient() {
                         color: "#B91C1C",
                       }}
                     >
-                      <AlertCircle size={18} style={{ flexShrink: 0, marginTop: 1 }} />
+                      <AlertCircle
+                        size={18}
+                        style={{ flexShrink: 0, marginTop: 1 }}
+                      />
                       <span style={{ fontSize: 14, fontWeight: 500 }}>
                         {generalError}
                       </span>
@@ -421,9 +459,13 @@ export function AddPatient() {
                         color: "#047857",
                       }}
                     >
-                      <CheckCircle2 size={18} style={{ flexShrink: 0, marginTop: 1 }} />
+                      <CheckCircle2
+                        size={18}
+                        style={{ flexShrink: 0, marginTop: 1 }}
+                      />
                       <span style={{ fontSize: 14, fontWeight: 600 }}>
-                        Responsável cadastrado. Agora você pode adicionar mais pacientes para ele.
+                        Responsável cadastrado. Agora você pode adicionar mais
+                        pacientes para ele.
                       </span>
                     </div>
                   )}
@@ -456,7 +498,7 @@ export function AddPatient() {
                           <div className="md:col-span-2">
                             <Field
                               label="Nome do responsável"
-                              icon={<Shield size={16} color="#0052CC" />}
+                              icon={<UserRound size={16} color="#0052CC" />}
                             >
                               <input
                                 value={form.nomeResponsavel}
@@ -472,17 +514,25 @@ export function AddPatient() {
                                 )}
                               />
                               {fieldErrors.nomeResponsavel && (
-                                <FieldError message={fieldErrors.nomeResponsavel} />
+                                <FieldError
+                                  message={fieldErrors.nomeResponsavel}
+                                />
                               )}
                             </Field>
                           </div>
 
-                          <Field label="CPF" icon={<Shield size={16} color="#0052CC" />}>
+                          <Field
+                            label="CPF"
+                            icon={<Shield size={16} color="#0052CC" />}
+                          >
                             <input
                               value={form.cpfResponsavel}
                               disabled={!!responsavelCadastrado}
                               onChange={(e) =>
-                                updateField("cpfResponsavel", formatCPF(e.target.value))
+                                updateField(
+                                  "cpfResponsavel",
+                                  formatCPF(e.target.value),
+                                )
                               }
                               placeholder="000.000.000-00"
                               className="w-full"
@@ -494,11 +544,16 @@ export function AddPatient() {
                               )}
                             />
                             {fieldErrors.cpfResponsavel && (
-                              <FieldError message={fieldErrors.cpfResponsavel} />
+                              <FieldError
+                                message={fieldErrors.cpfResponsavel}
+                              />
                             )}
                           </Field>
 
-                          <Field label="Telefone" icon={<Phone size={16} color="#0052CC" />}>
+                          <Field
+                            label="Telefone"
+                            icon={<Phone size={16} color="#0052CC" />}
+                          >
                             <input
                               value={form.telefoneResponsavel}
                               disabled={!!responsavelCadastrado}
@@ -518,12 +573,17 @@ export function AddPatient() {
                               )}
                             />
                             {fieldErrors.telefoneResponsavel && (
-                              <FieldError message={fieldErrors.telefoneResponsavel} />
+                              <FieldError
+                                message={fieldErrors.telefoneResponsavel}
+                              />
                             )}
                           </Field>
 
                           <div className="md:col-span-2">
-                            <Field label="Email" icon={<Mail size={16} color="#0052CC" />}>
+                            <Field
+                              label="Email"
+                              icon={<Mail size={16} color="#0052CC" />}
+                            >
                               <input
                                 value={form.emailResponsavel}
                                 disabled={!!responsavelCadastrado}
@@ -542,10 +602,67 @@ export function AddPatient() {
                                 )}
                               />
                               {fieldErrors.emailResponsavel && (
-                                <FieldError message={fieldErrors.emailResponsavel} />
+                                <FieldError
+                                  message={fieldErrors.emailResponsavel}
+                                />
                               )}
                             </Field>
                           </div>
+
+                          {/* Quando configurar cadastro de responsavel descomenta e configura responsaveis.ts*/}
+
+                          <Field
+                            label="Senha do responsável"
+                            icon={<Lock size={16} color="#0052CC" />}
+                          >
+                            <input
+                              type="password"
+                              value={form.senhaResponsavel}
+                              disabled={!!responsavelCadastrado}
+                              onChange={(e) =>
+                                updateField("senhaResponsavel", e.target.value)
+                              }
+                              placeholder="Digite a senha"
+                              className="w-full"
+                              style={inputStyle(
+                                !!fieldErrors.senhaResponsavel,
+                                !!responsavelCadastrado,
+                              )}
+                            />
+                            {fieldErrors.senhaResponsavel && (
+                              <FieldError
+                                message={fieldErrors.senhaResponsavel}
+                              />
+                            )}
+                          </Field>
+
+                          <Field
+                            label="Confirmação de senha"
+                            icon={<ShieldCheck size={16} color="#0052CC" />}
+                          >
+                            <input
+                              type="password"
+                              value={form.confirmarSenhaResponsavel}
+                              disabled={!!responsavelCadastrado}
+                              onChange={(e) =>
+                                updateField(
+                                  "confirmarSenhaResponsavel",
+                                  e.target.value,
+                                )
+                              }
+                              placeholder="Confirme a senha"
+                              className="w-full"
+                              style={inputStyle(
+                                !!fieldErrors.confirmarSenhaResponsavel,
+                                !!responsavelCadastrado,
+                              )}
+                            />
+                            {fieldErrors.confirmarSenhaResponsavel && (
+                              <FieldError
+                                message={fieldErrors.confirmarSenhaResponsavel}
+                              />
+                            )}
+                          </Field>
                         </div>
                       </section>
 
@@ -584,7 +701,9 @@ export function AddPatient() {
                                 style={inputStyle(!!fieldErrors.nomePaciente)}
                               />
                               {fieldErrors.nomePaciente && (
-                                <FieldError message={fieldErrors.nomePaciente} />
+                                <FieldError
+                                  message={fieldErrors.nomePaciente}
+                                />
                               )}
                             </Field>
                           </div>
@@ -603,11 +722,16 @@ export function AddPatient() {
                               style={inputStyle(!!fieldErrors.dataNascimento)}
                             />
                             {fieldErrors.dataNascimento && (
-                              <FieldError message={fieldErrors.dataNascimento} />
+                              <FieldError
+                                message={fieldErrors.dataNascimento}
+                              />
                             )}
                           </Field>
 
-                          <Field label="Idade" icon={<Baby size={16} color="#0052CC" />}>
+                          <Field
+                            label="Idade"
+                            icon={<Baby size={16} color="#0052CC" />}
+                          >
                             <div
                               style={{
                                 ...inputStyle(false),
@@ -654,7 +778,8 @@ export function AddPatient() {
                           disabled={loading}
                           className="w-full sm:w-auto rounded-2xl px-6 py-4 flex items-center justify-center gap-2"
                           style={{
-                            background: "linear-gradient(135deg, #0A8F3D, #00A337)",
+                            background:
+                              "linear-gradient(135deg, #0A8F3D, #00A337)",
                             color: "#fff",
                             border: "none",
                             cursor: loading ? "not-allowed" : "pointer",
@@ -699,7 +824,8 @@ export function AddPatient() {
                         <div
                           className="rounded-3xl p-5"
                           style={{
-                            background: "linear-gradient(135deg, #0052CC, #0065FF)",
+                            background:
+                              "linear-gradient(135deg, #0052CC, #0065FF)",
                             color: "#fff",
                           }}
                         >
@@ -739,7 +865,9 @@ export function AddPatient() {
                           <div className="mt-5 space-y-3">
                             <PreviewItem
                               label="Idade"
-                              value={idadePreview ? `${idadePreview} anos` : "-"}
+                              value={
+                                idadePreview ? `${idadePreview} anos` : "-"
+                              }
                             />
                             <PreviewItem
                               label="Responsável"

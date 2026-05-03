@@ -23,6 +23,9 @@ export type Exercicio = {
   instrucao: string;
   created_at?: string;
   updated_at?: string;
+  nivel_display: string;
+  concluido: boolean;
+  paciente: string;
 };
 
 export async function criarExercicio(payload: CreateExercicioPayload) {
