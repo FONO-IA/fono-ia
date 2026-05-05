@@ -57,7 +57,7 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
         )
 
         # Adicionando o fono criado ao grupo de fonoaudiólogos
-        fono_group = Group.objects.get(name='Fonoaudiólogos')
+        fono_group = Group.objects.get(name='Fonoaudiologo')
         user.groups.add(fono_group)
 
         fonoaudiologo = serializer.save(user=user)

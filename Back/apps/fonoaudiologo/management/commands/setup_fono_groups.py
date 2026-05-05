@@ -3,7 +3,9 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
-from apps.pacientes.models import Paciente, Fonoaudiologo, Responsavel
+from apps.paciente.models import Paciente
+from apps.responsavel.models import Responsavel
+from apps.fonoaudiologo.models import Fonoaudiologo
 
 
 class Command(BaseCommand):
