@@ -8,8 +8,6 @@ async function request<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  // limpar o token antes de salvar
-  localStorage.removeItem("token");
   const token = localStorage.getItem("token");
 
   const headers: HeadersInit = {

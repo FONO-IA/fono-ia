@@ -183,6 +183,8 @@ export function AddPatient() {
           cpf: onlyDigits(form.cpfResponsavel),
           email: form.emailResponsavel.trim(),
           telefone: onlyDigits(form.telefoneResponsavel),
+          username: form.emailResponsavel.trim(),
+          password: form.senhaResponsavel,
         });
 
         setResponsavelCadastrado(responsavel);

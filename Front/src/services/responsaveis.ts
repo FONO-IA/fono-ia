@@ -6,6 +6,8 @@ export type Responsavel = {
   cpf: string;
   email: string;
   telefone: string;
+  username: string;
+  password: string;
 };
 
 export type CreateResponsavelPayload = {
@@ -13,6 +15,8 @@ export type CreateResponsavelPayload = {
   cpf: string;
   email: string;
   telefone: string;
+  username: string;
+  password: string;
 };
 
 export async function criarResponsavel(payload: CreateResponsavelPayload) {
