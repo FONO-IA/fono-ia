@@ -9,9 +9,10 @@ async function request<T>(
   options: RequestOptions = {},
 ): Promise<T> {
   const token = localStorage.getItem("token");
+  const isFormData = options.body instanceof FormData;
 
   const headers: HeadersInit = {
-    "Content-Type": "application/json",
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
@@ -19,7 +20,12 @@ async function request<T>(
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    body:
+      options.body !== undefined
+        ? isFormData
+          ? options.body
+          : JSON.stringify(options.body)
+        : undefined,
   });
 
   const data = await response.json().catch(() => null);
@@ -51,6 +57,12 @@ export const api = {
   get: <T>(path: string) => request<T>(path),
 
   post: <T>(path: string, body: unknown) =>
+    request<T>(path, {
+      method: "POST",
+      body,
+    }),
+
+  postForm: <T>(path: string, body: FormData) =>
     request<T>(path, {
       method: "POST",
       body,

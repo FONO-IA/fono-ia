@@ -1,16 +1,57 @@
 from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
-from apps.exercicio.models import Exercicio
 from apps.exercicio.api.v1.serializer import ExercicioSerializer
+from apps.exercicio.models import Exercicio
+from apps.fonoaudiologo.models import Fonoaudiologo
+from apps.responsavel.models import Responsavel
+from apps.resultado.models import Resultado
 
 
 class ExercicioViewSet(viewsets.ModelViewSet):
     serializer_class = ExercicioSerializer
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+
+    def get_fonoaudiologo(self):
+        return Fonoaudiologo.objects.filter(user=self.request.user).first()
+
+    def get_responsavel(self):
+        return Responsavel.objects.filter(user=self.request.user).first()
+
+    def is_staff_user(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
+
+    def require_fonoaudiologo(self):
+        fono = self.get_fonoaudiologo()
+
+        if not fono and not self.is_staff_user():
+            raise PermissionDenied(
+                "Apenas fonoaudiologos podem alterar exercicios."
+            )
+
+        return fono
 
     def get_queryset(self):
         queryset = Exercicio.objects.actives()
+
+        if not self.is_staff_user():
+            fono = self.get_fonoaudiologo()
+
+            if fono:
+                queryset = queryset.filter(paciente__fonoaudiologo=fono)
+            else:
+                responsavel = self.get_responsavel()
+
+                if responsavel:
+                    queryset = queryset.filter(
+                        paciente__responsavel=responsavel
+                    )
+                else:
+                    return queryset.none()
 
         nivel = self.request.query_params.get("nivel")
         categoria = self.request.query_params.get("categoria")
@@ -23,11 +64,12 @@ class ExercicioViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(categoria__icontains=categoria)
 
         if paciente:
-            queryset = queryset.filter(paciente__id=paciente).distinct()
+            queryset = queryset.filter(paciente__id=paciente)
 
-        return queryset
+        return queryset.distinct()
 
     def create(self, request, *args, **kwargs):
+        self.require_fonoaudiologo()
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -39,6 +81,7 @@ class ExercicioViewSet(viewsets.ModelViewSet):
         )
 
     def update(self, request, *args, **kwargs):
+        self.require_fonoaudiologo()
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
 
@@ -53,6 +96,7 @@ class ExercicioViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def perform_destroy(self, instance):
+        self.require_fonoaudiologo()
         instance.soft_delete(self.request.user)
 
     def destroy(self, request, *args, **kwargs):
@@ -60,6 +104,53 @@ class ExercicioViewSet(viewsets.ModelViewSet):
         self.perform_destroy(instance)
 
         return Response(
-            {"message": "Exercício excluído com sucesso"},
+            {"message": "Exercicio excluido com sucesso"},
             status=status.HTTP_204_NO_CONTENT,
+        )
+
+    @action(detail=True, methods=["post"])
+    def responder(self, request, pk=None):
+        exercicio = self.get_object()
+        audio = request.FILES.get("audio")
+        paciente_id = request.data.get("paciente_id")
+
+        if not audio:
+            return Response(
+                {"detail": "Envie um arquivo de audio para concluir."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if paciente_id and not exercicio.paciente.filter(id=paciente_id).exists():
+            raise PermissionDenied(
+                "Este exercicio nao pertence ao paciente informado."
+            )
+
+        feedback = {
+            "tipo": "audio",
+            "status": "concluido",
+            "paciente_id": str(paciente_id) if paciente_id else None,
+            "audio_recebido": True,
+            "audio_nome": audio.name,
+            "audio_tamanho": audio.size,
+            "audio_content_type": getattr(audio, "content_type", None),
+            # TODO: Persistir o arquivo de audio quando o model tiver FileField.
+        }
+
+        resultado = Resultado.objects.create(
+            exercicio=exercicio,
+            feedback=feedback,
+        )
+
+        if not exercicio.concluido:
+            exercicio.concluido = True
+            exercicio.save(update_fields=["concluido", "updated_at"])
+
+        return Response(
+            {
+                "id": resultado.id,
+                "detail": "Resposta registrada com sucesso.",
+                "concluido": True,
+                "feedback": resultado.feedback,
+            },
+            status=status.HTTP_201_CREATED,
         )
