@@ -23,6 +23,7 @@ import {
   buscarResponsavelLogado,
   listarPacientesDoResponsavelLogado,
 } from "../services/responsaveis";
+import { logout } from "../services/auth";
 
 type PatientExercises = {
   paciente: Paciente;
@@ -193,23 +194,11 @@ export function ChildExerciseList() {
   }
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-
-    if (!token || token === "undefined" || token === "null" || !token.trim()) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("refresh");
-      localStorage.removeItem("userRole");
-      navigate("/", { replace: true });
-      return;
-    }
-
     void loadData();
   }, []);
 
   function handleLogout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("refresh");
-    localStorage.removeItem("userRole");
+    logout();
     navigate("/", { replace: true });
   }
 

@@ -247,7 +247,7 @@ export function PatientProgress() {
   const firstExerciseId = exercicios[0]?.id;
   const handleStartSession = () => {
     if (firstExerciseId) {
-      navigate(`/child/exercise/${firstExerciseId}`, {
+      navigate(`/exercise/${firstExerciseId}`, {
         state: {
           origem: "fono",
           pacienteId: patient?.id,

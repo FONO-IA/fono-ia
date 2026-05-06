@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
 import { listarPacientes } from "../services/pacientes";
-import { getMe } from "../services/auth";
+import { getMe, logout } from "../services/auth";
 import { listarExercicios } from "../services/exercicios";
 import type { Exercicio } from "../services/exercicios";
 import {
@@ -330,7 +330,10 @@ export function AdminDashboard() {
               </span>
             </button>
             <button
-              onClick={() => navigate("/")}
+              onClick={() => {
+                logout();
+                navigate("/", { replace: true });
+              }}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all"
               style={{
                 background: "rgba(255,86,48,0.15)",

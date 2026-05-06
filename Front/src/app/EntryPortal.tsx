@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
 import { Eye, EyeOff, ChevronRight, AlertCircle, X } from "lucide-react";
-import { login } from "../services/auth";
+import { loginProfessional, loginResponsible } from "../services/auth";
 
 export function EntryPortal() {
   const navigate = useNavigate();
@@ -34,8 +34,8 @@ export function EntryPortal() {
 
     try {
       setLoading(true);
-      await login(email.trim(), password);
-      navigate("/admin");
+      await loginProfessional(email.trim(), password);
+      navigate("/admin", { replace: true });
     } catch {
       openLoginModal("Usuário não cadastrado ou dados de acesso inválidos.");
     } finally {
@@ -44,23 +44,23 @@ export function EntryPortal() {
   };
 
   const handlePatientLogin = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!email.trim() || !password.trim()) {
-    openLoginModal("Preencha o e-mail e a senha para continuar.");
-    return;
-  }
+    if (!email.trim() || !password.trim()) {
+      openLoginModal("Preencha o e-mail e a senha para continuar.");
+      return;
+    }
 
-  try {
-    setLoading(true);
-    await login(email.trim(), password);
-    navigate("/child/home");
-  } catch {
-    openLoginModal("Usuário não cadastrado ou dados de acesso inválidos.");
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      setLoading(true);
+      await loginResponsible(email.trim(), password);
+      navigate("/child/home", { replace: true });
+    } catch {
+      openLoginModal("Usuário não cadastrado ou dados de acesso inválidos.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <MobileWrapper bgColor="#EBF3FF" desktopMode="full">

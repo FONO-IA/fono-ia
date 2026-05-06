@@ -1,3 +1,5 @@
+import { clearAuthSession, getAccessToken } from "./session";
+
 const API_BASE_URL = "http://127.0.0.1:8000/api/v1";
 
 type RequestOptions = Omit<RequestInit, "body"> & {
@@ -8,7 +10,7 @@ async function request<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const token = localStorage.getItem("token");
+  const token = getAccessToken();
   const isFormData = options.body instanceof FormData;
 
   const headers: HeadersInit = {
@@ -31,6 +33,10 @@ async function request<T>(
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
+    if (response.status === 401) {
+      clearAuthSession({ redirect: true });
+    }
+
     console.error("Erro da API:", response.status, data);
 
     const message =
