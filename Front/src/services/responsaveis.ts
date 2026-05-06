@@ -1,4 +1,5 @@
 import { api } from "./api";
+import type { Paciente } from "./pacientes";
 
 export type Responsavel = {
   id: string;
@@ -6,8 +7,8 @@ export type Responsavel = {
   cpf: string;
   email: string;
   telefone: string;
-  username: string;
-  password: string;
+  username?: string;
+  password?: string;
 };
 
 export type CreateResponsavelPayload = {
@@ -21,4 +22,12 @@ export type CreateResponsavelPayload = {
 
 export async function criarResponsavel(payload: CreateResponsavelPayload) {
   return api.post<Responsavel>("/responsaveis/", payload);
+}
+
+export async function buscarResponsavelLogado() {
+  return api.get<Responsavel>("/responsaveis/me/");
+}
+
+export async function listarPacientesDoResponsavelLogado() {
+  return api.get<Paciente[]>("/responsaveis/me/pacientes/");
 }

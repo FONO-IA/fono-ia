@@ -1,4 +1,5 @@
 import { api } from "./api";
+import type { Exercicio } from "./exercicios";
 
 export type Paciente = {
   id: string;
@@ -25,4 +26,8 @@ export async function listarPacientes() {
 
 export async function criarPaciente(payload: CreatePacientePayload) {
   return api.post<Paciente>("/pacientes/", payload);
+}
+
+export async function listarExerciciosDoPaciente(pacienteId: string) {
+  return api.get<Exercicio[]>(`/pacientes/${pacienteId}/exercicios/`);
 }

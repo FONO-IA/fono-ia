@@ -1,331 +1,691 @@
-import React, { useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router";
-import { MobileWrapper } from "./MobileWrapper";
-import { LogOut, Star, Lock, Play } from "lucide-react";
+import {
+  AlertCircle,
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  Loader2,
+  LogOut,
+  Play,
+  RefreshCw,
+  UserRound,
+  UsersRound,
+} from "lucide-react";
 import { motion } from "motion/react";
-import { exerciseSets } from "./data/exercises";
+import { MobileWrapper } from "./MobileWrapper";
+import type { Exercicio } from "../services/exercicios";
+import type { Paciente } from "../services/pacientes";
+import { listarExerciciosDoPaciente } from "../services/pacientes";
+import type { Responsavel } from "../services/responsaveis";
+import {
+  buscarResponsavelLogado,
+  listarPacientesDoResponsavelLogado,
+} from "../services/responsaveis";
 
-function DifficultyStars({ level }: { level: 1 | 2 | 3 }) {
+type PatientExercises = {
+  paciente: Paciente;
+  exercicios: Exercicio[];
+  error?: string;
+};
+
+type ExerciseStatus = {
+  label: string;
+  action: string;
+  bg: string;
+  color: string;
+  icon: "check" | "play";
+};
+
+function getExerciseTitle(exercicio: Exercicio) {
+  return exercicio.titulo?.trim() || exercicio.categoria || "Exercicio";
+}
+
+function getExerciseDescription(exercicio: Exercicio) {
   return (
-    <div className="flex gap-0.5">
-      {[1, 2, 3].map((s) => (
-        <Star
-          key={s}
-          size={11}
-          fill={s <= level ? "#FFD700" : "none"}
-          color={s <= level ? "#FFD700" : "#D1D9E8"}
-          strokeWidth={1.5}
-        />
-      ))}
-    </div>
+    exercicio.descricao?.trim() ||
+    exercicio.objetivo?.trim() ||
+    exercicio.instrucao?.trim() ||
+    exercicio.conteudo?.trim() ||
+    "Sem descricao cadastrada."
+  );
+}
+
+function getExerciseStatus(exercicio: Exercicio): ExerciseStatus {
+  const status = exercicio.status?.toLowerCase();
+
+  if (
+    exercicio.concluido ||
+    status === "concluido" ||
+    status === "concluida" ||
+    status === "finalizado" ||
+    status === "done"
+  ) {
+    return {
+      label: "Concluido",
+      action: "Refazer",
+      bg: "#ECFDF5",
+      color: "#1F8A5B",
+      icon: "check",
+    };
+  }
+
+  if (status === "em_andamento" || status === "andamento") {
+    return {
+      label: "Em andamento",
+      action: "Continuar",
+      bg: "#FFF7E6",
+      color: "#B76E00",
+      icon: "play",
+    };
+  }
+
+  return {
+    label: "Pendente",
+    action: "Iniciar",
+    bg: "#EBF3FF",
+    color: "#0052CC",
+    icon: "play",
+  };
+}
+
+function formatDeadline(value?: string | null) {
+  if (!value) return null;
+
+  const date = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function DetailPill({
+  children,
+  tone = "blue",
+}: {
+  children: ReactNode;
+  tone?: "blue" | "gray";
+}) {
+  return (
+    <span
+      className="inline-flex items-center rounded-full px-3 py-1"
+      style={{
+        background: tone === "blue" ? "#EBF3FF" : "#F1F5F9",
+        color: tone === "blue" ? "#0052CC" : "#64748B",
+        fontSize: 12,
+        fontWeight: 700,
+      }}
+    >
+      {children}
+    </span>
   );
 }
 
 export function ChildExerciseList() {
   const navigate = useNavigate();
-  const [completedIds, setCompletedIds] = useState<string[]>(["vogais"]); // demo: vogais já feito
-  const totalStars = completedIds.length * 5;
+  const [responsavel, setResponsavel] = useState<Responsavel | null>(null);
+  const [groups, setGroups] = useState<PatientExercises[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const totals = useMemo(() => {
+    return groups.reduce(
+      (acc, group) => {
+        acc.exercises += group.exercicios.length;
+        acc.completed += group.exercicios.filter((exercise) => {
+          const status = getExerciseStatus(exercise);
+          return status.label === "Concluido";
+        }).length;
+        return acc;
+      },
+      { exercises: 0, completed: 0 },
+    );
+  }, [groups]);
+
+  async function loadData() {
+    setLoading(true);
+    setError("");
+
+    try {
+      const [responsavelData, pacientes] = await Promise.all([
+        buscarResponsavelLogado(),
+        listarPacientesDoResponsavelLogado(),
+      ]);
+
+      const patientGroups = await Promise.all(
+        pacientes.map(async (paciente) => {
+          try {
+            const exercicios = await listarExerciciosDoPaciente(
+              String(paciente.id),
+            );
+            return { paciente, exercicios };
+          } catch (err) {
+            return {
+              paciente,
+              exercicios: [],
+              error:
+                err instanceof Error
+                  ? err.message
+                  : "Nao foi possivel carregar os exercicios.",
+            };
+          }
+        }),
+      );
+
+      setResponsavel(responsavelData);
+      setGroups(patientGroups);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Nao foi possivel carregar os dados do responsavel.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token || token === "undefined" || token === "null" || !token.trim()) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("refresh");
+      localStorage.removeItem("userRole");
+      navigate("/", { replace: true });
+      return;
+    }
+
+    void loadData();
+  }, []);
+
+  function handleLogout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("refresh");
+    localStorage.removeItem("userRole");
+    navigate("/", { replace: true });
+  }
+
+  function handleOpenExercise(pacienteId: string, exerciseId: string) {
+    navigate(`/child/exercise/${exerciseId}`, {
+      state: { pacienteId },
+    });
+  }
 
   return (
     <MobileWrapper bgColor="#EBF3FF" desktopMode="full">
-      <div className="flex h-screen" style={{ fontFamily: "'Poppins', sans-serif", background: "#F4F7FF" }}>
-        {/* Desktop - Full Screen */}
-        <div className="hidden md:flex md:flex-col md:flex-1">
-          {/* Header Desktop */}
-          <div className="relative overflow-hidden px-12 lg:px-20 py-10" style={{ background: "linear-gradient(150deg, #003884 0%, #0052CC 55%, #0065FF 100%)" }}>
-            <div className="absolute -top-20 -right-20 w-96 h-96 rounded-full opacity-10" style={{ background: "#fff" }} />
-            <div className="absolute bottom-0 left-1/3 w-64 h-64 rounded-full opacity-8" style={{ background: "#fff" }} />
+      <div
+        className="min-h-screen"
+        style={{
+          fontFamily: "'Poppins', sans-serif",
+          background: "#F4F7FF",
+        }}
+      >
+        <header
+          className="relative overflow-hidden px-5 py-8 md:px-12 md:py-10"
+          style={{
+            background:
+              "linear-gradient(150deg, #003884 0%, #0052CC 55%, #0065FF 100%)",
+          }}
+        >
+          <div
+            className="absolute -right-20 -top-20 h-64 w-64 rounded-full opacity-10 md:h-96 md:w-96"
+            style={{ background: "#FFFFFF" }}
+          />
+          <div
+            className="absolute bottom-0 left-1/3 h-40 w-40 rounded-full opacity-10 md:h-64 md:w-64"
+            style={{ background: "#FFFFFF" }}
+          />
 
-            <div className="flex items-center justify-between relative z-10 max-w-7xl mx-auto">
-              <div>
-                <p style={{ fontSize: 16, color: "rgba(255,255,255,0.75)", fontWeight: 400, marginBottom: 8 }}>
-                  Bem-vindo de volta! 👋
-                </p>
-                <h1 style={{ fontSize: 48, fontWeight: 800, color: "#fff", lineHeight: 1.1, marginBottom: 8 }}>
-                  Vamos praticar! 🎙️
-                </h1>
-                <p style={{ fontSize: 16, color: "rgba(255,255,255,0.8)", fontWeight: 400 }}>
-                  Escolha um exercício abaixo para começar
-                </p>
-              </div>
+          <div className="relative z-10 mx-auto flex max-w-7xl items-start justify-between gap-5">
+            <div>
+              <p
+                style={{
+                  color: "rgba(255,255,255,0.78)",
+                  fontSize: 20,
+                  fontWeight: 500,
+                  marginBottom: 8,
+                }}
+              >
+                Ola, {responsavel?.nome?.split(" ")[0] || "responsavel"}!
+              </p>
+              <h1
+                style={{
+                  color: "#FFFFFF",
+                  fontSize: "clamp(28px, 5vw, 48px)",
+                  fontWeight: 800,
+                  lineHeight: 1.1,
+                  marginBottom: 8,
+                }}
+              >
+                Escolha um paciente para praticar.
+              </h1>
+              <p
+                style={{
+                  color: "rgba(255,255,255,0.82)",
+                  fontSize: 15,
+                  fontWeight: 400,
+                }}
+              >
+                Os exercicios criados pelo fonoaudiólogo para cada paciente aparecerão aqui. Toque no paciente para ver os exercicios disponiveis e comecar a praticar.
+              </p>
 
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-3 px-6 py-4 rounded-3xl" style={{ background: "rgba(255,255,255,0.2)" }}>
-                  <span style={{ fontSize: 32 }}>⭐</span>
-                  <div>
-                    <p style={{ fontSize: 14, color: "rgba(255,255,255,0.75)", fontWeight: 500 }}>Total de estrelas</p>
-                    <p style={{ fontSize: 28, fontWeight: 800, color: "#FFD700" }}>{totalStars}</p>
+              {!loading && !error && (
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <div
+                    className="flex items-center gap-2 rounded-2xl px-4 py-2"
+                    style={{ background: "rgba(255,255,255,0.18)" }}
+                  >
+                    <UsersRound size={18} color="#FFFFFF" />
+                    <span
+                      style={{
+                        color: "#FFFFFF",
+                        fontSize: 13,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {groups.length} paciente{groups.length === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                  <div
+                    className="flex items-center gap-2 rounded-2xl px-4 py-2"
+                    style={{ background: "rgba(255,255,255,0.18)" }}
+                  >
+                    <ClipboardList size={18} color="#FFFFFF" />
+                    <span
+                      style={{
+                        color: "#FFFFFF",
+                        fontSize: 13,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {totals.completed}/{totals.exercises} concluidos
+                    </span>
                   </div>
                 </div>
-                <button
-                  onClick={() => navigate("/")}
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all hover:bg-white/20"
-                  style={{ background: "rgba(255,255,255,0.15)", border: "none", cursor: "pointer" }}
-                >
-                  <LogOut size={24} color="rgba(255,255,255,0.85)" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Exercises Grid Desktop */}
-          <div className="flex-1 overflow-y-auto px-12 lg:px-20 py-10">
-            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {exerciseSets.map((ex) => {
-                const completed = completedIds.includes(ex.id);
-                const locked = ex.id !== "vogais" && !completed && !completedIds.includes("vogais");
-
-                return (
-                  <motion.button
-                    key={ex.id}
-                    onClick={() => !locked && navigate(`/child/exercise/${ex.id}`)}
-                    whileHover={!locked ? { scale: 1.02, y: -4 } : {}}
-                    whileTap={!locked ? { scale: 0.98 } : {}}
-                    disabled={locked}
-                    className="text-left rounded-[32px] p-6 flex flex-col gap-4 transition-all"
-                    style={{
-                      background: locked ? "#E8EBF0" : "#ffffff",
-                      border: `3px solid ${locked ? "#D1D9E8" : completed ? "#36B37E" : "#DBEAFE"}`,
-                      boxShadow: locked ? "none" : completed ? "0 6px 24px rgba(54,179,126,0.2)" : "0 6px 24px rgba(0,82,204,0.12)",
-                      cursor: locked ? "not-allowed" : "pointer",
-                      opacity: locked ? 0.6 : 1,
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="w-16 h-16 rounded-3xl flex items-center justify-center" style={{ background: locked ? "#D1D9E8" : `${ex.color}22`, fontSize: 32 }}>
-                        {locked ? "🔒" : ex.emoji}
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        {completed && (
-                          <div className="flex items-center gap-1 px-3 py-1.5 rounded-full" style={{ background: "#ECFDF5" }}>
-                            <span style={{ fontSize: 14 }}>✅</span>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: "#36B37E" }}>Completo</span>
-                          </div>
-                        )}
-                        {!locked && !completed && (
-                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: `${ex.color}15` }}>
-                            <Play size={20} color={ex.color} fill={ex.color} />
-                          </div>
-                        )}
-                        {locked && (
-                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "#E8EBF0" }}>
-                            <Lock size={20} color="#B0BAD3" />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 style={{ fontSize: 22, fontWeight: 800, color: locked ? "#B0BAD3" : "#1A2B5F", marginBottom: 6 }}>
-                        {ex.title}
-                      </h3>
-                      <p style={{ fontSize: 14, color: locked ? "#B0BAD3" : "#6B7A99", fontWeight: 400, lineHeight: 1.5, marginBottom: 8 }}>
-                        {ex.description}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <DifficultyStars level={ex.difficulty} />
-                        <span style={{ fontSize: 12, fontWeight: 600, color: locked ? "#B0BAD3" : "#6B7A99" }}>
-                          {ex.phases.length || 0} palavras
-                        </span>
-                      </div>
-                    </div>
-
-                    {locked && (
-                      <p style={{ fontSize: 11, color: "#B0BAD3", fontWeight: 500, textAlign: "center", marginTop: 4 }}>
-                        Complete os exercícios anteriores para desbloquear
-                      </p>
-                    )}
-                  </motion.button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Version */}
-        <div className="md:hidden flex flex-col flex-1" style={{ fontFamily: "'Poppins', sans-serif", background: "#F4F7FF" }}>
-          {/* Header */}
-          <div
-            className="relative overflow-hidden flex-shrink-0"
-            style={{
-              background: "linear-gradient(150deg, #003884 0%, #0052CC 55%, #0065FF 100%)",
-              paddingTop: 56,
-              paddingBottom: 28,
-              paddingLeft: 24,
-              paddingRight: 24,
-            }}
-          >
-            {/* Decorations */}
-            <div className="absolute -top-10 -right-10 w-40 h-40 md:w-48 md:h-48 rounded-full opacity-10" style={{ background: "#fff" }} />
-            <div className="absolute bottom-0 left-1/4 w-24 h-24 md:w-32 md:h-32 rounded-full opacity-8" style={{ background: "#fff" }} />
-
-            <div className="flex items-start justify-between relative z-10">
-              <div>
-                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", fontWeight: 400, marginBottom: 4 }}>
-                  Bem-vindo de volta! 👋
-                </p>
-                <h1 className="md:text-3xl" style={{ fontSize: 26, fontWeight: 800, color: "#fff", lineHeight: 1.1 }}>
-                  Vamos praticar! 🎙️
-                </h1>
-                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", fontWeight: 400, marginTop: 4 }}>
-                  Escolha um exercício abaixo
-                </p>
-              </div>
-
-              {/* Logout */}
-              <button
-                onClick={() => navigate("/")}
-                className="w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center"
-                style={{ background: "rgba(255,255,255,0.15)", border: "none", cursor: "pointer" }}
-              >
-                <LogOut size={18} color="rgba(255,255,255,0.8)" />
-              </button>
+              )}
             </div>
 
-            {/* Stars counter */}
-            <div className="flex items-center gap-3 mt-5 relative z-10">
-              <div
-                className="flex items-center gap-2 px-4 py-2 rounded-2xl"
-                style={{ background: "rgba(255,255,255,0.18)" }}
-              >
-                <span style={{ fontSize: 18 }}>⭐</span>
-                <span style={{ fontSize: 16, fontWeight: 800, color: "#FFD700" }}>{totalStars}</span>
-                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontWeight: 400 }}>estrelas</span>
-              </div>
-              <div
-                className="flex items-center gap-2 px-4 py-2 rounded-2xl"
-                style={{ background: "rgba(255,255,255,0.18)" }}
-              >
-                <span style={{ fontSize: 18 }}>🏆</span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>
-                  {completedIds.length}/{exerciseSets.length}
-                </span>
-                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontWeight: 400 }}>feitos</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Exercise grid */}
-          <div className="flex-1 overflow-y-auto px-5 pt-5 pb-8">
-            <p
+            <button
+              aria-label="Sair"
+              onClick={handleLogout}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-all hover:bg-white/20"
               style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: "#6B7A99",
-                letterSpacing: 1,
-                textTransform: "uppercase",
-                marginBottom: 14,
-                paddingLeft: 2,
+                background: "rgba(255,255,255,0.16)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                cursor: "pointer",
               }}
             >
-              Exercícios disponíveis
-            </p>
+              <LogOut size={22} color="rgba(255,255,255,0.9)" />
+            </button>
+          </div>
+        </header>
 
-            <div className="flex flex-col gap-4">
-              {exerciseSets.map((ex, i) => {
-                const done = completedIds.includes(ex.id);
-                return (
-                  <motion.button
-                    key={ex.id}
-                    initial={{ opacity: 0, y: 22 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.06, duration: 0.3, ease: "easeOut" }}
-                    onClick={() => navigate(`/child/exercise/${ex.id}`)}
-                    className="w-full text-left flex items-center gap-4 p-4 rounded-3xl transition-all active:scale-96"
+        <main className="mx-auto max-w-7xl px-5 py-6 md:px-12 md:py-10">
+          {loading && (
+            <div
+              className="flex min-h-[320px] flex-col items-center justify-center rounded-3xl"
+              style={{
+                background: "#FFFFFF",
+                border: "1px solid #DBEAFE",
+                boxShadow: "0 10px 30px rgba(0,82,204,0.08)",
+              }}
+            >
+              <Loader2
+                className="mb-4 animate-spin"
+                size={42}
+                color="#0052CC"
+              />
+              <p
+                style={{
+                  color: "#1A2B5F",
+                  fontSize: 18,
+                  fontWeight: 800,
+                }}
+              >
+                Carregando exercicios
+              </p>
+              <p style={{ color: "#6B7A99", fontSize: 14, marginTop: 6 }}>
+                Buscando pacientes vinculados ao responsavel logado.
+              </p>
+            </div>
+          )}
+
+          {!loading && error && (
+            <div
+              className="rounded-3xl p-6 md:p-8"
+              style={{
+                background: "#FFF0EC",
+                border: "2px solid #FECDC3",
+              }}
+            >
+              <div className="flex items-start gap-4">
+                <AlertCircle size={28} color="#FF5630" />
+                <div className="min-w-0 flex-1">
+                  <h2
                     style={{
-                      background: "#ffffff",
-                      border: `2.5px solid ${done ? ex.color + "40" : "#DBEAFE"}`,
-                      boxShadow: done
-                        ? `0 4px 18px ${ex.color}18`
-                        : "0 2px 10px rgba(0,82,204,0.06)",
-                      cursor: "pointer",
+                      color: "#7A271A",
+                      fontSize: 22,
+                      fontWeight: 800,
+                      marginBottom: 6,
                     }}
                   >
-                    {/* Emoji card */}
-                    <div
-                      className="w-20 h-20 rounded-2xl flex items-center justify-center flex-shrink-0 relative"
-                      style={{ background: ex.bgColor }}
+                    Nao conseguimos carregar sua area de pratica.
+                  </h2>
+                  <p style={{ color: "#9A3412", fontSize: 14 }}>
+                    {error}
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <button
+                      onClick={() => void loadData()}
+                      className="flex items-center gap-2 rounded-2xl px-5 py-3"
+                      style={{
+                        background: "#FF5630",
+                        border: "none",
+                        color: "#FFFFFF",
+                        cursor: "pointer",
+                        fontWeight: 700,
+                      }}
                     >
-                      <span style={{ fontSize: 42 }}>{ex.emoji}</span>
-                      {done && (
-                        <div
-                          className="absolute -top-1.5 -right-1.5 w-7 h-7 rounded-xl flex items-center justify-center"
-                          style={{ background: "#36B37E" }}
-                        >
-                          <span style={{ fontSize: 14 }}>✓</span>
-                        </div>
-                      )}
-                    </div>
+                      <RefreshCw size={17} />
+                      Tentar novamente
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="rounded-2xl px-5 py-3"
+                      style={{
+                        background: "#FFFFFF",
+                        border: "1px solid #FECDC3",
+                        color: "#7A271A",
+                        cursor: "pointer",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Sair
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p style={{ fontSize: 17, fontWeight: 800, color: ex.color }}>
-                          {ex.title}
-                        </p>
-                      </div>
-                      <p style={{ fontSize: 12, color: "#6B7A99", fontWeight: 400, marginBottom: 6, lineHeight: 1.4 }}>
-                        {ex.description}
-                      </p>
-                      <div className="flex items-center gap-3">
-                        <DifficultyStars level={ex.difficulty} />
-                        <span
-                          className="px-2.5 py-1 rounded-xl"
-                          style={{
-                            background: ex.bgColor,
-                            fontSize: 11,
-                            fontWeight: 600,
-                            color: ex.color,
-                          }}
-                        >
-                          {ex.phases.length} fases
-                        </span>
-                        {done && (
-                          <span
-                            className="px-2.5 py-1 rounded-xl"
-                            style={{ background: "#ECFDF5", fontSize: 11, fontWeight: 600, color: "#36B37E" }}
-                          >
-                            ⭐ {ex.phases.length} pts
-                          </span>
+          {!loading && !error && groups.length === 0 && (
+            <div
+              className="rounded-3xl p-8 text-center"
+              style={{
+                background: "#FFFFFF",
+                border: "1px solid #DBEAFE",
+                boxShadow: "0 10px 30px rgba(0,82,204,0.08)",
+              }}
+            >
+              <div
+                className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl"
+                style={{ background: "#EBF3FF" }}
+              >
+                <UsersRound size={30} color="#0052CC" />
+              </div>
+              <h2
+                style={{
+                  color: "#1A2B5F",
+                  fontSize: 24,
+                  fontWeight: 800,
+                  marginBottom: 8,
+                }}
+              >
+                Nenhum paciente vinculado ainda.
+              </h2>
+              <p
+                className="mx-auto max-w-xl"
+                style={{ color: "#6B7A99", fontSize: 15, lineHeight: 1.6 }}
+              >
+                Quando o terapeuta vincular pacientes a este responsavel, os
+                exercicios aparecerao aqui automaticamente.
+              </p>
+            </div>
+          )}
+
+          {!loading && !error && groups.length > 0 && (
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+              {groups.map((group, index) => (
+                <motion.section
+                  key={group.paciente.id}
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.04, duration: 0.25 }}
+                  className="rounded-3xl p-5 md:p-6"
+                  style={{
+                    background: "#FFFFFF",
+                    border: "1px solid #DBEAFE",
+                    boxShadow: "0 10px 30px rgba(0,82,204,0.08)",
+                  }}
+                >
+                  <div className="mb-5 flex items-start gap-4">
+                    <div
+                      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
+                      style={{ background: "#EBF3FF" }}
+                    >
+                      <UserRound size={26} color="#0052CC" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h2
+                        style={{
+                          color: "#1A2B5F",
+                          fontSize: 22,
+                          fontWeight: 800,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {group.paciente.nome}
+                      </h2>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <DetailPill>
+                          {group.exercicios.length} exercicio
+                          {group.exercicios.length === 1 ? "" : "s"}
+                        </DetailPill>
+                        {group.paciente.data_nascimento && (
+                          <DetailPill tone="gray">
+                            Nasc. {group.paciente.data_nascimento}
+                          </DetailPill>
                         )}
                       </div>
+                      {group.paciente.observacoes && (
+                        <p
+                          className="mt-3"
+                          style={{
+                            color: "#6B7A99",
+                            fontSize: 13,
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          {group.paciente.observacoes}
+                        </p>
+                      )}
                     </div>
+                  </div>
 
-                    {/* Play button */}
+                  {group.error && (
                     <div
-                      className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: done ? "#ECFDF5" : ex.color }}
+                      className="rounded-2xl p-4"
+                      style={{
+                        background: "#FFF0EC",
+                        border: "1px solid #FECDC3",
+                        color: "#9A3412",
+                        fontSize: 13,
+                        fontWeight: 600,
+                      }}
                     >
-                      {done
-                        ? <span style={{ fontSize: 20 }}>🔁</span>
-                        : <Play size={20} color="white" fill="white" />
-                      }
+                      {group.error}
                     </div>
-                  </motion.button>
-                );
-              })}
-            </div>
+                  )}
 
-            {/* Motivational footer */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="mt-6 rounded-3xl p-5 flex items-center gap-4"
-              style={{ background: "linear-gradient(135deg, #EBF3FF, #DBEAFE)", border: "1.5px solid #93C5FD" }}
-            >
-              <span style={{ fontSize: 36, flexShrink: 0 }}>🏅</span>
-              <div>
-                <p style={{ fontSize: 14, fontWeight: 700, color: "#1A2B5F" }}>
-                  Continue praticando!
-                </p>
-                <p style={{ fontSize: 12, color: "#6B7A99", fontWeight: 400, lineHeight: 1.5 }}>
-                  Complete todos os exercícios para ganhar um troféu especial! 🎉
-                </p>
-              </div>
-            </motion.div>
-          </div>
-        </div>
+                  {!group.error && group.exercicios.length === 0 && (
+                    <div
+                      className="rounded-2xl p-5 text-center"
+                      style={{
+                        background: "#F8FAFC",
+                        border: "1px dashed #CBD5E1",
+                      }}
+                    >
+                      <ClipboardList
+                        className="mx-auto mb-3"
+                        size={28}
+                        color="#94A3B8"
+                      />
+                      <p
+                        style={{
+                          color: "#475569",
+                          fontSize: 14,
+                          fontWeight: 700,
+                        }}
+                      >
+                        Este paciente ainda nao possui exercicios cadastrados.
+                      </p>
+                    </div>
+                  )}
+
+                  {!group.error && group.exercicios.length > 0 && (
+                    <div className="flex flex-col gap-3">
+                      {group.exercicios.map((exercicio) => {
+                        const status = getExerciseStatus(exercicio);
+                        const prazo = formatDeadline(exercicio.prazo);
+                        const dificuldade =
+                          exercicio.dificuldade?.toString() ||
+                          exercicio.nivel_display ||
+                          exercicio.nivel;
+
+                        return (
+                          <motion.button
+                            key={exercicio.id}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() =>
+                              handleOpenExercise(
+                                String(group.paciente.id),
+                                String(exercicio.id),
+                              )
+                            }
+                            className="w-full rounded-2xl p-4 text-left transition-all hover:-translate-y-0.5"
+                            style={{
+                              background: "#FFFFFF",
+                              border: "1.5px solid #DBEAFE",
+                              boxShadow: "0 4px 16px rgba(0,82,204,0.06)",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <div className="flex items-start gap-4">
+                              <div
+                                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+                                style={{ background: status.bg }}
+                              >
+                                {status.icon === "check" ? (
+                                  <CheckCircle2
+                                    size={24}
+                                    color={status.color}
+                                  />
+                                ) : (
+                                  <Play
+                                    size={22}
+                                    color={status.color}
+                                    fill={status.color}
+                                  />
+                                )}
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <div className="mb-2 flex flex-wrap items-center gap-2">
+                                  <span
+                                    className="rounded-full px-3 py-1"
+                                    style={{
+                                      background: status.bg,
+                                      color: status.color,
+                                      fontSize: 12,
+                                      fontWeight: 800,
+                                    }}
+                                  >
+                                    {status.label}
+                                  </span>
+                                  {exercicio.categoria && (
+                                    <DetailPill tone="gray">
+                                      {exercicio.categoria}
+                                    </DetailPill>
+                                  )}
+                                  {dificuldade && (
+                                    <DetailPill tone="gray">
+                                      Nivel {dificuldade}
+                                    </DetailPill>
+                                  )}
+                                </div>
+
+                                <h3
+                                  style={{
+                                    color: "#1A2B5F",
+                                    fontSize: 17,
+                                    fontWeight: 800,
+                                    lineHeight: 1.25,
+                                    marginBottom: 6,
+                                  }}
+                                >
+                                  {getExerciseTitle(exercicio)}
+                                </h3>
+                                <p
+                                  style={{
+                                    color: "#6B7A99",
+                                    fontSize: 13,
+                                    lineHeight: 1.5,
+                                    marginBottom: 10,
+                                  }}
+                                >
+                                  {getExerciseDescription(exercicio)}
+                                </p>
+
+                                {prazo && (
+                                  <div className="flex items-center gap-2">
+                                    <CalendarDays
+                                      size={15}
+                                      color="#64748B"
+                                    />
+                                    <span
+                                      style={{
+                                        color: "#64748B",
+                                        fontSize: 12,
+                                        fontWeight: 600,
+                                      }}
+                                    >
+                                      Prazo: {prazo}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div
+                                className="hidden shrink-0 items-center gap-1 rounded-2xl px-4 py-3 md:flex"
+                                style={{
+                                  background: "#0052CC",
+                                  color: "#FFFFFF",
+                                  fontSize: 13,
+                                  fontWeight: 800,
+                                }}
+                              >
+                                {status.action}
+                                <ChevronRight size={16} />
+                              </div>
+                            </div>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </motion.section>
+              ))}
+            </div>
+          )}
+        </main>
       </div>
     </MobileWrapper>
   );
