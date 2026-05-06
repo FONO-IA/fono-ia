@@ -24,6 +24,14 @@ export async function criarResponsavel(payload: CreateResponsavelPayload) {
   return api.post<Responsavel>("/responsaveis/", payload);
 }
 
+export async function listarResponsaveis() {
+  return api.get<Responsavel[]>("/responsaveis/");
+}
+
+export async function buscarResponsavelPorId(id: string) {
+  return api.get<Responsavel>(`/responsaveis/${id}/`);
+}
+
 export async function buscarResponsavelLogado() {
   return api.get<Responsavel>("/responsaveis/me/");
 }

@@ -9,6 +9,7 @@ from apps.fonoaudiologo.models import Fonoaudiologo
 from apps.paciente.api.v1.serializer import PacienteSerializer
 from apps.paciente.models import Paciente
 from apps.responsavel.models import Responsavel
+from apps.resultado.models import Resultado
 
 
 class PacienteViewSet(viewsets.ModelViewSet):
@@ -118,3 +119,84 @@ class PacienteViewSet(viewsets.ModelViewSet):
         ).distinct()
         serializer = ExercicioSerializer(exercicios, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=["get"])
+    def progresso(self, request, pk=None):
+        try:
+            paciente = Paciente.objects.actives().get(pk=pk)
+        except Paciente.DoesNotExist:
+            raise NotFound("Paciente nao encontrado.")
+
+        if not self.user_can_access_patient(paciente):
+            raise PermissionDenied(
+                "Voce nao tem permissao para acessar este paciente."
+            )
+
+        exercicios = Exercicio.objects.actives().filter(
+            paciente=paciente
+        ).distinct()
+        resultados = Resultado.objects.actives().filter(
+            exercicio__in=exercicios
+        ).distinct()
+
+        total_exercicios = exercicios.count()
+        exercicios_com_resultado = set(
+            resultados.values_list("exercicio_id", flat=True)
+        )
+        concluidos = sum(
+            1
+            for exercicio in exercicios
+            if exercicio.concluido or exercicio.id in exercicios_com_resultado
+        )
+        pendentes = max(total_exercicios - concluidos, 0)
+        progresso = (
+            round((concluidos / total_exercicios) * 100)
+            if total_exercicios
+            else 0
+        )
+
+        resultados_ordenados = resultados.order_by("-updated_at", "-created_at")
+        ultimo_resultado = resultados_ordenados.first()
+        ultimo_exercicio = ultimo_resultado.exercicio if ultimo_resultado else None
+
+        return Response(
+            {
+                "paciente": str(paciente.id),
+                "total_exercicios": total_exercicios,
+                "pendentes": pendentes,
+                "concluidos": concluidos,
+                "em_andamento": 0,
+                "sessoes_feitas": resultados.count(),
+                "ultimo_exercicio": (
+                    {
+                        "id": str(ultimo_exercicio.id),
+                        "titulo": ultimo_exercicio.categoria,
+                        "categoria": ultimo_exercicio.categoria,
+                    }
+                    if ultimo_exercicio
+                    else None
+                ),
+                "ultima_sessao": (
+                    ultimo_resultado.updated_at
+                    if ultimo_resultado
+                    else None
+                ),
+                "progresso": progresso,
+                "resultados": [
+                    {
+                        "id": str(resultado.id),
+                        "exercicio": str(resultado.exercicio_id),
+                        "exercicio_categoria": resultado.exercicio.categoria,
+                        "exercicio_nivel": resultado.exercicio.get_nivel_display(),
+                        "observacoes": resultado.feedback.get("observacao", ""),
+                        "concluido": (
+                            resultado.feedback.get("status") == "concluido"
+                            or resultado.exercicio.concluido
+                        ),
+                        "created_at": resultado.created_at,
+                        "updated_at": resultado.updated_at,
+                    }
+                    for resultado in resultados_ordenados[:12]
+                ],
+            }
+        )

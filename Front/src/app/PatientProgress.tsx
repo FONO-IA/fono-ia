@@ -22,36 +22,15 @@ import {
   Area,
   AreaChart,
 } from "recharts";
-import { listarPacientes } from "../services/pacientes";
-import { listarAtendimentos } from "../services/atendimentos";
-import { listarExercicios, type Exercicio } from "../services/exercicios";
-
-type ApiPaciente = {
-  id: string;
-  nome: string;
-  data_nascimento: string;
-  observacoes?: string;
-  responsavel?: string;
-  responsavel_nome?: string;
-  total_exercicios?: number;
-  exercicios_concluidos?: number;
-  ultima_sessao?: string;
-};
-
-type ApiAtendimento = {
-  id: string;
-  paciente: string;
-  paciente_nome?: string;
-  fonoaudiologo?: string;
-  fonoaudiologo_nome?: string;
-  exercicio: string;
-  exercicio_categoria?: string;
-  exercicio_nivel?: string;
-  observacoes?: string;
-  concluido: boolean;
-  created_at?: string;
-  updated_at?: string;
-};
+import {
+  buscarPaciente,
+  buscarProgressoPaciente,
+  listarExerciciosDoPaciente,
+  type Paciente as ApiPaciente,
+  type ProgressoPaciente,
+  type ResultadoResumo as ApiAtendimento,
+} from "../services/pacientes";
+import type { Exercicio } from "../services/exercicios";
 
 type ChartPoint = {
   week: string;
@@ -107,6 +86,16 @@ const formatTime = (date?: string) => {
 };
 
 const getWeekLabel = (index: number) => `Sess ${index + 1}`;
+
+const isExerciseCompleted = (exercise: Exercicio) => {
+  const status = exercise.status?.toLowerCase();
+  return (
+    exercise.concluido ||
+    status === "concluido" ||
+    status === "concluida" ||
+    status === "finalizado"
+  );
+};
 
 const buildProgressData = (sessions: ApiAtendimento[]): ChartPoint[] => {
   if (!sessions.length) {
@@ -180,6 +169,7 @@ export function PatientProgress() {
   const [patient, setPatient] = useState<ApiPaciente | null>(null);
   const [sessions, setSessions] = useState<ApiAtendimento[]>([]);
   const [exercicios, setExercicios] = useState<Exercicio[]>([]);
+  const [progress, setProgress] = useState<ProgressoPaciente | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -189,11 +179,20 @@ export function PatientProgress() {
         setLoading(true);
         setError("");
 
-        const patients = await listarPacientes();
+        if (!id) {
+          setError("Paciente nao identificado.");
+          setPatient(null);
+          setSessions([]);
+          setExercicios([]);
+          setProgress(null);
+          return;
+        }
 
-        const found = patients.find(
-          (item: ApiPaciente) => String(item.id) === String(id),
-        );
+        const [found, progressoData, exerciciosData] = await Promise.all([
+          buscarPaciente(String(id)),
+          buscarProgressoPaciente(String(id)),
+          listarExerciciosDoPaciente(String(id)),
+        ]);
 
         if (!found) {
           setError("Paciente não encontrado.");
@@ -204,13 +203,8 @@ export function PatientProgress() {
         }
 
         setPatient(found);
-
-        const [atendimentos, exerciciosData] = await Promise.all([
-          listarAtendimentos({ paciente: String(found.id) }),
-          listarExercicios({ paciente: String(found.id) }),
-        ]);
-
-        setSessions(atendimentos);
+        setProgress(progressoData);
+        setSessions(progressoData.resultados || []);
         setExercicios(exerciciosData);
       } catch (err) {
         const message =
@@ -233,20 +227,39 @@ export function PatientProgress() {
     : 0;
   const patientInitials = patient?.nome ? getInitials(patient.nome) : "--";
 
-  const totalSessions = sessions.length;
-  const completedSessions = sessions.filter(
-    (session) => session.concluido,
-  ).length;
+  const totalExercises = progress?.total_exercicios ?? exercicios.length;
+  const completedExercises =
+    progress?.concluidos ?? exercicios.filter(isExerciseCompleted).length;
+  const pendingExercises =
+    progress?.pendentes ?? Math.max(totalExercises - completedExercises, 0);
+  const inProgressExercises = progress?.em_andamento ?? 0;
+  const totalSessions = progress?.sessoes_feitas ?? sessions.length;
+  const completedSessions = sessions.filter((session) => session.concluido).length;
   const currentProgress =
-    totalSessions > 0
-      ? Math.round((completedSessions / totalSessions) * 100)
-      : 0;
+    progress?.progresso ??
+    (totalExercises > 0
+      ? Math.round((completedExercises / totalExercises) * 100)
+      : 0);
   const bestResult =
-    sessions.length > 0
-      ? sessions.some((session) => session.concluido)
-        ? 100
-        : 0
+    totalExercises > 0
+      ? currentProgress
       : 0;
+  const firstExerciseId = exercicios[0]?.id;
+  const handleStartSession = () => {
+    if (firstExerciseId) {
+      navigate(`/child/exercise/${firstExerciseId}`, {
+        state: {
+          origem: "fono",
+          pacienteId: patient?.id,
+        },
+      });
+      return;
+    }
+
+    navigate("/add-exercise", {
+      state: { pacienteId: patient?.id },
+    });
+  };
 
   const latestSession = useMemo(() => {
     if (!sessions.length) return null;
@@ -419,6 +432,16 @@ export function PatientProgress() {
                     value: `${bestResult}%`,
                     icon: Award,
                   },
+                  {
+                    label: "Pendentes",
+                    value: String(pendingExercises),
+                    icon: ClipboardList,
+                  },
+                  {
+                    label: "Em andamento",
+                    value: String(inProgressExercises),
+                    icon: RefreshCw,
+                  },
                 ].map((s) => (
                   <div
                     key={s.label}
@@ -489,14 +512,7 @@ export function PatientProgress() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <button
-                    onClick={() =>
-                      navigate("/exercise", {
-                        state: {
-                          origem: "fono",
-                          pacienteId: patient.id,
-                        },
-                      })
-                    }
+                    onClick={handleStartSession}
                     className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:opacity-90"
                     style={{
                       background: "#fff",
@@ -1465,14 +1481,7 @@ export function PatientProgress() {
             <div className="flex flex-col gap-3 mt-5">
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() =>
-                    navigate("/exercise", {
-                      state: {
-                        origem: "fono",
-                        pacienteId: patient.id,
-                      },
-                    })
-                  }
+                  onClick={handleStartSession}
                   className="py-4 rounded-2xl flex items-center justify-center gap-2"
                   style={{
                     background: "linear-gradient(135deg, #0052CC, #0065FF)",
