@@ -16,6 +16,8 @@ export type CreateExercicioPayload = {
 
 export type Exercicio = {
   id: string;
+  titulo?: string;
+  descricao?: string;
   nivel: string;
   categoria: string;
   conteudo: string;
@@ -25,7 +27,12 @@ export type Exercicio = {
   updated_at?: string;
   nivel_display: string;
   concluido: boolean;
-  paciente: string;
+  status?: string;
+  dificuldade?: string | number;
+  prazo?: string | null;
+  audio_url?: string | null;
+  referencia_url?: string | null;
+  paciente: string | string[];
 };
 
 export async function criarExercicio(payload: CreateExercicioPayload) {

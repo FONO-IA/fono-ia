@@ -1,4 +1,6 @@
 from rest_framework import viewsets, permissions, status, serializers
+from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
@@ -6,11 +8,19 @@ from django.core.mail import send_mail
 from django.conf import settings
 from apps.responsavel.models import Responsavel
 from apps.responsavel.api.v1.serializer import ResponsavelSerializer
+from apps.paciente.models import Paciente
+from apps.paciente.api.v1.serializer import PacienteSerializer
 
 
 class ResponsavelViewSet(viewsets.ModelViewSet):
     serializer_class = ResponsavelSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_responsavel_logado(self):
+        try:
+            return Responsavel.objects.actives().get(user=self.request.user)
+        except Responsavel.DoesNotExist:
+            raise NotFound("Responsável não encontrado para este usuário.")
 
     def get_queryset(self):
         queryset = Responsavel.objects.actives()
@@ -135,3 +145,16 @@ class ResponsavelViewSet(viewsets.ModelViewSet):
             {"message": "Responsável excluído com sucesso"},
             status=status.HTTP_204_NO_CONTENT,
         )
+
+    @action(detail=False, methods=["get"])
+    def me(self, request):
+        responsavel = self.get_responsavel_logado()
+        serializer = self.get_serializer(responsavel)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=["get"], url_path="me/pacientes")
+    def me_pacientes(self, request):
+        responsavel = self.get_responsavel_logado()
+        pacientes = Paciente.objects.actives().filter(responsavel=responsavel)
+        serializer = PacienteSerializer(pacientes, many=True)
+        return Response(serializer.data)
