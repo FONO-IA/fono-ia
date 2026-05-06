@@ -43,6 +43,25 @@ export function EntryPortal() {
     }
   };
 
+  const handlePatientLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!email.trim() || !password.trim()) {
+    openLoginModal("Preencha o e-mail e a senha para continuar.");
+    return;
+  }
+
+  try {
+    setLoading(true);
+    await login(email.trim(), password);
+    navigate("/child/home");
+  } catch {
+    openLoginModal("Usuário não cadastrado ou dados de acesso inválidos.");
+  } finally {
+    setLoading(false);
+  }
+};
+
   return (
     <MobileWrapper bgColor="#EBF3FF" desktopMode="full">
       <div className="absolute top-0 left-0 right-0 h-64 md:h-full overflow-hidden pointer-events-none">
@@ -447,7 +466,7 @@ export function EntryPortal() {
                 </div>
 
                 <form
-                  onSubmit={handleProfessionalLogin}
+                  onSubmit={handlePatientLogin}
                   className="flex flex-col gap-4"
                 >
                   <div>
