@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
-import { api } from "../services/api";
+import { criarExercicio } from "../services/exercicios";
 import {
   ArrowLeft,
   Dumbbell,
@@ -11,6 +11,7 @@ import {
   Sparkles,
   CheckCircle2,
   Wand2,
+  Plus,
   X,
 } from "lucide-react";
 
@@ -48,13 +49,71 @@ export function AddExercise() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const totalConteudos = conteudos.length;
   const location = useLocation();
   const pacienteId = location.state?.pacienteId;
 
+  const getConteudosForPayload = () => {
+    const items = [...conteudos];
+    const textoAtual = conteudo.trim();
+
+    if (textoAtual) {
+      items.push({
+        id: Date.now(),
+        texto: textoAtual,
+        instrucao:
+          instrucaoItem.trim() ||
+          form.instrucoesGuia.trim() ||
+          `Pratique: ${textoAtual}`,
+      });
+    }
+
+    return items
+      .map((item) => ({
+        texto: item.texto.trim(),
+        instrucao:
+          item.instrucao.trim() ||
+          form.instrucoesGuia.trim() ||
+          `Pratique: ${item.texto.trim()}`,
+      }))
+      .filter((item) => item.texto);
+  };
+
+  const conteudosPreview = useMemo(
+    () => getConteudosForPayload(),
+    [conteudos, conteudo, instrucaoItem, form.instrucoesGuia],
+  );
+  const totalConteudos = conteudosPreview.length;
+
   const previewConteudo = useMemo(() => {
-    return conteudos.map((item) => item.texto).join(", ");
-  }, [conteudos]);
+    return conteudosPreview.map((item) => item.texto).join(", ");
+  }, [conteudosPreview]);
+
+  const handleAddWord = () => {
+    const texto = conteudo.trim();
+
+    if (!texto) {
+      setShowErrorModal(true);
+      return;
+    }
+
+    setConteudos((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        texto,
+        instrucao:
+          instrucaoItem.trim() ||
+          form.instrucoesGuia.trim() ||
+          `Pratique: ${texto}`,
+      },
+    ]);
+    setConteudo("");
+    setInstrucaoItem("");
+  };
+
+  const handleRemoveWord = (id: number) => {
+    setConteudos((prev) => prev.filter((item) => item.id !== id));
+  };
 
   const handleSave = async () => {
     const nivelMap = {
@@ -70,12 +129,10 @@ export function AddExercise() {
       return;
     }
 
-    if (
-      !newCategory.trim() ||
-      !form.objetivo.trim() ||
-      !conteudo.trim() ||
-      !instrucaoItem.trim()
-    ) {
+    const conteudosValidos = getConteudosForPayload();
+    const palavras = conteudosValidos.map((item) => item.texto);
+
+    if (!newCategory.trim() || !form.objetivo.trim() || palavras.length === 0) {
       setShowErrorModal(true);
       return;
     }
@@ -84,19 +141,18 @@ export function AddExercise() {
       categoria: newCategory.trim(),
       nivel: nivelMap[form.nivel],
       objetivo: form.objetivo.trim(),
-      instrucao: instrucaoItem.trim(),
-      conteudo: conteudo.trim(),
+      instrucao:
+        conteudosValidos[0]?.instrucao ||
+        form.instrucoesGuia.trim() ||
+        "Pratique o conteudo do exercicio.",
+      conteudo: palavras.join(", "),
       paciente: [pacienteId],
-      conteudos: [
-        {
-          texto: conteudo.trim(),
-          instrucao: instrucaoItem.trim(),
-        },
-      ],
+      palavras,
+      conteudos: conteudosValidos,
     };
 
     try {
-      await api.post("/exercicios/", payload);
+      await criarExercicio(payload);
 
       setNewCategory("");
       setConteudo("");
@@ -155,6 +211,7 @@ I
       },
     ];
 
+    setNewCategory((prev) => prev || "Fonemas");
     setForm((prev) => ({
       ...prev,
       nome: prev.nome || "Exercício gerado com IA",
@@ -735,7 +792,89 @@ I
                             />
                           </Field>
                         </div>
-                        <div className="mt-6 flex justify-end">
+                        {conteudos.length > 0 && (
+                          <div className="mt-5 grid gap-3">
+                            {conteudos.map((item, index) => (
+                              <div
+                                key={item.id}
+                                className="flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-start sm:justify-between"
+                                style={{
+                                  background: "#F8FBFF",
+                                  border: "1.5px solid #DBEAFE",
+                                }}
+                              >
+                                <div className="min-w-0">
+                                  <p
+                                    style={{
+                                      color: "#0052CC",
+                                      fontSize: 12,
+                                      fontWeight: 800,
+                                      marginBottom: 4,
+                                    }}
+                                  >
+                                    Palavra {index + 1}
+                                  </p>
+                                  <p
+                                    style={{
+                                      color: "#1A2B5F",
+                                      fontSize: 16,
+                                      fontWeight: 800,
+                                      wordBreak: "break-word",
+                                    }}
+                                  >
+                                    {item.texto}
+                                  </p>
+                                  <p
+                                    style={{
+                                      color: "#6B7A99",
+                                      fontSize: 13,
+                                      lineHeight: 1.5,
+                                      marginTop: 6,
+                                      whiteSpace: "pre-wrap",
+                                      wordBreak: "break-word",
+                                    }}
+                                  >
+                                    {item.instrucao}
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() => handleRemoveWord(item.id)}
+                                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+                                  style={{
+                                    background: "#FFF0EC",
+                                    border: "1px solid #FECDC3",
+                                    color: "#FF5630",
+                                    cursor: "pointer",
+                                  }}
+                                  aria-label={`Remover ${item.texto}`}
+                                  title="Remover palavra"
+                                >
+                                  <X size={18} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <button
+                            onClick={handleAddWord}
+                            className="w-full sm:w-auto rounded-2xl px-6 py-4 flex items-center justify-center gap-2"
+                            style={{
+                              background: "#EBF3FF",
+                              color: "#0052CC",
+                              border: "1.5px solid #93C5FD",
+                              cursor: "pointer",
+                              fontSize: 15,
+                              fontWeight: 800,
+                              minWidth: 220,
+                              maxWidth: "100%",
+                            }}
+                          >
+                            <Plus size={18} />
+                            Adicionar Palavra
+                          </button>
+
                           <button
                             onClick={handleSave}
                             className="w-full sm:w-auto rounded-2xl px-6 py-4 flex items-center justify-center gap-2"

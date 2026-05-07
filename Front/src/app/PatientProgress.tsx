@@ -97,6 +97,14 @@ const isExerciseCompleted = (exercise: Exercicio) => {
   );
 };
 
+const getExerciseWords = (exercise: Exercicio) => {
+  const words = exercise.palavras?.length
+    ? exercise.palavras
+    : exercise.conteudos?.map((item) => item.texto);
+
+  return words?.filter(Boolean).join(", ") || exercise.conteudo || "Sem conteudo";
+};
+
 const buildProgressData = (sessions: ApiAtendimento[]): ChartPoint[] => {
   if (!sessions.length) {
     return [{ week: "Sem dados", accuracy: 0 }];
@@ -247,7 +255,7 @@ export function PatientProgress() {
   const firstExerciseId = exercicios[0]?.id;
   const handleStartSession = () => {
     if (firstExerciseId) {
-      navigate(`/exercise/${firstExerciseId}`, {
+      navigate(`/child/exercise/${firstExerciseId}`, {
         state: {
           origem: "fono",
           pacienteId: patient?.id,
@@ -258,6 +266,15 @@ export function PatientProgress() {
 
     navigate("/add-exercise", {
       state: { pacienteId: patient?.id },
+    });
+  };
+
+  const handleOpenExercise = (exerciseId: string) => {
+    navigate(`/child/exercise/${exerciseId}`, {
+      state: {
+        origem: "fono",
+        pacienteId: patient?.id,
+      },
     });
   };
 
@@ -352,19 +369,22 @@ export function PatientProgress() {
 
   return (
     <MobileWrapper bgColor="#EBF3FF" desktopMode="full">
-      <>
+      <div
+        className="min-h-screen w-full overflow-x-hidden"
+        style={{ fontFamily: "'Poppins', sans-serif", background: "#F4F7FF" }}
+      >
         <div
-          className="hidden md:flex h-screen"
-          style={{ fontFamily: "'Poppins', sans-serif", background: "#F4F7FF" }}
+          className="hidden h-screen w-full overflow-hidden md:flex"
+          style={{ background: "#F4F7FF" }}
         >
           <div
-            className="w-80 lg:w-96"
+            className="h-screen w-80 shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain lg:w-96"
             style={{
               background:
                 "linear-gradient(180deg, #003884 0%, #0052CC 60%, #0065FF 100%)",
             }}
           >
-            <div className="p-8">
+            <div className="min-h-full p-8">
               <button
                 onClick={() => navigate("/admin")}
                 className="flex items-center gap-2 mb-8 transition-all hover:opacity-80"
@@ -553,8 +573,8 @@ export function PatientProgress() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-8 lg:p-12 max-w-6xl">
+          <div className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
+            <div className="mx-auto w-full max-w-6xl p-8 lg:p-12">
               <h2
                 style={{
                   fontSize: 28,
@@ -857,13 +877,16 @@ export function PatientProgress() {
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {exercicios.map((exercicio) => (
-                      <div
+                      <button
                         key={exercicio.id}
-                        className="rounded-3xl p-5"
+                        type="button"
+                        onClick={() => handleOpenExercise(String(exercicio.id))}
+                        className="rounded-3xl p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
                         style={{
                           background: "#ffffff",
                           border: "1.5px solid #DBEAFE",
                           boxShadow: "0 2px 8px rgba(0,82,204,0.05)",
+                          cursor: "pointer",
                         }}
                       >
                         <p
@@ -903,9 +926,22 @@ export function PatientProgress() {
                             marginTop: 8,
                           }}
                         >
-                          <strong>Conteúdo:</strong> {exercicio.conteudo}
+                          <strong>Conteúdo:</strong> {getExerciseWords(exercicio)}
                         </p>
-                      </div>
+
+                        <div
+                          className="mt-4 flex items-center justify-center gap-2 rounded-2xl px-4 py-3"
+                          style={{
+                            background: "#EBF3FF",
+                            color: "#0052CC",
+                            fontSize: 13,
+                            fontWeight: 800,
+                          }}
+                        >
+                          <Mic size={16} />
+                          Abrir exercício
+                        </div>
+                      </button>
                     ))}
                   </div>
                 )}
@@ -1083,8 +1119,8 @@ export function PatientProgress() {
         </div>
 
         <div
-          className="md:hidden flex flex-col flex-1 overflow-y-auto"
-          style={{ fontFamily: "'Poppins', sans-serif", background: "#F4F7FF" }}
+          className="flex min-h-screen w-full flex-col overflow-x-hidden overflow-y-auto md:hidden"
+          style={{ background: "#F4F7FF" }}
         >
           <div
             className="px-6 pt-14 pb-6 relative overflow-hidden"
@@ -1521,7 +1557,7 @@ export function PatientProgress() {
             </div>
           </div>
         </div>
-      </>
+      </div>
     </MobileWrapper>
   );
 }
