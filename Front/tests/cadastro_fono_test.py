@@ -6,7 +6,7 @@ import time
 from pages.cadastro_page import CadastroPage
 
 
-# usa o CadastroPage pra executar ações.
+# Função que usa o CadastroPage pra abrir o navegador, acessar o sistema e executar o fluxo de teste.
 def test_cadastro_fono():
 
     options = Options()
