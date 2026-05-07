@@ -305,7 +305,7 @@ export function ChildExerciseList() {
             <button
               aria-label="Sair"
               onClick={handleLogout}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-all hover:bg-white/20"
+              className="flex h-16 w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl transition-all hover:bg-white/20"
               style={{
                 background: "rgba(255,255,255,0.16)",
                 border: "1px solid rgba(255,255,255,0.2)",
@@ -313,6 +313,16 @@ export function ChildExerciseList() {
               }}
             >
               <LogOut size={22} color="rgba(255,255,255,0.9)" />
+              <span
+                style={{
+                  color: "rgba(255,255,255,0.9)",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  lineHeight: 1,
+                }}
+              >
+                Sair
+              </span>
             </button>
           </div>
         </header>

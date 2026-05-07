@@ -21,6 +21,7 @@ import {
   enviarRespostaExercicio,
   type Exercicio,
 } from "../services/exercicios";
+import { getValidAuthSession } from "../services/session";
 
 type MicStatus = "unsupported" | "idle" | "recording" | "recorded" | "error";
 
@@ -80,6 +81,8 @@ export function ChildExercise() {
   const navigate = useNavigate();
   const location = useLocation();
   const { exerciseId } = useParams<{ exerciseId: string }>();
+  const session = getValidAuthSession();
+  const isProfessional = session?.role === "profissional";
   const pacienteId = location.state?.pacienteId
     ? String(location.state.pacienteId)
     : undefined;
@@ -130,10 +133,15 @@ export function ChildExercise() {
         setCurrentIndex(0);
         setCompleted(Boolean(data.concluido));
       } catch (err) {
-        setError(
+        const message =
           err instanceof Error
             ? err.message
-            : "Nao foi possivel carregar o exercicio.",
+            : "Nao foi possivel carregar o exercicio.";
+
+        setError(
+          message.toLowerCase().includes("permiss")
+            ? "Voce nao tem permissao para acessar este exercicio."
+            : message,
         );
       } finally {
         setLoading(false);
@@ -218,6 +226,11 @@ export function ChildExercise() {
   async function submitAnswer() {
     if (!exerciseId || !audioBlob) return;
 
+    if (isProfessional) {
+      setCompleted(true);
+      return;
+    }
+
     try {
       setSubmitting(true);
       setSubmitError("");
@@ -235,8 +248,13 @@ export function ChildExercise() {
   }
 
   function handleBack() {
-    if (origem === "fono" && pacienteId) {
+    if ((origem === "fono" || isProfessional) && pacienteId) {
       navigate(`/patient/${pacienteId}`);
+      return;
+    }
+
+    if (isProfessional) {
+      navigate("/admin");
       return;
     }
 
@@ -340,14 +358,19 @@ export function ChildExercise() {
               </div>
             </div>
 
-            {completed && (
+            {(isProfessional || completed) && (
               <div
                 className="hidden items-center gap-2 rounded-2xl px-4 py-2 md:flex"
-                style={{ background: "#ECFDF5", color: "#1F8A5B" }}
+                style={{
+                  background: completed ? "#ECFDF5" : "#EBF3FF",
+                  color: completed ? "#1F8A5B" : "#0052CC",
+                }}
               >
                 <CheckCircle2 size={18} />
                 <span style={{ fontSize: 13, fontWeight: 800 }}>
-                  Concluido
+                  {completed
+                    ? "Concluido"
+                    : "Modo teste do fonoaudiologo"}
                 </span>
               </div>
             )}
@@ -519,7 +542,7 @@ export function ChildExercise() {
               <div className="mb-5 flex items-start justify-between gap-4">
                 <div>
                   <p style={{ color: "#1A2B5F", fontSize: 18, fontWeight: 800 }}>
-                    Grave sua resposta
+                    {isProfessional ? "Teste a gravacao" : "Grave sua resposta"}
                   </p>
                   <p style={{ color: "#6B7A99", fontSize: 14, marginTop: 4 }}>
                     {getMicMessage(micStatus)}
@@ -626,9 +649,26 @@ export function ChildExercise() {
                   ) : (
                     <Send size={18} />
                   )}
-                  {submitting ? "Enviando..." : "Enviar resposta"}
+                  {submitting
+                    ? "Enviando..."
+                    : isProfessional
+                      ? "Finalizar teste"
+                      : "Enviar resposta"}
                 </button>
               </div>
+
+              {isProfessional && (
+                <div
+                  className="mt-5 rounded-2xl p-4"
+                  style={{ background: "#EBF3FF", border: "1.5px solid #DBEAFE" }}
+                >
+                  <p style={{ color: "#1A2B5F", fontSize: 13, fontWeight: 700 }}>
+                    Voce esta visualizando este exercicio como fonoaudiologo.
+                    A gravacao fica local nesta tela e nao altera o progresso
+                    do paciente.
+                  </p>
+                </div>
+              )}
 
               {audioUrl && (
                 <div className="mt-5 rounded-2xl p-4" style={{ background: "#F8FBFF" }}>
@@ -654,7 +694,9 @@ export function ChildExercise() {
                         Exercicio concluido
                       </p>
                       <p style={{ color: "#357A5B", fontSize: 13, marginTop: 3 }}>
-                        A resposta foi registrada para acompanhamento do progresso.
+                        {isProfessional
+                          ? "Teste local finalizado sem alterar o progresso do paciente."
+                          : "A resposta foi registrada para acompanhamento do progresso."}
                       </p>
                     </div>
                   </div>

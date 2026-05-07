@@ -1,6 +1,6 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
@@ -25,6 +25,24 @@ class ExercicioViewSet(viewsets.ModelViewSet):
     def is_staff_user(self):
         return self.request.user.is_staff or self.request.user.is_superuser
 
+    def user_can_access_exercise(self, exercicio):
+        if self.is_staff_user():
+            return True
+
+        fono = self.get_fonoaudiologo()
+
+        if fono and exercicio.paciente.filter(fonoaudiologo=fono).exists():
+            return True
+
+        responsavel = self.get_responsavel()
+
+        if responsavel and exercicio.paciente.filter(
+            responsavel=responsavel
+        ).exists():
+            return True
+
+        return False
+
     def require_fonoaudiologo(self):
         fono = self.get_fonoaudiologo()
 
@@ -34,6 +52,38 @@ class ExercicioViewSet(viewsets.ModelViewSet):
             )
 
         return fono
+
+    def validate_pacientes_for_fono(self, pacientes, fono):
+        if not fono or self.is_staff_user():
+            return
+
+        invalid_pacientes = [
+            paciente for paciente in pacientes
+            if paciente.fonoaudiologo_id != fono.id
+        ]
+
+        if invalid_pacientes:
+            raise PermissionDenied(
+                "Voce nao tem permissao para criar exercicios para este paciente."
+            )
+
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        lookup_value = self.kwargs.get(lookup_url_kwarg)
+        exercicio = Exercicio.objects.actives().filter(
+            **{self.lookup_field: lookup_value}
+        ).first()
+
+        if not exercicio:
+            raise NotFound("Exercicio nao encontrado.")
+
+        if not self.user_can_access_exercise(exercicio):
+            raise PermissionDenied(
+                "Voce nao tem permissao para acessar este exercicio."
+            )
+
+        self.check_object_permissions(self.request, exercicio)
+        return exercicio
 
     def get_queryset(self):
         queryset = Exercicio.objects.actives()
@@ -69,9 +119,13 @@ class ExercicioViewSet(viewsets.ModelViewSet):
         return queryset.distinct()
 
     def create(self, request, *args, **kwargs):
-        self.require_fonoaudiologo()
+        fono = self.require_fonoaudiologo()
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        self.validate_pacientes_for_fono(
+            serializer.validated_data.get("paciente", []),
+            fono,
+        )
         self.perform_create(serializer)
 
         return Response(
@@ -81,7 +135,7 @@ class ExercicioViewSet(viewsets.ModelViewSet):
         )
 
     def update(self, request, *args, **kwargs):
-        self.require_fonoaudiologo()
+        fono = self.require_fonoaudiologo()
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
 
@@ -91,6 +145,10 @@ class ExercicioViewSet(viewsets.ModelViewSet):
             partial=partial,
         )
         serializer.is_valid(raise_exception=True)
+        self.validate_pacientes_for_fono(
+            serializer.validated_data.get("paciente", []),
+            fono,
+        )
         self.perform_update(serializer)
 
         return Response(serializer.data)
@@ -111,8 +169,14 @@ class ExercicioViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def responder(self, request, pk=None):
         exercicio = self.get_object()
+        responsavel = self.get_responsavel()
         audio = request.FILES.get("audio")
         paciente_id = request.data.get("paciente_id")
+
+        if not responsavel and not self.is_staff_user():
+            raise PermissionDenied(
+                "Apenas o responsavel pode enviar respostas do exercicio."
+            )
 
         if not audio:
             return Response(

@@ -11,6 +11,8 @@ export type CreateExercicioPayload = {
   conteudo: string;
   objetivo: string;
   instrucao: string;
+  paciente?: string[];
+  palavras?: string[];
   conteudos: ConteudoExercicioPayload[];
 };
 
@@ -32,6 +34,7 @@ export type Exercicio = {
   prazo?: string | null;
   audio_url?: string | null;
   referencia_url?: string | null;
+  palavras?: string[];
   conteudos?: Array<{
     id: string | number;
     texto: string;

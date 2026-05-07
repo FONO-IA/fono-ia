@@ -64,10 +64,6 @@ export const router = createBrowserRouter([
         Component: GamifiedFeedback,
       },
       {
-        path: "/exercise/:exerciseId",
-        Component: ChildExercise,
-      },
-      {
         path: "/exercise",
         Component: ChildExercise,
       },
@@ -100,16 +96,28 @@ export const router = createBrowserRouter([
 
   {
     element: createElement(ProtectedRoute, {
+      allowedRoles: ["profissional", "fonoaudiologo", "responsavel", "paciente"],
+    }),
+    children: [
+      {
+        path: "/child/exercise/:exerciseId",
+        Component: ChildExercise,
+      },
+      {
+        path: "/exercise/:exerciseId",
+        Component: ChildExercise,
+      },
+    ],
+  },
+
+  {
+    element: createElement(ProtectedRoute, {
       allowedRoles: ["responsavel", "paciente"],
     }),
     children: [
       {
         path: "/child/home",
         Component: ChildExerciseList,
-      },
-      {
-        path: "/child/exercise/:exerciseId",
-        Component: ChildExercise,
       },
     ],
   },
