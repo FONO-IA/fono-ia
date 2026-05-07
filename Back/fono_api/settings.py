@@ -38,6 +38,11 @@ load_dotenv()
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('DJANGO_SECRET')
 
+AI_PROVIDER = os.getenv('AI_PROVIDER', 'groq')
+AI_MODEL = os.getenv('AI_MODEL', 'llama-3.1-8b-instant')
+GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
+AI_REQUEST_TIMEOUT = int(os.getenv('AI_REQUEST_TIMEOUT', '20'))
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 

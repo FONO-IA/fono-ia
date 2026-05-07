@@ -6,6 +6,7 @@ export type ConteudoExercicioPayload = {
 };
 
 export type CreateExercicioPayload = {
+  nome?: string;
   nivel: string;
   categoria: string;
   conteudo: string;
@@ -16,8 +17,19 @@ export type CreateExercicioPayload = {
   conteudos: ConteudoExercicioPayload[];
 };
 
+export type SugestaoExercicioIARequest = {
+  categoria: string;
+  nivel: string;
+  objetivo?: string;
+};
+
+export type SugestaoExercicioIA = {
+  sugestao: string;
+};
+
 export type Exercicio = {
   id: string;
+  nome?: string;
   titulo?: string;
   descricao?: string;
   nivel: string;
@@ -52,6 +64,12 @@ export type RespostaExercicio = {
 
 export async function criarExercicio(payload: CreateExercicioPayload) {
   return api.post<Exercicio>("/exercicios/", payload);
+}
+
+export async function sugerirExercicioComIA(
+  payload: SugestaoExercicioIARequest,
+) {
+  return api.post<SugestaoExercicioIA>("/exercicios/ia-sugestao/", payload);
 }
 
 export async function listarExercicios(params?: { paciente?: string }) {

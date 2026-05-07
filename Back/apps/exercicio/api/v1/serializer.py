@@ -31,7 +31,7 @@ class ExercicioSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def get_titulo(self, obj):
-        return obj.categoria
+        return obj.nome or obj.categoria
 
     def get_descricao(self, obj):
         return obj.objetivo

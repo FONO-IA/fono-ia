@@ -169,9 +169,17 @@ export function AdminDashboard() {
         setLoading(true);
         setError("");
 
-        const [pacientesData, fonoData, exerciciosData] = await Promise.all([
+        const fonoData = await getMe();
+        if (fonoData) {
+          setFono({
+            nome: fonoData.nome,
+            crfa: fonoData.crfa || "-",
+            iniciais: getInitials(fonoData.nome),
+          });
+        }
+
+        const [pacientesData, exerciciosData] = await Promise.all([
           listarPacientes(),
-          getMe(),
           listarExercicios(),
         ]);
 
@@ -191,15 +199,6 @@ export function AdminDashboard() {
 
         setExercicios(exerciciosData);
         setPatients(mappedPatients);
-
-        const fonoAtual = fonoData;
-        if (fonoAtual) {
-          setFono({
-            nome: fonoAtual.nome,
-            crfa: fonoAtual.crfa,
-            iniciais: getInitials(fonoAtual.nome),
-          });
-        }
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Erro ao carregar dashboard.";
