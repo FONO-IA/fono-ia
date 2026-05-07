@@ -1,6 +1,13 @@
+# Importa o webdriver para conrolar o navegador
 from selenium import webdriver
+
+# Gerencia serviço do ChromeDriver.
 from selenium.webdriver.chrome.service import Service
+
+# Baixa automaticamente o ChromeDriver correto.
 from webdriver_manager.chrome import ChromeDriverManager
+
+# Permite configurar opções do Chrome.
 from selenium.webdriver.chrome.options import Options
 import time
 from pages.cadastro_page import CadastroPage
@@ -9,7 +16,9 @@ from pages.cadastro_page import CadastroPage
 # Função que usa o CadastroPage pra abrir o navegador, acessar o sistema e executar o fluxo de teste.
 def test_cadastro_fono():
 
+    # Cria objeto de configurações do Chrome.
     options = Options()
+    # Faz o navegador permanecer aberto após o teste terminar.
     options.add_experimental_option("detach", True)
 
     # baixa automaticamente o ChromeDriver correto e configura o caminho.

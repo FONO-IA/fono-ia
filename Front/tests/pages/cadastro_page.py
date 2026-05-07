@@ -25,6 +25,7 @@ class CadastroPage:
 
     def preencher_email(self, email):
         self.driver.find_element(By.ID, "email").send_keys(email)
-
+    # função que clica no botão
     def clicar_cadastrar(self):
+        #  .click() executa a ação de clicar no botão referente ao ID
         self.driver.find_element(By.ID, "btn-cadastrar").click()
