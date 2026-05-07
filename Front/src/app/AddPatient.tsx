@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
 import {
@@ -16,8 +16,15 @@ import {
   CheckCircle2,
   Lock,
   ShieldCheck,
+  Search,
+  UsersRound,
+  Loader2,
 } from "lucide-react";
-import { criarResponsavel } from "../services/responsaveis";
+import {
+  criarResponsavel,
+  listarResponsaveis,
+  type Responsavel,
+} from "../services/responsaveis";
 import { criarPaciente } from "../services/pacientes";
 import {
   formatCPF,
@@ -61,13 +68,90 @@ export function AddPatient() {
   const [generalError, setGeneralError] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  const [responsavelCadastrado, setResponsavelCadastrado] = useState<any>(null);
+  const [responsavelCadastrado, setResponsavelCadastrado] =
+    useState<Responsavel | null>(null);
+  const [responsavelSelecionado, setResponsavelSelecionado] =
+    useState<Responsavel | null>(null);
   const [pacientesCadastrados, setPacientesCadastrados] = useState(0);
+  const [showResponsaveisModal, setShowResponsaveisModal] = useState(false);
+  const [responsaveis, setResponsaveis] = useState<Responsavel[]>([]);
+  const [responsaveisLoading, setResponsaveisLoading] = useState(false);
+  const [responsaveisError, setResponsaveisError] = useState("");
+  const [responsaveisSearch, setResponsaveisSearch] = useState("");
 
   function updateField(field: keyof FormState, value: string) {
+    if (
+      responsavelSelecionado &&
+      [
+        "nomeResponsavel",
+        "cpfResponsavel",
+        "emailResponsavel",
+        "telefoneResponsavel",
+        "senhaResponsavel",
+        "confirmarSenhaResponsavel",
+      ].includes(field)
+    ) {
+      setResponsavelSelecionado(null);
+      setResponsavelCadastrado(null);
+    }
+
     setForm((prev) => ({ ...prev, [field]: value }));
     setFieldErrors((prev) => ({ ...prev, [field]: "" }));
     setGeneralError("");
+  }
+
+  async function loadResponsaveis() {
+    try {
+      setResponsaveisLoading(true);
+      setResponsaveisError("");
+      const data = await listarResponsaveis();
+      setResponsaveis(data);
+    } catch (err) {
+      setResponsaveisError(
+        err instanceof Error
+          ? err.message
+          : "Nao foi possivel carregar os responsaveis.",
+      );
+    } finally {
+      setResponsaveisLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (showResponsaveisModal) {
+      void loadResponsaveis();
+    }
+  }, [showResponsaveisModal]);
+
+  function selectResponsavel(responsavel: Responsavel) {
+    setResponsavelSelecionado(responsavel);
+    setResponsavelCadastrado(responsavel);
+    setForm((prev) => ({
+      ...prev,
+      nomeResponsavel: responsavel.nome || "",
+      cpfResponsavel: formatCPF(responsavel.cpf || ""),
+      emailResponsavel: responsavel.email || "",
+      telefoneResponsavel: formatPhone(responsavel.telefone || ""),
+      senhaResponsavel: "",
+      confirmarSenhaResponsavel: "",
+    }));
+    setFieldErrors({});
+    setGeneralError("");
+    setShowResponsaveisModal(false);
+  }
+
+  function clearSelectedResponsavel() {
+    setResponsavelSelecionado(null);
+    setResponsavelCadastrado(null);
+    setForm((prev) => ({
+      ...prev,
+      nomeResponsavel: "",
+      cpfResponsavel: "",
+      emailResponsavel: "",
+      telefoneResponsavel: "",
+      senhaResponsavel: "",
+      confirmarSenhaResponsavel: "",
+    }));
   }
 
   function validateField(field: keyof FormState, value: string): string {
@@ -129,27 +213,31 @@ export function AddPatient() {
   }
 
   function validateForm(values: FormState) {
+    const shouldCreateResponsavel = !responsavelCadastrado;
     const nextErrors: FieldErrors = {
-      nomeResponsavel: validateField("nomeResponsavel", values.nomeResponsavel),
-      cpfResponsavel: validateField("cpfResponsavel", values.cpfResponsavel),
-      telefoneResponsavel: validateField(
-        "telefoneResponsavel",
-        values.telefoneResponsavel,
-      ),
-      emailResponsavel: validateField(
-        "emailResponsavel",
-        values.emailResponsavel,
-      ),
+      nomeResponsavel: shouldCreateResponsavel
+        ? validateField("nomeResponsavel", values.nomeResponsavel)
+        : "",
+      cpfResponsavel: shouldCreateResponsavel
+        ? validateField("cpfResponsavel", values.cpfResponsavel)
+        : "",
+      telefoneResponsavel: shouldCreateResponsavel
+        ? validateField("telefoneResponsavel", values.telefoneResponsavel)
+        : "",
+      emailResponsavel: shouldCreateResponsavel
+        ? validateField("emailResponsavel", values.emailResponsavel)
+        : "",
       nomePaciente: validateField("nomePaciente", values.nomePaciente),
       dataNascimento: validateField("dataNascimento", values.dataNascimento),
-      senhaResponsavel: validateField(
-        "senhaResponsavel",
-        values.senhaResponsavel,
-      ),
-      confirmarSenhaResponsavel: validateField(
-        "confirmarSenhaResponsavel",
-        values.confirmarSenhaResponsavel,
-      ),
+      senhaResponsavel: shouldCreateResponsavel
+        ? validateField("senhaResponsavel", values.senhaResponsavel)
+        : "",
+      confirmarSenhaResponsavel: shouldCreateResponsavel
+        ? validateField(
+            "confirmarSenhaResponsavel",
+            values.confirmarSenhaResponsavel,
+          )
+        : "",
       observacoes: "",
     };
 
@@ -229,6 +317,29 @@ export function AddPatient() {
   const idadePreview = useMemo(() => {
     return calculateAge(form.dataNascimento);
   }, [form.dataNascimento]);
+
+  const responsaveisFiltrados = useMemo(() => {
+    const query = onlyDigits(responsaveisSearch) || responsaveisSearch
+      .trim()
+      .toLowerCase();
+
+    if (!query) return responsaveis;
+
+    return responsaveis.filter((responsavel) => {
+      const searchable = [
+        responsavel.nome,
+        responsavel.email,
+        responsavel.telefone,
+        responsavel.cpf,
+        onlyDigits(responsavel.telefone || ""),
+        onlyDigits(responsavel.cpf || ""),
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return searchable.includes(query);
+    });
+  }, [responsaveis, responsaveisSearch]);
 
   const iniciaisPaciente = useMemo(() => {
     if (!form.nomePaciente.trim()) return "PC";
@@ -495,6 +606,42 @@ export function AddPatient() {
                         >
                           Dados do responsável
                         </h2>
+
+                        <div className="mb-5 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowResponsaveisModal(true)}
+                            className="rounded-2xl px-4 py-3 flex items-center gap-2"
+                            style={{
+                              background: "#EBF3FF",
+                              border: "1.5px solid #CFE0FF",
+                              color: "#0052CC",
+                              cursor: "pointer",
+                              fontSize: 13,
+                              fontWeight: 800,
+                            }}
+                          >
+                            <UsersRound size={16} />
+                            Ver responsaveis cadastrados
+                          </button>
+                          {responsavelSelecionado && (
+                            <button
+                              type="button"
+                              onClick={clearSelectedResponsavel}
+                              className="rounded-2xl px-4 py-3"
+                              style={{
+                                background: "#FFF0EC",
+                                border: "1.5px solid #FECDC3",
+                                color: "#C2410C",
+                                cursor: "pointer",
+                                fontSize: 13,
+                                fontWeight: 800,
+                              }}
+                            >
+                              Trocar responsavel
+                            </button>
+                          )}
+                        </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                           <div className="md:col-span-2">
@@ -927,6 +1074,202 @@ export function AddPatient() {
             </main>
           </div>
         </div>
+
+        {showResponsaveisModal && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(15, 23, 42, 0.45)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9998,
+              padding: 20,
+            }}
+          >
+            <div
+              style={{
+                width: "100%",
+                maxWidth: 780,
+                maxHeight: "88vh",
+                overflow: "hidden",
+                background: "#fff",
+                borderRadius: 28,
+                border: "1.5px solid #DBEAFE",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <div className="flex items-start justify-between gap-4 p-5 sm:p-6">
+                <div>
+                  <h3
+                    style={{
+                      fontSize: 24,
+                      fontWeight: 800,
+                      color: "#1A2B5F",
+                    }}
+                  >
+                    Responsaveis cadastrados
+                  </h3>
+                  <p style={{ fontSize: 14, color: "#6B7A99", marginTop: 6 }}>
+                    Selecione um responsavel existente para vincular ao paciente.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowResponsaveisModal(false)}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    cursor: "pointer",
+                  }}
+                >
+                  <X size={22} color="#6B7A99" />
+                </button>
+              </div>
+
+              <div className="px-5 sm:px-6 pb-4">
+                <div className="relative">
+                  <Search
+                    size={18}
+                    color="#6B7A99"
+                    style={{
+                      position: "absolute",
+                      left: 14,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                    }}
+                  />
+                  <input
+                    value={responsaveisSearch}
+                    onChange={(e) => setResponsaveisSearch(e.target.value)}
+                    placeholder="Buscar por nome, CPF, telefone ou email"
+                    style={{
+                      ...inputStyle(false),
+                      paddingLeft: 44,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 sm:px-6 pb-6">
+                {responsaveisLoading && (
+                  <div className="flex items-center justify-center gap-3 rounded-3xl p-8">
+                    <Loader2 className="animate-spin" size={24} color="#0052CC" />
+                    <span style={{ color: "#1A2B5F", fontWeight: 700 }}>
+                      Carregando responsaveis...
+                    </span>
+                  </div>
+                )}
+
+                {!responsaveisLoading && responsaveisError && (
+                  <div
+                    className="rounded-3xl p-5"
+                    style={{ background: "#FFF0EC", border: "1.5px solid #FECDC3" }}
+                  >
+                    <p style={{ color: "#9A3412", fontSize: 14, fontWeight: 700 }}>
+                      {responsaveisError}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void loadResponsaveis()}
+                      className="mt-4 rounded-2xl px-4 py-3"
+                      style={{
+                        background: "#FF5630",
+                        border: "none",
+                        color: "#fff",
+                        cursor: "pointer",
+                        fontWeight: 800,
+                      }}
+                    >
+                      Tentar novamente
+                    </button>
+                  </div>
+                )}
+
+                {!responsaveisLoading &&
+                  !responsaveisError &&
+                  responsaveisFiltrados.length === 0 && (
+                    <div
+                      className="rounded-3xl p-8 text-center"
+                      style={{
+                        background: "#F8FBFF",
+                        border: "1.5px dashed #CFE0FF",
+                      }}
+                    >
+                      <UsersRound className="mx-auto mb-3" size={32} color="#0052CC" />
+                      <p
+                        style={{
+                          color: "#1A2B5F",
+                          fontSize: 17,
+                          fontWeight: 800,
+                        }}
+                      >
+                        Nenhum responsavel encontrado.
+                      </p>
+                      <p style={{ color: "#6B7A99", fontSize: 14, marginTop: 8 }}>
+                        Cadastre um novo responsavel preenchendo os campos do formulario.
+                      </p>
+                    </div>
+                  )}
+
+                {!responsaveisLoading &&
+                  !responsaveisError &&
+                  responsaveisFiltrados.length > 0 && (
+                    <div className="grid grid-cols-1 gap-3">
+                      {responsaveisFiltrados.map((responsavel) => (
+                        <button
+                          key={responsavel.id}
+                          type="button"
+                          onClick={() => selectResponsavel(responsavel)}
+                          className="rounded-3xl p-4 text-left"
+                          style={{
+                            background: "#FFFFFF",
+                            border: "1.5px solid #DBEAFE",
+                            cursor: "pointer",
+                            boxShadow: "0 2px 8px rgba(0,82,204,0.05)",
+                          }}
+                        >
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <p
+                                style={{
+                                  color: "#1A2B5F",
+                                  fontSize: 16,
+                                  fontWeight: 800,
+                                }}
+                              >
+                                {responsavel.nome}
+                              </p>
+                              <p style={{ color: "#6B7A99", fontSize: 13, marginTop: 4 }}>
+                                {responsavel.email || "Email nao informado"}
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <span
+                                className="rounded-full px-3 py-1"
+                                style={{ background: "#EBF3FF", color: "#0052CC", fontSize: 12, fontWeight: 800 }}
+                              >
+                                {formatCPF(responsavel.cpf || "")}
+                              </span>
+                              <span
+                                className="rounded-full px-3 py-1"
+                                style={{ background: "#F1F5F9", color: "#64748B", fontSize: 12, fontWeight: 800 }}
+                              >
+                                {formatPhone(responsavel.telefone || "")}
+                              </span>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {showSuccessModal && (
           <div

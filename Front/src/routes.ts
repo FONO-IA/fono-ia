@@ -1,3 +1,4 @@
+import { createElement } from "react";
 import { createBrowserRouter } from "react-router";
 import { EntryPortal } from "./app/EntryPortal";
 import { CadastroFonoPage } from "./app/CadastroFonoPage";
@@ -9,7 +10,7 @@ import { ChildExercise } from "./app/ChildExercise";
 import { AddExercise } from "./app/AddExercise";
 import { ChildExerciseList } from "./app/ChildExerciseList";
 import { GamifiedFeedback } from "./app/GamifiedFeedback";
-import { ProtectedRoute } from "./routes/ProtectedRoute";
+import { ProtectedRoute, PublicRoute } from "./routes/ProtectedRoute";
 
 import { SettingsPerfil } from "./app/components/settings/SettingsPerfil";
 import { SettingsNotificacoes } from "./app/components/settings/SettingsNotificacoes";
@@ -20,8 +21,17 @@ import { SettingsSair } from "./app/components/settings/SettingsSair";
 
 export const router = createBrowserRouter([
   {
-    path: "/",
-    Component: EntryPortal,
+    element: createElement(PublicRoute),
+    children: [
+      {
+        path: "/",
+        Component: EntryPortal,
+      },
+      {
+        path: "/child-login",
+        Component: ChildLogin,
+      },
+    ],
   },
   {
     path: "/cadastro-fono",
@@ -29,7 +39,9 @@ export const router = createBrowserRouter([
   },
 
   {
-    Component: ProtectedRoute,
+    element: createElement(ProtectedRoute, {
+      allowedRoles: ["profissional", "fonoaudiologo"],
+    }),
     children: [
       {
         path: "/admin",
@@ -50,6 +62,10 @@ export const router = createBrowserRouter([
       {
         path: "/feedback/:state",
         Component: GamifiedFeedback,
+      },
+      {
+        path: "/exercise",
+        Component: ChildExercise,
       },
       {
         path: "/settings/perfil",
@@ -79,19 +95,30 @@ export const router = createBrowserRouter([
   },
 
   {
-    path: "/child-login",
-    Component: ChildLogin,
+    element: createElement(ProtectedRoute, {
+      allowedRoles: ["profissional", "fonoaudiologo", "responsavel", "paciente"],
+    }),
+    children: [
+      {
+        path: "/child/exercise/:exerciseId",
+        Component: ChildExercise,
+      },
+      {
+        path: "/exercise/:exerciseId",
+        Component: ChildExercise,
+      },
+    ],
   },
+
   {
-    path: "/child/home",
-    Component: ChildExerciseList,
-  },
-  {
-    path: "/child/exercise/:exerciseId",
-    Component: ChildExercise,
-  },
-  {
-    path: "/exercise",
-    Component: ChildExercise,
+    element: createElement(ProtectedRoute, {
+      allowedRoles: ["responsavel", "paciente"],
+    }),
+    children: [
+      {
+        path: "/child/home",
+        Component: ChildExerciseList,
+      },
+    ],
   },
 ]);

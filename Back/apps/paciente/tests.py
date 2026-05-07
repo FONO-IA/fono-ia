@@ -7,6 +7,7 @@ from apps.fonoaudiologo.models import Fonoaudiologo
 from apps.paciente.api.v1.serializer import PacienteSerializer
 from apps.paciente.models import Paciente
 from apps.responsavel.models import Responsavel
+from apps.resultado.models import Resultado
 
 
 class PacienteModelTest(TestCase):
@@ -171,3 +172,19 @@ class PacienteExerciciosEndpointTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
+
+    def test_progresso_calcula_exercicios_concluidos(self):
+        Resultado.objects.create(
+            exercicio=self.exercicio,
+            feedback={'status': 'concluido'}
+        )
+        self.client.force_authenticate(user=self.responsavel_user)
+
+        response = self.client.get(
+            f'/api/v1/pacientes/{self.paciente.id}/progresso/'
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['total_exercicios'], 1)
+        self.assertEqual(response.data['concluidos'], 1)
+        self.assertEqual(response.data['progresso'], 100)

@@ -1,3 +1,5 @@
+import { clearAuthSession, getAccessToken } from "./session";
+
 const API_BASE_URL = "http://127.0.0.1:8000/api/v1";
 
 type RequestOptions = Omit<RequestInit, "body"> & {
@@ -8,10 +10,11 @@ async function request<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const token = localStorage.getItem("token");
+  const token = getAccessToken();
+  const isFormData = options.body instanceof FormData;
 
   const headers: HeadersInit = {
-    "Content-Type": "application/json",
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
@@ -19,12 +22,21 @@ async function request<T>(
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    body:
+      options.body !== undefined
+        ? isFormData
+          ? options.body
+          : JSON.stringify(options.body)
+        : undefined,
   });
 
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
+    if (response.status === 401) {
+      clearAuthSession({ redirect: true });
+    }
+
     console.error("Erro da API:", response.status, data);
 
     const message =
@@ -51,6 +63,12 @@ export const api = {
   get: <T>(path: string) => request<T>(path),
 
   post: <T>(path: string, body: unknown) =>
+    request<T>(path, {
+      method: "POST",
+      body,
+    }),
+
+  postForm: <T>(path: string, body: FormData) =>
     request<T>(path, {
       method: "POST",
       body,

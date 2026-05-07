@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { MobileWrapper } from "../../MobileWrapper";
 import { LogOut, ArrowLeft, ShieldCheck, Clock } from "lucide-react";
+import { logout } from "../../../services/auth";
 
 const BLUE = "#0052CC";
 
@@ -14,7 +15,8 @@ export function SettingsSair() {
   useEffect(() => {
     if (countdown === null) return;
     if (countdown === 0) {
-      navigate("/");
+      logout();
+      navigate("/", { replace: true });
       return;
     }
     const timer = setTimeout(
@@ -26,7 +28,9 @@ export function SettingsSair() {
 
   const handleConfirm = () => {
     setConfirmed(true);
-    setCountdown(3);
+    setCountdown(0);
+    logout();
+    navigate("/", { replace: true });
   };
 
   return (
