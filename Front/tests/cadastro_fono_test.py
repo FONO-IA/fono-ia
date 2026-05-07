@@ -23,15 +23,20 @@ def test_cadastro_fono():
 
     # baixa automaticamente o ChromeDriver correto e configura o caminho.
     service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(options=options)
+    # Abre navegador Chrome.
+    driver = webdriver.Chrome(service=service, options=options)
 
+    # abre a URL
     driver.get("http://localhost:5173/cadastro-fono")
+    # Maximiza a página
     driver.maximize_window()
 
+    # Cria um objeto da classe CadastroPage
     page = CadastroPage(driver)
 
     time.sleep(2)
 
+    # chama as funções da classe CadastroPage
     page.preencher_nome("Fono Teste")
     page.preencher_cpf("12345678999")
     page.preencher_crfa("123-PA")
@@ -39,10 +44,11 @@ def test_cadastro_fono():
     page.preencher_email("fono01@email.com")
 
     time.sleep(2)
-
     page.clicar_cadastrar()
 
+# Verifica se arquivo foi executado diretamente.
 if __name__ == "__main__":
+    # Executa teste.
     test_cadastro_fono()
 
 # pra rodar o teste, no terminal dentro da past front:
