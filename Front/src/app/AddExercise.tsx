@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate, useParams  } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
 import { criarExercicio, sugerirExercicioComIA } from "../services/exercicios";
 import {
@@ -43,6 +43,7 @@ type ContentItem = {
 
 export function AddExercise() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [newCategory, setNewCategory] = useState("");
   const [showAiBox, setShowAiBox] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
@@ -68,7 +69,8 @@ export function AddExercise() {
   };
 
   const location = useLocation();
-  const pacienteId = location.state?.pacienteId;
+  const pacienteId = location.state?.pacienteId || id;
+  const patientName = location.state?.patientName || "Paciente";
 
   const getConteudosForPayload = () => {
     const items = [...conteudos];
@@ -557,7 +559,7 @@ export function AddExercise() {
                           color: "#1A2B5F",
                         }}
                       >
-                        Cadastrar Exercício
+                        Cadastrar um exercício para: {patientName}
                       </h2>
                       <p
                         style={{
@@ -703,7 +705,8 @@ export function AddExercise() {
                                 !aiSuggestionText || isGeneratingAi
                                   ? "not-allowed"
                                   : "pointer",
-                              opacity: !aiSuggestionText || isGeneratingAi ? 0.65 : 1,
+                              opacity:
+                                !aiSuggestionText || isGeneratingAi ? 0.65 : 1,
                               fontSize: 14,
                               fontWeight: 700,
                             }}

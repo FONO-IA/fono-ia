@@ -67,7 +67,7 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
             message=f"""
         Olá, {fonoaudiologo.nome}!
 
-        Seja bem-vindo(a) ao Fono IA.
+        Seja bem-vindo(a) ao FONO-IA.
 
         Seu cadastro foi realizado com sucesso.
         Abaixo estão seus dados de acesso:
@@ -80,15 +80,22 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
         Por segurança, recomendamos alterar sua senha após o primeiro acesso.
 
         Atenciosamente,
-        Equipe Fono IA
+        Equipe FONO-IA
         """,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[fonoaudiologo.email],
-            fail_silently=True,
+            fail_silently=False,
         )
 
-        # Salva o fonoaudiólogo com o usuário associado
-        serializer.save(user=user)
+        print(f"""
+               ========================================
+               EMAIL ENVIADO COM SUCESSO
+   
+               Destinatário: {fonoaudiologo.email}
+               Usuário: {username}
+               Senha: {password}
+               ========================================
+            """)
 
     def create(self, request, *args, **kwargs):
 

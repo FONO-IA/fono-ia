@@ -245,7 +245,7 @@ export function AdminDashboard() {
                   className="w-full h-full object-cover rounded-[16px]"
                 />
               </div>
-              <div>
+              <div onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
                 <h2
                   style={{
                     fontSize: 20,
@@ -305,8 +305,6 @@ export function AdminDashboard() {
             </div>
           </div>
 
-          <div className="flex-1" />
-
           <div className="p-4 border-t border-white/10 space-y-2">
             <button
               onClick={() => navigate("/settings/perfil")}
@@ -328,6 +326,7 @@ export function AdminDashboard() {
                 Configurações
               </span>
             </button>
+            <div className="flex-1 p-3" />
             <button
               onClick={() => {
                 logout();

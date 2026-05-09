@@ -184,8 +184,7 @@ export function CadastroFonoPage() {
             </h1>
 
             <p className="mt-2 text-sm leading-6 text-[#6B7A99]">
-              Preencha os dados do profissional. CPF e telefone serão formatados
-              automaticamente.
+              Preencha com seus dados. CPF, CRFa e Email são obrigatórios.
             </p>
           </div>
 
@@ -293,20 +292,23 @@ export function CadastroFonoPage() {
               </Field>
             </div>
 
-            <button
-              id="btn-cadastrar"
-              type="submit"
-              disabled={loading}
-              className="mt-2 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl font-semibold text-white transition-all disabled:cursor-not-allowed"
-              style={{
-                background: "linear-gradient(135deg, #0052CC, #0065FF)",
-                opacity: loading ? 0.7 : 1,
-                boxShadow: "0 12px 28px rgba(0,82,204,0.18)",
-              }}
-            >
-              <Save size={18} />
-              {loading ? "Salvando..." : "Cadastrar fonoaudiólogo"}
-            </button>
+            <div className="flex justify-end">
+              <button
+                id="btn-cadastrar"
+                type="submit"
+                disabled={loading}
+                className="mt-2 flex min-h-[52px] w-40 items-center px-6 justify-center gap-2 rounded-xl font-semibold text-white transition-all disabled:cursor-not-allowed"
+                style={{
+                  background: "linear-gradient(135deg, #0052CC, #0065FF)",
+                  opacity: loading ? 0.7 : 1,
+                  boxShadow: "0 12px 28px rgba(0,82,204,0.18)",
+                  cursor: loading ? "not-allowed" : "pointer",
+                }}
+              >
+                <Save size={18} />
+                {loading ? "Salvando..." : "Cadastrar"}
+              </button>
+            </div>
           </form>
         </div>
       </div>
@@ -317,8 +319,10 @@ export function CadastroFonoPage() {
               Cadastro realizado com sucesso!
             </h2>
 
-            <p className="text-sm text-[#6B7A99] mb-4">
-              Realize o login para acessar o sistema.
+            <p className="text-sm text-[#6B7A99] mb-4 leading-6">
+              Utilize o email{" "}
+              <span className="font-semibold text-[#0052CC]">{form.email}</span>{" "}
+              para acessar o sistema.
             </p>
 
             <button
@@ -329,6 +333,7 @@ export function CadastroFonoPage() {
               className="px-4 py-2 rounded-xl text-white"
               style={{
                 background: "linear-gradient(135deg, #0052CC, #0065FF)",
+                cursor: loading ? "not-allowed" : "pointer",
               }}
             >
               Realizar login

@@ -52,7 +52,7 @@ export const router = createBrowserRouter([
         Component: AddPatient,
       },
       {
-        path: "/add-exercise",
+        path: "/add-exercise/:id",
         Component: AddExercise,
       },
       {

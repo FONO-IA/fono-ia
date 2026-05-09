@@ -355,7 +355,7 @@ export function SettingsPlano() {
               {plan.popular && (
                 <div
                   className="absolute top-3 right-3 px-2.5 py-1 rounded-full"
-                  style={{ background: "#FFD700" }}
+                  style={{ background: "#fff" }}
                 >
                   <span
                     style={{
@@ -451,7 +451,7 @@ export function SettingsPlano() {
 
               <button
                 onClick={() => handleUpgrade(plan.id)}
-                className="w-full py-3 rounded-2xl transition-all active:scale-95"
+                className="w-auto px-4 py-3 rounded-2xl transition-all active:scale-95"
                 style={{
                   background: isActive
                     ? plan.dark

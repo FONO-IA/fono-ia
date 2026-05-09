@@ -14,6 +14,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 from datetime import timedelta
+from decouple import config
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
@@ -156,18 +157,23 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-#terminal para envio de email
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = "Fono IA <nao-responda@fonoia.com>"
-
 # Configurações para envio real de email 
-# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-# EMAIL_HOST = "smtp.gmail.com"
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = "seuemail@gmail.com"
-# EMAIL_HOST_PASSWORD = "sua_senha_de_app"
-# DEFAULT_FROM_EMAIL = "Fono IA <seuemail@gmail.com>"
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = config(
+    "EMAIL_HOST_USER",
+    default="seuemail@gmail.com"
+)
+
+EMAIL_HOST_PASSWORD = config(
+    "EMAIL_HOST_PASSWORD",
+    default="senha-de-app"
+)
+
+DEFAULT_FROM_EMAIL = "Fono IA <nao-responda@fonoia.com>"
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/

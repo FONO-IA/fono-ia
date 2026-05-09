@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { SettingsLayout, SettingsSection } from "./SettingsLayout";
-import { User, Hash, Phone, Mail, Check, Pencil, Lock } from "lucide-react";
+import { User, Hash, Phone, Mail, Check, Pencil, Lock, Shield } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { getMe, alterarSenha } from "../../../services/auth";
 
@@ -306,7 +306,7 @@ export function SettingsPerfil() {
             label="CPF"
             value={form.cpf}
             onChange={set("cpf")}
-            icon={<User size={16} />}
+            icon={<Shield size={16} />}
             placeholder="CPF"
             disabled
           />

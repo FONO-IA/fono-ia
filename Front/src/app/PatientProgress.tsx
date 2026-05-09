@@ -102,7 +102,9 @@ const getExerciseWords = (exercise: Exercicio) => {
     ? exercise.palavras
     : exercise.conteudos?.map((item) => item.texto);
 
-  return words?.filter(Boolean).join(", ") || exercise.conteudo || "Sem conteudo";
+  return (
+    words?.filter(Boolean).join(", ") || exercise.conteudo || "Sem conteudo"
+  );
 };
 
 const buildProgressData = (sessions: ApiAtendimento[]): ChartPoint[] => {
@@ -242,16 +244,15 @@ export function PatientProgress() {
     progress?.pendentes ?? Math.max(totalExercises - completedExercises, 0);
   const inProgressExercises = progress?.em_andamento ?? 0;
   const totalSessions = progress?.sessoes_feitas ?? sessions.length;
-  const completedSessions = sessions.filter((session) => session.concluido).length;
+  const completedSessions = sessions.filter(
+    (session) => session.concluido,
+  ).length;
   const currentProgress =
     progress?.progresso ??
     (totalExercises > 0
       ? Math.round((completedExercises / totalExercises) * 100)
       : 0);
-  const bestResult =
-    totalExercises > 0
-      ? currentProgress
-      : 0;
+  const bestResult = totalExercises > 0 ? currentProgress : 0;
   const firstExerciseId = exercicios[0]?.id;
   const handleStartSession = () => {
     if (firstExerciseId) {
@@ -264,8 +265,11 @@ export function PatientProgress() {
       return;
     }
 
-    navigate("/add-exercise", {
-      state: { pacienteId: patient?.id },
+    navigate(`/add-exercise/${patient?.id}`, {
+      state: {
+        pacienteId: patient?.id,
+        patientName: patient?.nome,
+      },
     });
   };
 
@@ -457,11 +461,6 @@ export function PatientProgress() {
                     value: String(pendingExercises),
                     icon: ClipboardList,
                   },
-                  {
-                    label: "Em andamento",
-                    value: String(inProgressExercises),
-                    icon: RefreshCw,
-                  },
                 ].map((s) => (
                   <div
                     key={s.label}
@@ -550,7 +549,7 @@ export function PatientProgress() {
 
                   <button
                     onClick={() =>
-                      navigate("/add-exercise", {
+                      navigate("/add-exercise/${patient.id}", {
                         state: { pacienteId: patient.id },
                       })
                     }
@@ -926,7 +925,8 @@ export function PatientProgress() {
                             marginTop: 8,
                           }}
                         >
-                          <strong>Conteúdo:</strong> {getExerciseWords(exercicio)}
+                          <strong>Conteúdo:</strong>{" "}
+                          {getExerciseWords(exercicio)}
                         </p>
 
                         <div
@@ -1535,7 +1535,7 @@ export function PatientProgress() {
 
                 <button
                   onClick={() =>
-                    navigate("/add-exercise", {
+                    navigate("/add-exercise/${patient.id}", {
                       state: { pacienteId: patient.id },
                     })
                   }
