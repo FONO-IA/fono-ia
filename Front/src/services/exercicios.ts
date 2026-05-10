@@ -94,7 +94,7 @@ export async function enviarRespostaExercicio(
   pacienteId?: string,
 ) {
   const formData = new FormData();
-  formData.append("audio", audioBlob, `resposta-${exercicioId}.webm`);
+  formData.append("audio", audioBlob, `resposta-${exercicioId}.wav`);
 
   if (pacienteId) {
     formData.append("paciente_id", pacienteId);

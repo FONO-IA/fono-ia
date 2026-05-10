@@ -77,6 +77,101 @@ function getMicMessage(status: MicStatus) {
   }
 }
 
+async function convertBlobToWav(blob: Blob): Promise<Blob> {
+  const AudioContextConstructor =
+    window.AudioContext || (window as any).webkitAudioContext;
+  const audioContext = new AudioContextConstructor();
+  const arrayBuffer = await blob.arrayBuffer();
+  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+  const wavArrayBuffer = encodeWAV(audioBuffer);
+  await audioContext.close();
+  return new Blob([wavArrayBuffer], { type: "audio/wav" });
+}
+
+function encodeWAV(audioBuffer: AudioBuffer): ArrayBuffer {
+  const numChannels = audioBuffer.numberOfChannels;
+  const sampleRate = audioBuffer.sampleRate;
+  const format = 1; // PCM
+  const bitDepth = 16;
+  const samples = audioBuffer.length;
+  const blockAlign = numChannels * (bitDepth / 8);
+  const byteRate = sampleRate * blockAlign;
+  const dataSize = samples * blockAlign;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+
+  function writeString(offset: number, str: string) {
+    for (let i = 0; i < str.length; i += 1) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
+  }
+
+  let offset = 0;
+  writeString(offset, "RIFF");
+  offset += 4;
+  view.setUint32(offset, 36 + dataSize, true);
+  offset += 4;
+  writeString(offset, "WAVE");
+  offset += 4;
+  writeString(offset, "fmt ");
+  offset += 4;
+  view.setUint32(offset, 16, true);
+  offset += 4;
+  view.setUint16(offset, format, true);
+  offset += 2;
+  view.setUint16(offset, numChannels, true);
+  offset += 2;
+  view.setUint32(offset, sampleRate, true);
+  offset += 4;
+  view.setUint32(offset, byteRate, true);
+  offset += 4;
+  view.setUint16(offset, blockAlign, true);
+  offset += 2;
+  view.setUint16(offset, bitDepth, true);
+  offset += 2;
+  writeString(offset, "data");
+  offset += 4;
+  view.setUint32(offset, dataSize, true);
+  offset += 4;
+
+  const interleaved = interleaveAudio(audioBuffer);
+  let index = 44;
+
+  for (let i = 0; i < interleaved.length; i += 1) {
+    const sample = Math.max(-1, Math.min(1, interleaved[i]));
+    view.setInt16(index, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+    index += 2;
+  }
+
+  return buffer;
+}
+
+function interleaveAudio(audioBuffer: AudioBuffer): Float32Array {
+  const channels = [];
+  const length = audioBuffer.length;
+  const numChannels = audioBuffer.numberOfChannels;
+
+  for (let i = 0; i < numChannels; i += 1) {
+    channels.push(audioBuffer.getChannelData(i));
+  }
+
+  if (numChannels === 1) {
+    return channels[0];
+  }
+
+  const result = new Float32Array(length * numChannels);
+  let offset = 0;
+
+  for (let i = 0; i < length; i += 1) {
+    for (let channel = 0; channel < numChannels; channel += 1) {
+      result[offset] = channels[channel][i];
+      offset += 1;
+    }
+  }
+
+  return result;
+}
+
 export function ChildExercise() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -195,14 +290,15 @@ export function ChildExercise() {
         }
       };
 
-      recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, {
+      recorder.onstop = async () => {
+        const rawBlob = new Blob(chunksRef.current, {
           type: recorder.mimeType || "audio/webm",
         });
-        const url = URL.createObjectURL(blob);
+        const wavBlob = await convertBlobToWav(rawBlob);
+        const url = URL.createObjectURL(wavBlob);
         stream.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
-        setAudioBlob(blob);
+        setAudioBlob(wavBlob);
         setAudioUrl(url);
         setMicStatus("recorded");
       };
@@ -347,7 +443,8 @@ export function ChildExercise() {
               </button>
               <div className="min-w-0">
                 <p style={{ color: "#0052CC", fontSize: 12, fontWeight: 800 }}>
-                  {exercise.categoria} {exercise.nivel_display ? `- ${exercise.nivel_display}` : ""}
+                  {exercise.categoria}{" "}
+                  {exercise.nivel_display ? `- ${exercise.nivel_display}` : ""}
                 </p>
                 <h1
                   className="truncate"
@@ -368,9 +465,7 @@ export function ChildExercise() {
               >
                 <CheckCircle2 size={18} />
                 <span style={{ fontSize: 13, fontWeight: 800 }}>
-                  {completed
-                    ? "Concluido"
-                    : "Modo teste do fonoaudiologo"}
+                  {completed ? "Concluido" : "Modo teste do fonoaudiologo"}
                 </span>
               </div>
             )}
@@ -409,10 +504,15 @@ export function ChildExercise() {
             </div>
 
             {referenceAudio && (
-              <div className="mt-5 rounded-2xl p-4" style={{ background: "#F8FBFF" }}>
+              <div
+                className="mt-5 rounded-2xl p-4"
+                style={{ background: "#F8FBFF" }}
+              >
                 <div className="mb-3 flex items-center gap-2">
                   <Volume2 size={17} color="#0052CC" />
-                  <p style={{ color: "#1A2B5F", fontSize: 13, fontWeight: 800 }}>
+                  <p
+                    style={{ color: "#1A2B5F", fontSize: 13, fontWeight: 800 }}
+                  >
                     Audio de referencia
                   </p>
                 </div>
@@ -432,7 +532,8 @@ export function ChildExercise() {
                       onClick={() => goToItem(index)}
                       className="rounded-2xl px-3 py-3 text-left"
                       style={{
-                        background: index === currentIndex ? "#EBF3FF" : "#F8FBFF",
+                        background:
+                          index === currentIndex ? "#EBF3FF" : "#F8FBFF",
                         border:
                           index === currentIndex
                             ? "1.5px solid #93C5FD"
@@ -465,10 +566,14 @@ export function ChildExercise() {
             >
               <div className="mb-6 flex items-center justify-between gap-3">
                 <div>
-                  <p style={{ color: "#6B7A99", fontSize: 12, fontWeight: 800 }}>
+                  <p
+                    style={{ color: "#6B7A99", fontSize: 12, fontWeight: 800 }}
+                  >
                     PRATIQUE
                   </p>
-                  <p style={{ color: "#0052CC", fontSize: 13, fontWeight: 700 }}>
+                  <p
+                    style={{ color: "#0052CC", fontSize: 13, fontWeight: 700 }}
+                  >
                     Item {currentIndex + 1} de {items.length}
                   </p>
                 </div>
@@ -541,7 +646,9 @@ export function ChildExercise() {
             >
               <div className="mb-5 flex items-start justify-between gap-4">
                 <div>
-                  <p style={{ color: "#1A2B5F", fontSize: 18, fontWeight: 800 }}>
+                  <p
+                    style={{ color: "#1A2B5F", fontSize: 18, fontWeight: 800 }}
+                  >
                     {isProfessional ? "Teste a gravacao" : "Grave sua resposta"}
                   </p>
                   <p style={{ color: "#6B7A99", fontSize: 14, marginTop: 4 }}>
@@ -639,7 +746,8 @@ export function ChildExercise() {
                     background: !audioBlob ? "#DBEAFE" : "#0A8F3D",
                     color: !audioBlob ? "#6B7A99" : "#fff",
                     border: "none",
-                    cursor: !audioBlob || submitting ? "not-allowed" : "pointer",
+                    cursor:
+                      !audioBlob || submitting ? "not-allowed" : "pointer",
                     fontSize: 15,
                     fontWeight: 800,
                   }}
@@ -660,21 +768,35 @@ export function ChildExercise() {
               {isProfessional && (
                 <div
                   className="mt-5 rounded-2xl p-4"
-                  style={{ background: "#EBF3FF", border: "1.5px solid #DBEAFE" }}
+                  style={{
+                    background: "#EBF3FF",
+                    border: "1.5px solid #DBEAFE",
+                  }}
                 >
-                  <p style={{ color: "#1A2B5F", fontSize: 13, fontWeight: 700 }}>
-                    Voce esta visualizando este exercicio como fonoaudiologo.
-                    A gravacao fica local nesta tela e nao altera o progresso
-                    do paciente.
+                  <p
+                    style={{ color: "#1A2B5F", fontSize: 13, fontWeight: 700 }}
+                  >
+                    Voce esta visualizando este exercicio como fonoaudiologo. A
+                    gravacao fica local nesta tela e nao altera o progresso do
+                    paciente.
                   </p>
                 </div>
               )}
 
               {audioUrl && (
-                <div className="mt-5 rounded-2xl p-4" style={{ background: "#F8FBFF" }}>
+                <div
+                  className="mt-5 rounded-2xl p-4"
+                  style={{ background: "#F8FBFF" }}
+                >
                   <div className="mb-3 flex items-center gap-2">
                     <Play size={16} color="#0052CC" />
-                    <p style={{ color: "#1A2B5F", fontSize: 13, fontWeight: 800 }}>
+                    <p
+                      style={{
+                        color: "#1A2B5F",
+                        fontSize: 13,
+                        fontWeight: 800,
+                      }}
+                    >
                       Ouvir gravacao
                     </p>
                   </div>
@@ -685,15 +807,26 @@ export function ChildExercise() {
               {completed && (
                 <div
                   className="mt-5 rounded-3xl p-5"
-                  style={{ background: "#ECFDF5", border: "1.5px solid #BBF7D0" }}
+                  style={{
+                    background: "#ECFDF5",
+                    border: "1.5px solid #BBF7D0",
+                  }}
                 >
                   <div className="flex items-center gap-3">
                     <CheckCircle2 size={26} color="#1F8A5B" />
                     <div>
-                      <p style={{ color: "#1F8A5B", fontSize: 17, fontWeight: 900 }}>
+                      <p
+                        style={{
+                          color: "#1F8A5B",
+                          fontSize: 17,
+                          fontWeight: 900,
+                        }}
+                      >
                         Exercicio concluido
                       </p>
-                      <p style={{ color: "#357A5B", fontSize: 13, marginTop: 3 }}>
+                      <p
+                        style={{ color: "#357A5B", fontSize: 13, marginTop: 3 }}
+                      >
                         {isProfessional
                           ? "Teste local finalizado sem alterar o progresso do paciente."
                           : "A resposta foi registrada para acompanhamento do progresso."}
@@ -730,9 +863,7 @@ function InfoPill({ label, value }: { label: string; value: string }) {
       className="rounded-2xl p-3"
       style={{ background: "#F8FBFF", border: "1.5px solid #E3EEFF" }}
     >
-      <p style={{ color: "#6B7A99", fontSize: 11, fontWeight: 700 }}>
-        {label}
-      </p>
+      <p style={{ color: "#6B7A99", fontSize: 11, fontWeight: 700 }}>{label}</p>
       <p
         style={{
           color: "#1A2B5F",
