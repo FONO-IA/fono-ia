@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
 import {
@@ -242,7 +242,6 @@ export function PatientProgress() {
     progress?.concluidos ?? exercicios.filter(isExerciseCompleted).length;
   const pendingExercises =
     progress?.pendentes ?? Math.max(totalExercises - completedExercises, 0);
-  const inProgressExercises = progress?.em_andamento ?? 0;
   const totalSessions = progress?.sessoes_feitas ?? sessions.length;
   const completedSessions = sessions.filter(
     (session) => session.concluido,
@@ -549,8 +548,11 @@ export function PatientProgress() {
 
                   <button
                     onClick={() =>
-                      navigate("/add-exercise/${patient.id}", {
-                        state: { pacienteId: patient.id },
+                      navigate(`/add-exercise/${patient.id}`, {
+                        state: {
+                          pacienteId: patient.id,
+                          patientName: patient.nome,
+                        },
                       })
                     }
                     className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:opacity-90"
@@ -1535,8 +1537,11 @@ export function PatientProgress() {
 
                 <button
                   onClick={() =>
-                    navigate("/add-exercise/${patient.id}", {
-                      state: { pacienteId: patient.id },
+                    navigate(`/add-exercise/${patient.id}`, {
+                      state: {
+                        pacienteId: patient.id,
+                        patientName: patient.nome,
+                      },
                     })
                   }
                   className="py-4 rounded-2xl flex items-center justify-center gap-2"

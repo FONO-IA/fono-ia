@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
 import {
@@ -280,9 +280,7 @@ export function ChildLogin() {
               >
                 <ArrowLeft size={18} color="#0052CC" />
               </div>
-              <span
-                style={{ fontSize: 14, color: "#6B7A99", fontWeight: 400 }}
-              >
+              <span style={{ fontSize: 14, color: "#6B7A99", fontWeight: 400 }}>
                 Voltar
               </span>
             </button>
@@ -297,8 +295,8 @@ export function ChildLogin() {
                         step === s
                           ? "#0052CC"
                           : i === 0 && step === "pin"
-                          ? "#36B37E"
-                          : "#DBEAFE",
+                            ? "#36B37E"
+                            : "#DBEAFE",
                       color:
                         step === s || (i === 0 && step === "pin")
                           ? "#fff"
@@ -452,8 +450,8 @@ export function ChildLogin() {
                                 codeError
                                   ? "#FF5630"
                                   : accessCode
-                                  ? "#0052CC"
-                                  : "#DBEAFE"
+                                    ? "#0052CC"
+                                    : "#DBEAFE"
                               }`,
                               fontFamily: "'Poppins', sans-serif",
                               fontSize: "clamp(20px, 2vw, 24px)",
@@ -467,8 +465,8 @@ export function ChildLogin() {
                               boxShadow: codeError
                                 ? "0 0 0 4px rgba(255,86,48,0.12)"
                                 : accessCode
-                                ? "0 0 0 4px rgba(0,82,204,0.1)"
-                                : "0 3px 15px rgba(0,82,204,0.08)",
+                                  ? "0 0 0 4px rgba(0,82,204,0.1)"
+                                  : "0 3px 15px rgba(0,82,204,0.08)",
                             }}
                           />
                         </div>
@@ -625,9 +623,7 @@ export function ChildLogin() {
 
                       <motion.div
                         animate={
-                          shake
-                            ? { x: [-12, 12, -12, 12, -6, 6, 0] }
-                            : { x: 0 }
+                          shake ? { x: [-12, 12, -12, 12, -6, 6, 0] } : { x: 0 }
                         }
                         transition={{ duration: 0.42 }}
                         className="flex gap-3 lg:gap-5"
@@ -649,26 +645,26 @@ export function ChildLogin() {
                                 background: isSuccess
                                   ? "#36B37E"
                                   : filled
-                                  ? pinError
-                                    ? "#FF5630"
-                                    : "#0052CC"
-                                  : "#ffffff",
+                                    ? pinError
+                                      ? "#FF5630"
+                                      : "#0052CC"
+                                    : "#ffffff",
                                 border: `4px solid ${
                                   isSuccess
                                     ? "#36B37E"
                                     : filled
-                                    ? pinError
-                                      ? "#FF5630"
-                                      : "#0052CC"
-                                    : "#DBEAFE"
+                                      ? pinError
+                                        ? "#FF5630"
+                                        : "#0052CC"
+                                      : "#DBEAFE"
                                 }`,
                                 boxShadow: filled
                                   ? `0 6px 20px ${
                                       pinError
                                         ? "rgba(255,86,48,0.35)"
                                         : isSuccess
-                                        ? "rgba(54,179,126,0.4)"
-                                        : "rgba(0,82,204,0.32)"
+                                          ? "rgba(54,179,126,0.4)"
+                                          : "rgba(0,82,204,0.32)"
                                     }`
                                   : "0 3px 12px rgba(0,82,204,0.08)",
                                 transition: "all 0.2s ease",
@@ -873,7 +869,8 @@ export function ChildLogin() {
                 <div
                   className="w-16 h-16 rounded-3xl flex items-center justify-center shadow-lg flex-shrink-0"
                   style={{
-                    background: "linear-gradient(135deg, #003884 0%, #0065FF 100%)",
+                    background:
+                      "linear-gradient(135deg, #003884 0%, #0065FF 100%)",
                   }}
                 >
                   <span style={{ fontSize: 32 }}>🎙️</span>
@@ -925,8 +922,8 @@ export function ChildLogin() {
                         step === s
                           ? "#0052CC"
                           : i === 0 && step === "pin"
-                          ? "#36B37E"
-                          : "#DBEAFE",
+                            ? "#36B37E"
+                            : "#DBEAFE",
                       transition: "all 0.35s ease",
                     }}
                   />
@@ -1037,8 +1034,8 @@ export function ChildLogin() {
                               codeError
                                 ? "#FF5630"
                                 : accessCode
-                                ? "#0052CC"
-                                : "#DBEAFE"
+                                  ? "#0052CC"
+                                  : "#DBEAFE"
                             }`,
                             fontFamily: "'Poppins', sans-serif",
                             fontSize: 20,
@@ -1052,8 +1049,8 @@ export function ChildLogin() {
                             boxShadow: codeError
                               ? "0 0 0 3px rgba(255,86,48,0.12)"
                               : accessCode
-                              ? "0 0 0 3px rgba(0,82,204,0.1)"
-                              : "0 2px 10px rgba(0,82,204,0.06)",
+                                ? "0 0 0 3px rgba(0,82,204,0.1)"
+                                : "0 2px 10px rgba(0,82,204,0.06)",
                           }}
                         />
                       </div>
@@ -1115,7 +1112,8 @@ export function ChildLogin() {
                           accessCode.trim().length >= 3
                             ? "linear-gradient(135deg, #003884, #0065FF)"
                             : "#DBEAFE",
-                        color: accessCode.trim().length >= 3 ? "#fff" : "#93C5FD",
+                        color:
+                          accessCode.trim().length >= 3 ? "#fff" : "#93C5FD",
                         fontFamily: "'Poppins', sans-serif",
                         fontSize: 17,
                         fontWeight: 700,
@@ -1185,9 +1183,7 @@ export function ChildLogin() {
 
                     <motion.div
                       animate={
-                        shake
-                          ? { x: [-10, 10, -10, 10, -5, 5, 0] }
-                          : { x: 0 }
+                        shake ? { x: [-10, 10, -10, 10, -5, 5, 0] } : { x: 0 }
                       }
                       transition={{ duration: 0.42 }}
                       className="flex gap-4"
@@ -1209,26 +1205,26 @@ export function ChildLogin() {
                               background: isSuccess
                                 ? "#36B37E"
                                 : filled
-                                ? pinError
-                                  ? "#FF5630"
-                                  : "#0052CC"
-                                : "#ffffff",
+                                  ? pinError
+                                    ? "#FF5630"
+                                    : "#0052CC"
+                                  : "#ffffff",
                               border: `3px solid ${
                                 isSuccess
                                   ? "#36B37E"
                                   : filled
-                                  ? pinError
-                                    ? "#FF5630"
-                                    : "#0052CC"
-                                  : "#DBEAFE"
+                                    ? pinError
+                                      ? "#FF5630"
+                                      : "#0052CC"
+                                    : "#DBEAFE"
                               }`,
                               boxShadow: filled
                                 ? `0 4px 16px ${
                                     pinError
                                       ? "rgba(255,86,48,0.3)"
                                       : isSuccess
-                                      ? "rgba(54,179,126,0.35)"
-                                      : "rgba(0,82,204,0.28)"
+                                        ? "rgba(54,179,126,0.35)"
+                                        : "rgba(0,82,204,0.28)"
                                   }`
                                 : "0 2px 8px rgba(0,82,204,0.06)",
                               transition: "all 0.2s ease",
