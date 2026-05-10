@@ -376,7 +376,8 @@ export function AdminDashboard() {
                   </h1>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button
+                  {/* Botão de notificação para futurras atualizações */}
+                  {/* <button
                     className="relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all hover:bg-gray-100"
                     style={{
                       background: "#F4F7FF",
@@ -385,7 +386,7 @@ export function AdminDashboard() {
                     }}
                   >
                     <Bell size={20} color="#6B7A99" />
-                  </button>
+                  </button> */}
                   <button
                     id="btn-novo-paciente"
                     onClick={() => navigate("/add-patient")}
