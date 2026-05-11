@@ -5,6 +5,11 @@ from apps.exercicio.models import Exercicio
 
 class Resultado(BaseModel):
     feedback = models.JSONField()
+    audio = models.FileField(
+        upload_to='respostas_audio/',
+        null=True,
+        blank=True,
+    )
     exercicio = models.ForeignKey(
         Exercicio,
         on_delete=models.PROTECT,

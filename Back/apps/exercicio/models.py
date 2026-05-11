@@ -5,6 +5,12 @@ from apps.paciente.models import Paciente
 
 
 class Exercicio(BaseModel):
+    nome = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        verbose_name="Nome"
+    )
     nivel = models.CharField(
         max_length=3,
         choices=NivelEnum.choices,
@@ -28,7 +34,7 @@ class Exercicio(BaseModel):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.categoria} - {self.nivel}"
+        return self.nome or f"{self.categoria} - {self.nivel}"
 
 
 class ConteudoExercicio(models.Model):
@@ -39,6 +45,11 @@ class ConteudoExercicio(models.Model):
     )
     texto = models.CharField(max_length=255)
     instrucao = models.TextField()
+    dica_visual = models.FileField(
+        upload_to='dicas_visuais/',
+        null=True,
+        blank=True,
+    )
 
     def __str__(self):
         return self.texto

@@ -117,7 +117,11 @@ class PacienteViewSet(viewsets.ModelViewSet):
         exercicios = Exercicio.objects.actives().filter(
             paciente=paciente
         ).distinct()
-        serializer = ExercicioSerializer(exercicios, many=True)
+        serializer = ExercicioSerializer(
+            exercicios,
+            many=True,
+            context={"request": request, "paciente_id": str(paciente.id)},
+        )
         return Response(serializer.data)
 
     @action(detail=True, methods=["get"])
@@ -159,6 +163,12 @@ class PacienteViewSet(viewsets.ModelViewSet):
         ultimo_resultado = resultados_ordenados.first()
         ultimo_exercicio = ultimo_resultado.exercicio if ultimo_resultado else None
 
+        def build_audio_url(resultado):
+            if not resultado.audio:
+                return None
+
+            return request.build_absolute_uri(resultado.audio.url)
+
         return Response(
             {
                 "paciente": str(paciente.id),
@@ -189,6 +199,11 @@ class PacienteViewSet(viewsets.ModelViewSet):
                         "exercicio_categoria": resultado.exercicio.categoria,
                         "exercicio_nivel": resultado.exercicio.get_nivel_display(),
                         "observacoes": resultado.feedback.get("observacao", ""),
+                        "audio_url": build_audio_url(resultado),
+                        "palavra_alvo": resultado.feedback.get("palavra_alvo", ""),
+                        "transcricao": resultado.feedback.get("transcricao", ""),
+                        "correto": resultado.feedback.get("correto"),
+                        "similaridade": resultado.feedback.get("similaridade"),
                         "concluido": (
                             resultado.feedback.get("status") == "concluido"
                             or resultado.exercicio.concluido

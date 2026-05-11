@@ -41,6 +41,10 @@ SECRET_KEY = os.getenv('DJANGO_SECRET')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+AI_PROVIDER = os.getenv('AI_PROVIDER', 'groq')
+AI_MODEL = os.getenv('AI_MODEL', 'llama-3.1-8b-instant')
+GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
+
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5174',
     'http://127.0.0.1:5174',
@@ -180,6 +184,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

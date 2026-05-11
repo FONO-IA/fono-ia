@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate, useSearchParams } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
-import { criarExercicio } from "../services/exercicios";
+import { criarExercicio, gerarSugestaoExercicio } from "../services/exercicios";
 import {
   ArrowLeft,
   Dumbbell,
@@ -10,26 +10,52 @@ import {
   Save,
   Sparkles,
   CheckCircle2,
+  Image as ImageIcon,
   Wand2,
   Plus,
   X,
 } from "lucide-react";
 
-type Level = "Fácil" | "Médio" | "Dificíl";
+type Level = "Fácil" | "Médio" | "Difícil";
+
+type AddExerciseLocationState = {
+  pacienteId?: string | number;
+  patientId?: string | number;
+  paciente?: {
+    id?: string | number;
+  };
+};
+
+const LEVEL_OPTIONS: Level[] = ["Fácil", "Médio", "Difícil"];
+
+const NIVEL_TO_API: Record<Level, string> = {
+  Fácil: "FAC",
+  Médio: "MED",
+  Difícil: "DIF",
+};
 
 type ContentItem = {
   id: number;
   texto: string;
   instrucao: string;
+  dicaVisual?: File | null;
+  dicaVisualPreview?: string;
 };
 
 export function AddExercise() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [newCategory, setNewCategory] = useState("");
   const [showAiBox, setShowAiBox] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiSuggestion, setAiSuggestion] = useState("");
+  const [aiError, setAiError] = useState("");
+  const [isGeneratingSuggestion, setIsGeneratingSuggestion] = useState(false);
+  const [copyLabel, setCopyLabel] = useState("Copiar sugestão");
   const [conteudo, setConteudo] = useState("");
   const [instrucaoItem, setInstrucaoItem] = useState("");
+  const [dicaVisualFile, setDicaVisualFile] = useState<File | null>(null);
+  const [dicaVisualPreview, setDicaVisualPreview] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [form, setForm] = useState({
@@ -49,8 +75,16 @@ export function AddExercise() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const location = useLocation();
-  const pacienteId = location.state?.pacienteId;
+  const pacienteId = useMemo(() => {
+    const state = location.state as AddExerciseLocationState | null;
+    const idFromState =
+      state?.pacienteId ?? state?.patientId ?? state?.paciente?.id;
+    const idFromUrl =
+      searchParams.get("pacienteId") ?? searchParams.get("paciente");
+    const id = idFromState ?? idFromUrl;
+
+    return id ? String(id) : "";
+  }, [location.state, searchParams]);
 
   const getConteudosForPayload = () => {
     const items = [...conteudos];
@@ -64,6 +98,8 @@ export function AddExercise() {
           instrucaoItem.trim() ||
           form.instrucoesGuia.trim() ||
           `Pratique: ${textoAtual}`,
+        dicaVisual: dicaVisualFile,
+        dicaVisualPreview,
       });
     }
 
@@ -74,19 +110,63 @@ export function AddExercise() {
           item.instrucao.trim() ||
           form.instrucoesGuia.trim() ||
           `Pratique: ${item.texto.trim()}`,
+        dicaVisual: item.dicaVisual || null,
+        dicaVisualPreview: item.dicaVisualPreview || "",
       }))
       .filter((item) => item.texto);
   };
 
   const conteudosPreview = useMemo(
     () => getConteudosForPayload(),
-    [conteudos, conteudo, instrucaoItem, form.instrucoesGuia],
+    [
+      conteudos,
+      conteudo,
+      instrucaoItem,
+      dicaVisualFile,
+      dicaVisualPreview,
+      form.instrucoesGuia,
+    ],
   );
   const totalConteudos = conteudosPreview.length;
 
   const previewConteudo = useMemo(() => {
     return conteudosPreview.map((item) => item.texto).join(", ");
   }, [conteudosPreview]);
+
+  const clearCurrentVisualTip = () => {
+    if (dicaVisualPreview) {
+      URL.revokeObjectURL(dicaVisualPreview);
+    }
+
+    setDicaVisualFile(null);
+    setDicaVisualPreview("");
+  };
+
+  const handleVisualTipChange = (file?: File) => {
+    if (dicaVisualPreview) {
+      URL.revokeObjectURL(dicaVisualPreview);
+    }
+
+    if (!file) {
+      setDicaVisualFile(null);
+      setDicaVisualPreview("");
+      return;
+    }
+
+    setDicaVisualFile(file);
+    setDicaVisualPreview(URL.createObjectURL(file));
+  };
+
+  const revokeConteudoPreview = (item: ContentItem) => {
+    if (item.dicaVisualPreview) {
+      URL.revokeObjectURL(item.dicaVisualPreview);
+    }
+  };
+
+  const clearAllVisualTips = () => {
+    conteudos.forEach(revokeConteudoPreview);
+    clearCurrentVisualTip();
+  };
 
   const handleAddWord = () => {
     const texto = conteudo.trim();
@@ -105,23 +185,31 @@ export function AddExercise() {
           instrucaoItem.trim() ||
           form.instrucoesGuia.trim() ||
           `Pratique: ${texto}`,
+        dicaVisual: dicaVisualFile,
+        dicaVisualPreview,
       },
     ]);
     setConteudo("");
     setInstrucaoItem("");
+    setDicaVisualFile(null);
+    setDicaVisualPreview("");
   };
 
   const handleRemoveWord = (id: number) => {
-    setConteudos((prev) => prev.filter((item) => item.id !== id));
+    setConteudos((prev) =>
+      prev.filter((item) => {
+        const shouldKeep = item.id !== id;
+
+        if (!shouldKeep) {
+          revokeConteudoPreview(item);
+        }
+
+        return shouldKeep;
+      }),
+    );
   };
 
   const handleSave = async () => {
-    const nivelMap = {
-      Fácil: "FAC",
-      Médio: "MED",
-      Dificíl: "DIF",
-    };
-
     if (!pacienteId) {
       alert(
         "Paciente não identificado. Volte ao paciente e clique em Criar Exercício novamente.",
@@ -138,8 +226,11 @@ export function AddExercise() {
     }
 
     const payload = {
+      nome:
+        form.nome.trim() ||
+        `Exercício de pronúncia - ${newCategory.trim()}`,
       categoria: newCategory.trim(),
-      nivel: nivelMap[form.nivel],
+      nivel: NIVEL_TO_API[form.nivel],
       objetivo: form.objetivo.trim(),
       instrucao:
         conteudosValidos[0]?.instrucao ||
@@ -154,6 +245,7 @@ export function AddExercise() {
     try {
       await criarExercicio(payload);
 
+      clearAllVisualTips();
       setNewCategory("");
       setConteudo("");
       setInstrucaoItem("");
@@ -176,59 +268,53 @@ export function AddExercise() {
     }
   };
 
-  const handleGenerateWithAI = () => {
-    const prompt = aiPrompt.trim();
+  const handleGenerateWithAI = async () => {
+    const categoria = newCategory.trim();
 
-    if (!prompt) return;
+    setShowAiBox(true);
+    setAiError("");
+    setCopyLabel("Copiar sugestão");
 
-    const generatedItems: ContentItem[] = [
-      {
-        id: Date.now(),
-        texto: "A",
-        instrucao: `Diga a vogal!
+    if (!categoria) {
+      setAiSuggestion("");
+      setAiError("Informe uma categoria antes de pedir ajuda da IA.");
+      return;
+    }
 
-A
+    setIsGeneratingSuggestion(true);
 
-💡 Como em ABACATE`,
-      },
-      {
-        id: Date.now() + 1,
-        texto: "E",
-        instrucao: `Diga a vogal!
+    try {
+      const response = await gerarSugestaoExercicio({
+        categoria,
+        nivel: form.nivel,
+        objetivo: form.objetivo.trim(),
+      });
+      setAiSuggestion(response.sugestao);
+    } catch (error) {
+      console.error("Erro ao gerar sugestão da IA:", error);
+      setAiSuggestion("");
+      setAiError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível gerar a sugestão agora.",
+      );
+    } finally {
+      setIsGeneratingSuggestion(false);
+    }
+  };
 
-E
+  const handleCopySuggestion = async () => {
+    if (!aiSuggestion) return;
 
-💡 Como em ELEFANTE`,
-      },
-      {
-        id: Date.now() + 2,
-        texto: "I",
-        instrucao: `Diga a vogal!
-
-I
-
-💡 Como em IGREJA`,
-      },
-    ];
-
-    setNewCategory((prev) => prev || "Fonemas");
-    setForm((prev) => ({
-      ...prev,
-      nome: prev.nome || "Exercício gerado com IA",
-      categoria: "Fonemas",
-      objetivo:
-        prev.objetivo || `Exercício montado com base na solicitação: ${prompt}`,
-      nivel: prev.nivel || "Médio",
-      instrucoesGuia: `Guia de texto para cada palavra:
-                      - Leia a palavra para a criança
-                      - Peça para repetir com clareza
-                      - Use a dica visual abaixo de cada item
-                      - Faça reforço positivo após cada acerto`,
-    }));
-
-    setConteudos(generatedItems);
-    setShowAiBox(false);
-    setAiPrompt("");
+    try {
+      await navigator.clipboard.writeText(aiSuggestion);
+      setCopyLabel("Sugestão copiada");
+      window.setTimeout(() => setCopyLabel("Copiar sugestão"), 1800);
+    } catch (error) {
+      console.error("Erro ao copiar sugestão:", error);
+      setCopyLabel("Não foi possível copiar");
+      window.setTimeout(() => setCopyLabel("Copiar sugestão"), 1800);
+    }
   };
 
   return (
@@ -540,13 +626,12 @@ I
                           marginTop: 8,
                         }}
                       >
-                        Preencha os dados ou use a IA para montar tudo
-                        automaticamente
+                        Preencha manualmente e use a IA apenas como apoio
                       </p>
                     </div>
 
                     <button
-                      onClick={() => setShowAiBox((prev) => !prev)}
+                      onClick={handleGenerateWithAI}
                       className="shrink-0 rounded-2xl px-5 py-4 flex items-center gap-2 transition-all hover:opacity-90"
                       style={{
                         background: "#EEF4FF",
@@ -565,7 +650,7 @@ I
                   {/* Ação tablet/mobile */}
                   <div className="xl:hidden -mt-4 sm:-mt-6 md:-mt-8 mb-4 sm:mb-5 py-4">
                     <button
-                      onClick={() => setShowAiBox((prev) => !prev)}
+                      onClick={handleGenerateWithAI}
                       className="w-full sm:w-auto rounded-2xl px-5 py-4 flex items-center justify-center gap-2"
                       style={{
                         background: "#EEF4FF",
@@ -599,7 +684,7 @@ I
                               color: "#1A2B5F",
                             }}
                           >
-                            Como o exercício deve ser feito?
+                            Sugestão da IA
                           </h3>
                           <p
                             style={{
@@ -609,8 +694,8 @@ I
                               lineHeight: 1.5,
                             }}
                           >
-                            Escreva para a IA como o fono quer montar o
-                            exercício
+                            Texto de apoio para o fonoaudiólogo consultar sem
+                            alterar o formulário.
                           </p>
                         </div>
 
@@ -627,34 +712,75 @@ I
                         </button>
                       </div>
 
-                      <textarea
-                        value={aiPrompt}
-                        onChange={(e) => setAiPrompt(e.target.value)}
-                        rows={4}
-                        placeholder="Ex: Criar um exercício com vogais, nível fácil, com palavras curtas e dica visual para cada item."
-                        className="w-full resize-none"
+                      <div
+                        className="rounded-2xl p-4"
                         style={{
-                          ...inputStyle,
-                          height: "auto",
-                          paddingTop: 14,
+                          background: "#F8FBFF",
+                          border: "1.5px solid #DBEAFE",
+                          minHeight: 180,
+                          whiteSpace: "pre-wrap",
+                          color: "#1A2B5F",
+                          fontSize: 14,
+                          lineHeight: 1.7,
                         }}
-                      />
+                      >
+                        {isGeneratingSuggestion
+                          ? "Gerando sugestão..."
+                          : aiError || aiSuggestion || "Informe uma categoria e clique em Ajuda da IA."}
+                      </div>
 
-                      <div className="mt-4 flex justify-end">
+                      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                        <button
+                          onClick={handleCopySuggestion}
+                          disabled={!aiSuggestion || isGeneratingSuggestion}
+                          className="w-full sm:w-auto rounded-2xl px-5 py-3 flex items-center justify-center gap-2"
+                          style={{
+                            background: "#EBF3FF",
+                            color: "#0052CC",
+                            border: "1.5px solid #93C5FD",
+                            cursor:
+                              !aiSuggestion || isGeneratingSuggestion
+                                ? "not-allowed"
+                                : "pointer",
+                            fontSize: 14,
+                            fontWeight: 700,
+                            opacity: !aiSuggestion || isGeneratingSuggestion ? 0.65 : 1,
+                          }}
+                        >
+                          {copyLabel}
+                        </button>
+
                         <button
                           onClick={handleGenerateWithAI}
+                          disabled={isGeneratingSuggestion}
                           className="w-full sm:w-auto rounded-2xl px-5 py-3 flex items-center justify-center gap-2"
                           style={{
                             background: "#0052CC",
                             color: "#fff",
                             border: "none",
+                            cursor: isGeneratingSuggestion ? "not-allowed" : "pointer",
+                            fontSize: 14,
+                            fontWeight: 700,
+                            opacity: isGeneratingSuggestion ? 0.7 : 1,
+                          }}
+                        >
+                          <Wand2 size={16} />
+                          Gerar novamente
+                        </button>
+
+                        <button
+                          onClick={() => setShowAiBox(false)}
+                          className="w-full sm:w-auto rounded-2xl px-5 py-3"
+                          style={{
+                            background: "#F8FBFF",
+                            color: "#6B7A99",
+                            border: "1.5px solid #DBEAFE",
                             cursor: "pointer",
                             fontSize: 14,
                             fontWeight: 700,
                           }}
                         >
-                          <Wand2 size={16} />
-                          Gerar exercício
+                          Fechar
                         </button>
                       </div>
                     </section>
@@ -693,7 +819,7 @@ I
                             icon={<CheckCircle2 size={16} color="#0052CC" />}
                           >
                             <div className="grid grid-cols-1 xs:grid-cols-3 sm:grid-cols-3 gap-2">
-                              {(["Fácil", "Médio", "Dificíl"] as Level[]).map(
+                              {LEVEL_OPTIONS.map(
                                 (nivel) => {
                                   const isActive = form.nivel === nivel;
                                   return (
@@ -752,7 +878,7 @@ I
                           boxShadow: "0 4px 16px rgba(0,82,204,0.05)",
                         }}
                       >
-                        <div className="mb-5 flex items-start justify-between gap-4">
+                        <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                           <div className="min-w-0 w-full">
                             <h3
                               style={{
@@ -771,6 +897,24 @@ I
                               style={inputStyle}
                             />
                           </div>
+
+                          <button
+                            onClick={handleAddWord}
+                            className="w-full lg:w-auto rounded-2xl px-6 py-4 flex items-center justify-center gap-2"
+                            style={{
+                              background: "#EBF3FF",
+                              color: "#0052CC",
+                              border: "1.5px solid #93C5FD",
+                              cursor: "pointer",
+                              fontSize: 15,
+                              fontWeight: 800,
+                              minWidth: 220,
+                              maxWidth: "100%",
+                            }}
+                          >
+                            <Plus size={18} />
+                            Adicionar Palavra
+                          </button>
                         </div>
                         <div className="md:col-span-2">
                           <Field
@@ -790,6 +934,94 @@ I
                                 paddingTop: 14,
                               }}
                             />
+                          </Field>
+                        </div>
+                        <div className="mt-5 md:col-span-2">
+                          <Field
+                            label="Dica visual"
+                            icon={<ImageIcon size={16} color="#0052CC" />}
+                          >
+                            <div
+                              className="flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between"
+                              style={{
+                                background: "#F8FBFF",
+                                border: "1.5px dashed #93C5FD",
+                              }}
+                            >
+                              <div className="min-w-0">
+                                <p
+                                  style={{
+                                    color: "#1A2B5F",
+                                    fontSize: 14,
+                                    fontWeight: 800,
+                                  }}
+                                >
+                                  Imagem de apoio para esta palavra
+                                </p>
+                                <p
+                                  style={{
+                                    color: "#6B7A99",
+                                    fontSize: 12,
+                                    lineHeight: 1.5,
+                                    marginTop: 4,
+                                  }}
+                                >
+                                  PNG, JPG ou WEBP.
+                                </p>
+                              </div>
+
+                              <label
+                                className="w-full sm:w-auto rounded-2xl px-5 py-3 flex items-center justify-center gap-2"
+                                style={{
+                                  background: "#EBF3FF",
+                                  color: "#0052CC",
+                                  border: "1.5px solid #93C5FD",
+                                  cursor: "pointer",
+                                  fontSize: 14,
+                                  fontWeight: 800,
+                                }}
+                              >
+                                <ImageIcon size={16} />
+                                Escolher imagem
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(event) => {
+                                    handleVisualTipChange(
+                                      event.target.files?.[0],
+                                    );
+                                    event.currentTarget.value = "";
+                                  }}
+                                />
+                              </label>
+                            </div>
+
+                            {dicaVisualPreview && (
+                              <div className="mt-3 flex flex-col gap-3 rounded-2xl p-3 sm:flex-row sm:items-center">
+                                <img
+                                  src={dicaVisualPreview}
+                                  alt="Dica visual selecionada"
+                                  className="h-24 w-24 rounded-2xl object-cover"
+                                  style={{ border: "1px solid #DBEAFE" }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={clearCurrentVisualTip}
+                                  className="rounded-2xl px-4 py-3"
+                                  style={{
+                                    background: "#FFF0EC",
+                                    border: "1px solid #FECDC3",
+                                    color: "#FF5630",
+                                    cursor: "pointer",
+                                    fontSize: 13,
+                                    fontWeight: 800,
+                                  }}
+                                >
+                                  Remover imagem
+                                </button>
+                              </div>
+                            )}
                           </Field>
                         </div>
                         {conteudos.length > 0 && (
@@ -836,6 +1068,14 @@ I
                                   >
                                     {item.instrucao}
                                   </p>
+                                  {item.dicaVisualPreview && (
+                                    <img
+                                      src={item.dicaVisualPreview}
+                                      alt={`Dica visual de ${item.texto}`}
+                                      className="mt-3 h-24 w-24 rounded-2xl object-cover"
+                                      style={{ border: "1px solid #DBEAFE" }}
+                                    />
+                                  )}
                                 </div>
                                 <button
                                   onClick={() => handleRemoveWord(item.id)}
@@ -856,25 +1096,7 @@ I
                           </div>
                         )}
 
-                        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <button
-                            onClick={handleAddWord}
-                            className="w-full sm:w-auto rounded-2xl px-6 py-4 flex items-center justify-center gap-2"
-                            style={{
-                              background: "#EBF3FF",
-                              color: "#0052CC",
-                              border: "1.5px solid #93C5FD",
-                              cursor: "pointer",
-                              fontSize: 15,
-                              fontWeight: 800,
-                              minWidth: 220,
-                              maxWidth: "100%",
-                            }}
-                          >
-                            <Plus size={18} />
-                            Adicionar Palavra
-                          </button>
-
+                        <div className="mt-6 flex justify-end">
                           <button
                             onClick={handleSave}
                             className="w-full sm:w-auto rounded-2xl px-6 py-4 flex items-center justify-center gap-2"

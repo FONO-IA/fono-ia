@@ -19,6 +19,11 @@ export type ResultadoResumo = {
   exercicio_categoria?: string;
   exercicio_nivel?: string;
   observacoes?: string;
+  audio_url?: string | null;
+  palavra_alvo?: string;
+  transcricao?: string;
+  correto?: boolean | null;
+  similaridade?: number | string | null;
   concluido: boolean;
   created_at?: string;
   updated_at?: string;

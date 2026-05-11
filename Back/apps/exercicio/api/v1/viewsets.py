@@ -1,3 +1,6 @@
+import json
+
+from django.db import transaction
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -6,15 +9,77 @@ from rest_framework.response import Response
 
 from apps.exercicio.api.v1.serializer import ExercicioSerializer
 from apps.exercicio.models import Exercicio
+from apps.exercicio.services.ai_suggestion import generate_ai_suggestion
 from apps.fonoaudiologo.models import Fonoaudiologo
 from apps.responsavel.models import Responsavel
 from apps.resultado.models import Resultado
+
+
+def parse_bool(value, default=False):
+    if value is None:
+        return default
+
+    return str(value).strip().lower() in ["1", "true", "sim", "yes", "correto"]
+
+
+def parse_float(value, default=0):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
 
 
 class ExercicioViewSet(viewsets.ModelViewSet):
     serializer_class = ExercicioSerializer
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
+
+    def normalize_request_data(self, request):
+        content_type = request.content_type or ""
+
+        if not content_type.startswith("multipart/"):
+            return request.data
+
+        data = {}
+
+        for field, values in request.data.lists():
+            if field.startswith("dica_visual_") or field == "dica_visual":
+                continue
+
+            data[field] = values if len(values) > 1 else values[0]
+
+        for field in ["paciente", "palavras", "conteudos"]:
+            raw_value = data.get(field)
+
+            if not isinstance(raw_value, str):
+                continue
+
+            try:
+                data[field] = json.loads(raw_value)
+            except json.JSONDecodeError:
+                if field in ["paciente", "palavras"] and field in request.data:
+                    data[field] = request.data.getlist(field)
+
+        return data
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        dica_visual_files = {}
+
+        for key, file in self.request.FILES.items():
+            if key.startswith("dica_visual_"):
+                try:
+                    index = int(key.replace("dica_visual_", "", 1))
+                except ValueError:
+                    continue
+
+                dica_visual_files[index] = file
+
+        if "dica_visual" in self.request.FILES:
+            dica_visual_files.setdefault(0, self.request.FILES["dica_visual"])
+
+        context["dica_visual_files"] = dica_visual_files
+        return context
 
     def get_fonoaudiologo(self):
         return Fonoaudiologo.objects.filter(user=self.request.user).first()
@@ -120,7 +185,7 @@ class ExercicioViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         fono = self.require_fonoaudiologo()
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=self.normalize_request_data(request))
         serializer.is_valid(raise_exception=True)
         self.validate_pacientes_for_fono(
             serializer.validated_data.get("paciente", []),
@@ -141,7 +206,7 @@ class ExercicioViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(
             instance,
-            data=request.data,
+            data=self.normalize_request_data(request),
             partial=partial,
         )
         serializer.is_valid(raise_exception=True)
@@ -166,12 +231,35 @@ class ExercicioViewSet(viewsets.ModelViewSet):
             status=status.HTTP_204_NO_CONTENT,
         )
 
+    @action(detail=False, methods=["post"], url_path="ia-sugestao")
+    def ia_sugestao(self, request):
+        self.require_fonoaudiologo()
+        categoria = (request.data.get("categoria") or "").strip()
+        nivel = (request.data.get("nivel") or "Fácil").strip()
+        objetivo = (request.data.get("objetivo") or "").strip()
+
+        if not categoria:
+            return Response(
+                {"detail": "Informe uma categoria para gerar a sugestao."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        sugestao = generate_ai_suggestion(categoria, nivel, objetivo)
+
+        return Response({"sugestao": sugestao})
+
     @action(detail=True, methods=["post"])
     def responder(self, request, pk=None):
         exercicio = self.get_object()
         responsavel = self.get_responsavel()
         audio = request.FILES.get("audio")
         paciente_id = request.data.get("paciente_id")
+        transcricao = (request.data.get("transcricao") or "").strip()
+        palavra_alvo = (request.data.get("palavra_alvo") or "").strip()
+        conteudo_id = request.data.get("conteudo_id")
+        similaridade = request.data.get("similaridade")
+        confianca = request.data.get("confianca")
+        correto = parse_bool(request.data.get("correto"), default=False)
 
         if not responsavel and not self.is_staff_user():
             raise PermissionDenied(
@@ -191,30 +279,68 @@ class ExercicioViewSet(viewsets.ModelViewSet):
 
         feedback = {
             "tipo": "audio",
-            "status": "concluido",
+            "status": "correto" if correto else "incorreto",
             "paciente_id": str(paciente_id) if paciente_id else None,
             "audio_recebido": True,
             "audio_nome": audio.name,
             "audio_tamanho": audio.size,
             "audio_content_type": getattr(audio, "content_type", None),
-            # TODO: Persistir o arquivo de audio quando o model tiver FileField.
+            "audio_formato": "wav",
+            "palavra_alvo": palavra_alvo,
+            "conteudo_id": str(conteudo_id) if conteudo_id else None,
+            "transcricao": transcricao,
+            "correto": correto,
+            "similaridade": parse_float(similaridade),
+            "confianca": parse_float(confianca),
         }
 
-        resultado = Resultado.objects.create(
-            exercicio=exercicio,
-            feedback=feedback,
-        )
+        with transaction.atomic():
+            resultados_anteriores = Resultado.objects.actives().filter(
+                exercicio=exercicio
+            )
 
-        if not exercicio.concluido:
+            if paciente_id:
+                resultados_anteriores = resultados_anteriores.filter(
+                    feedback__paciente_id=str(paciente_id)
+                )
+
+            if conteudo_id:
+                resultados_anteriores = resultados_anteriores.filter(
+                    feedback__conteudo_id=str(conteudo_id)
+                )
+            elif palavra_alvo:
+                resultados_anteriores = resultados_anteriores.filter(
+                    feedback__palavra_alvo=palavra_alvo
+                )
+
+            for resultado_antigo in resultados_anteriores:
+                if resultado_antigo.audio:
+                    resultado_antigo.audio.delete(save=False)
+                resultado_antigo.delete()
+
+            resultado = Resultado.objects.create(
+                exercicio=exercicio,
+                feedback=feedback,
+                audio=audio,
+            )
+
+        if correto and not exercicio.concluido:
             exercicio.concluido = True
             exercicio.save(update_fields=["concluido", "updated_at"])
+
+        audio_url = (
+            request.build_absolute_uri(resultado.audio.url)
+            if resultado.audio
+            else None
+        )
 
         return Response(
             {
                 "id": resultado.id,
                 "detail": "Resposta registrada com sucesso.",
-                "concluido": True,
+                "concluido": bool(exercicio.concluido),
                 "feedback": resultado.feedback,
+                "audio_url": audio_url,
             },
             status=status.HTTP_201_CREATED,
         )

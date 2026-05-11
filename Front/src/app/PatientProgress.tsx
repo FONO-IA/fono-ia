@@ -12,6 +12,7 @@ import {
   Plus,
   ClipboardList,
   UserRound,
+  Volume2,
 } from "lucide-react";
 import {
   XAxis,
@@ -253,6 +254,17 @@ export function PatientProgress() {
       ? currentProgress
       : 0;
   const firstExerciseId = exercicios[0]?.id;
+  const handleAddExercise = () => {
+    const id = patient?.id;
+    const addExercisePath = id
+      ? `/add-exercise?pacienteId=${encodeURIComponent(id)}`
+      : "/add-exercise";
+
+    navigate(addExercisePath, {
+      state: { pacienteId: id },
+    });
+  };
+
   const handleStartSession = () => {
     if (firstExerciseId) {
       navigate(`/child/exercise/${firstExerciseId}`, {
@@ -264,9 +276,7 @@ export function PatientProgress() {
       return;
     }
 
-    navigate("/add-exercise", {
-      state: { pacienteId: patient?.id },
-    });
+    handleAddExercise();
   };
 
   const handleOpenExercise = (exerciseId: string) => {
@@ -549,11 +559,7 @@ export function PatientProgress() {
                   </button>
 
                   <button
-                    onClick={() =>
-                      navigate("/add-exercise", {
-                        state: { pacienteId: patient.id },
-                      })
-                    }
+                    onClick={handleAddExercise}
                     className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:opacity-90"
                     style={{
                       background: "linear-gradient(135deg, #00A337, #00B561)",
@@ -1071,6 +1077,34 @@ export function PatientProgress() {
                               {session.observacoes?.trim() ||
                                 "Sem observações registradas."}
                             </p>
+
+                            {session.audio_url && (
+                              <div
+                                className="mt-3 rounded-2xl p-3"
+                                style={{
+                                  background: "#F8FBFF",
+                                  border: "1px solid #DBEAFE",
+                                }}
+                              >
+                                <div className="mb-2 flex items-center gap-2">
+                                  <Volume2 size={14} color="#0052CC" />
+                                  <span
+                                    style={{
+                                      color: "#1A2B5F",
+                                      fontSize: 12,
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    Gravação atual
+                                  </span>
+                                </div>
+                                <audio
+                                  controls
+                                  src={session.audio_url}
+                                  className="w-full"
+                                />
+                              </div>
+                            )}
                           </div>
 
                           <div className="flex flex-col items-end gap-1">
@@ -1486,6 +1520,34 @@ export function PatientProgress() {
                             {formatTime(sessionDate)}
                           </span>
                         </div>
+
+                        {session.audio_url && (
+                          <div
+                            className="mt-3 rounded-2xl p-3"
+                            style={{
+                              background: "#F8FBFF",
+                              border: "1px solid #DBEAFE",
+                            }}
+                          >
+                            <div className="mb-2 flex items-center gap-2">
+                              <Volume2 size={13} color="#0052CC" />
+                              <span
+                                style={{
+                                  color: "#1A2B5F",
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                }}
+                              >
+                                Gravação atual
+                              </span>
+                            </div>
+                            <audio
+                              controls
+                              src={session.audio_url}
+                              className="w-full"
+                            />
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex flex-col items-end gap-1">
@@ -1534,11 +1596,7 @@ export function PatientProgress() {
                 </button>
 
                 <button
-                  onClick={() =>
-                    navigate("/add-exercise", {
-                      state: { pacienteId: patient.id },
-                    })
-                  }
+                  onClick={handleAddExercise}
                   className="py-4 rounded-2xl flex items-center justify-center gap-2"
                   style={{
                     background: "linear-gradient(135deg, #36B37E, #57D9A3)",

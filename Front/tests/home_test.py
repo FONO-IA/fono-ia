@@ -29,8 +29,8 @@ def test_home():
     time.sleep(2)
 
     # Adicionar o email e a senha do cadastro:
-    login.preencher_email("")
-    login.preencher_senha("")
+    login.preencher_email("fono01@email.com")
+    login.preencher_senha("xokL7Mcs")
 
     time.sleep(2)
     login.clicar_entrar()
