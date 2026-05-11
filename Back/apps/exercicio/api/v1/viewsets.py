@@ -6,6 +6,7 @@ from rest_framework.response import Response
 
 from apps.exercicio.api.v1.serializer import ExercicioSerializer
 from apps.exercicio.models import Exercicio
+from apps.exercicio.services.ai_suggestion import generate_exercise_suggestion
 from apps.fonoaudiologo.models import Fonoaudiologo
 from apps.responsavel.models import Responsavel
 from apps.resultado.models import Resultado
@@ -218,3 +219,25 @@ class ExercicioViewSet(viewsets.ModelViewSet):
             },
             status=status.HTTP_201_CREATED,
         )
+
+    @action(detail=False, methods=["post"], url_path="ia-sugestao")
+    def ia_sugestao(self, request):
+        self.require_fonoaudiologo()
+
+        categoria = (request.data.get("categoria") or "").strip()
+        nivel = request.data.get("nivel") or "Médio"
+        objetivo = request.data.get("objetivo") or ""
+
+        if not categoria:
+            return Response(
+                {"detail": "Categoria é obrigatória."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        suggestion = generate_exercise_suggestion(
+            categoria=categoria,
+            nivel=nivel,
+            objetivo=objetivo,
+        )
+
+        return Response(suggestion, status=status.HTTP_200_OK)

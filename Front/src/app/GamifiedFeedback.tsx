@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
 import { motion, AnimatePresence } from "motion/react";

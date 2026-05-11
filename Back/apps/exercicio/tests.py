@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from apps.fonoaudiologo.models import Fonoaudiologo
@@ -163,6 +163,54 @@ class ExercicioResponderEndpointTest(TestCase):
             ).count(),
             3
         )
+
+    @override_settings(GROQ_API_KEY='', AI_PROVIDER='groq')
+    def test_fono_gera_sugestao_ia_com_fallback_textual_frutas(self):
+        self.client.force_authenticate(user=self.fono_user)
+
+        response = self.client.post(
+            '/api/v1/exercicios/ia-sugestao/',
+            {
+                'categoria': 'frutas',
+                'nivel': 'Fácil',
+                'objetivo': '',
+            },
+            format='json'
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.data.keys()), ['sugestao'])
+        self.assertIn('Sugestão de exercício', response.data['sugestao'])
+        self.assertIn('Categoria: Frutas', response.data['sugestao'])
+        self.assertIn('- banana', response.data['sugestao'])
+        self.assertIn('Dica terapêutica', response.data['sugestao'])
+        palavras_sugeridas = [
+            line for line in response.data['sugestao'].splitlines()
+            if line.startswith('- ')
+        ]
+        self.assertEqual(len(palavras_sugeridas), 5)
+
+    def test_ia_sugestao_exige_categoria(self):
+        self.client.force_authenticate(user=self.fono_user)
+
+        response = self.client.post(
+            '/api/v1/exercicios/ia-sugestao/',
+            {'categoria': '   ', 'nivel': 'Médio'},
+            format='json'
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_responsavel_nao_gera_sugestao_ia(self):
+        self.client.force_authenticate(user=self.responsavel_user)
+
+        response = self.client.post(
+            '/api/v1/exercicios/ia-sugestao/',
+            {'categoria': 'frutas', 'nivel': 'Fácil'},
+            format='json'
+        )
+
+        self.assertEqual(response.status_code, 403)
 
     def test_responsavel_responde_exercicio_vinculado(self):
         self.client.force_authenticate(user=self.responsavel_user)

@@ -6,6 +6,7 @@ export type ConteudoExercicioPayload = {
 };
 
 export type CreateExercicioPayload = {
+  nome?: string;
   nivel: string;
   categoria: string;
   conteudo: string;
@@ -16,8 +17,19 @@ export type CreateExercicioPayload = {
   conteudos: ConteudoExercicioPayload[];
 };
 
+export type SugestaoExercicioIARequest = {
+  categoria: string;
+  nivel: string;
+  objetivo?: string;
+};
+
+export type SugestaoExercicioIA = {
+  sugestao: string;
+};
+
 export type Exercicio = {
   id: string;
+  nome?: string;
   titulo?: string;
   descricao?: string;
   nivel: string;
@@ -54,6 +66,12 @@ export async function criarExercicio(payload: CreateExercicioPayload) {
   return api.post<Exercicio>("/exercicios/", payload);
 }
 
+export async function sugerirExercicioComIA(
+  payload: SugestaoExercicioIARequest,
+) {
+  return api.post<SugestaoExercicioIA>("/exercicios/ia-sugestao/", payload);
+}
+
 export async function listarExercicios(params?: { paciente?: string }) {
   const search = new URLSearchParams();
 
@@ -76,7 +94,7 @@ export async function enviarRespostaExercicio(
   pacienteId?: string,
 ) {
   const formData = new FormData();
-  formData.append("audio", audioBlob, `resposta-${exercicioId}.webm`);
+  formData.append("audio", audioBlob, `resposta-${exercicioId}.wav`);
 
   if (pacienteId) {
     formData.append("paciente_id", pacienteId);

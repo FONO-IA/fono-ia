@@ -169,9 +169,17 @@ export function AdminDashboard() {
         setLoading(true);
         setError("");
 
-        const [pacientesData, fonoData, exerciciosData] = await Promise.all([
+        const fonoData = await getMe();
+        if (fonoData) {
+          setFono({
+            nome: fonoData.nome,
+            crfa: fonoData.crfa || "-",
+            iniciais: getInitials(fonoData.nome),
+          });
+        }
+
+        const [pacientesData, exerciciosData] = await Promise.all([
           listarPacientes(),
-          getMe(),
           listarExercicios(),
         ]);
 
@@ -191,15 +199,6 @@ export function AdminDashboard() {
 
         setExercicios(exerciciosData);
         setPatients(mappedPatients);
-
-        const fonoAtual = fonoData;
-        if (fonoAtual) {
-          setFono({
-            nome: fonoAtual.nome,
-            crfa: fonoAtual.crfa,
-            iniciais: getInitials(fonoAtual.nome),
-          });
-        }
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Erro ao carregar dashboard.";
@@ -246,7 +245,7 @@ export function AdminDashboard() {
                   className="w-full h-full object-cover rounded-[16px]"
                 />
               </div>
-              <div>
+              <div onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
                 <h2
                   style={{
                     fontSize: 20,
@@ -306,8 +305,6 @@ export function AdminDashboard() {
             </div>
           </div>
 
-          <div className="flex-1" />
-
           <div className="p-4 border-t border-white/10 space-y-2">
             <button
               onClick={() => navigate("/settings/perfil")}
@@ -329,6 +326,7 @@ export function AdminDashboard() {
                 Configurações
               </span>
             </button>
+            <div className="flex-1 p-3" />
             <button
               onClick={() => {
                 logout();
@@ -378,7 +376,8 @@ export function AdminDashboard() {
                   </h1>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button
+                  {/* Botão de notificação para futurras atualizações */}
+                  {/* <button
                     className="relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all hover:bg-gray-100"
                     style={{
                       background: "#F4F7FF",
@@ -387,7 +386,7 @@ export function AdminDashboard() {
                     }}
                   >
                     <Bell size={20} color="#6B7A99" />
-                  </button>
+                  </button> */}
                   <button
                     id="btn-novo-paciente"
                     onClick={() => navigate("/add-patient")}

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate, useParams  } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
-import { criarExercicio } from "../services/exercicios";
+import { criarExercicio, sugerirExercicioComIA } from "../services/exercicios";
 import {
   ArrowLeft,
   Dumbbell,
@@ -15,7 +15,25 @@ import {
   X,
 } from "lucide-react";
 
-type Level = "Fácil" | "Médio" | "Dificíl";
+type Level = "Fácil" | "Médio" | "Difícil";
+
+type AiFeedback = {
+  type: "success" | "error";
+  message: string;
+} | null;
+
+const DEFAULT_INSTRUCTIONS = `Guia de texto para cada palavra:
+                    - Diga a palavra
+                    - Repita devagar
+                    - Use a dica visual quando necessário`;
+
+const LEVEL_OPTIONS: Level[] = ["Fácil", "Médio", "Difícil"];
+
+const NIVEL_TO_API: Record<Level, string> = {
+  Fácil: "FAC",
+  Médio: "MED",
+  Difícil: "DIF",
+};
 
 type ContentItem = {
   id: number;
@@ -25,9 +43,13 @@ type ContentItem = {
 
 export function AddExercise() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [newCategory, setNewCategory] = useState("");
   const [showAiBox, setShowAiBox] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [aiFeedback, setAiFeedback] = useState<AiFeedback>(null);
+  const [aiSuggestionText, setAiSuggestionText] = useState("");
   const [conteudo, setConteudo] = useState("");
   const [instrucaoItem, setInstrucaoItem] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -36,10 +58,7 @@ export function AddExercise() {
     nome: "",
     objetivo: "",
     nivel: "Médio" as Level,
-    instrucoesGuia: `Guia de texto para cada palavra:
-                    - Diga a palavra
-                    - Repita devagar
-                    - Use a dica visual quando necessário`,
+    instrucoesGuia: DEFAULT_INSTRUCTIONS,
     ativo: true,
   });
 
@@ -50,7 +69,8 @@ export function AddExercise() {
   };
 
   const location = useLocation();
-  const pacienteId = location.state?.pacienteId;
+  const pacienteId = location.state?.pacienteId || id;
+  const patientName = location.state?.patientName || "Paciente";
 
   const getConteudosForPayload = () => {
     const items = [...conteudos];
@@ -84,9 +104,20 @@ export function AddExercise() {
   );
   const totalConteudos = conteudosPreview.length;
 
-  const previewConteudo = useMemo(() => {
+  const palavrasPreview = useMemo(() => {
     return conteudosPreview.map((item) => item.texto).join(", ");
   }, [conteudosPreview]);
+
+  const previewConteudo = palavrasPreview;
+
+  const openAiBox = () => {
+    const categoriaContexto = aiPrompt.trim() || newCategory.trim();
+    setAiPrompt(categoriaContexto);
+    setAiFeedback(null);
+    setAiSuggestionText("");
+    setShowAiBox(true);
+    void handleGenerateWithAI(categoriaContexto);
+  };
 
   const handleAddWord = () => {
     const texto = conteudo.trim();
@@ -116,12 +147,6 @@ export function AddExercise() {
   };
 
   const handleSave = async () => {
-    const nivelMap = {
-      Fácil: "FAC",
-      Médio: "MED",
-      Dificíl: "DIF",
-    };
-
     if (!pacienteId) {
       alert(
         "Paciente não identificado. Volte ao paciente e clique em Criar Exercício novamente.",
@@ -138,8 +163,9 @@ export function AddExercise() {
     }
 
     const payload = {
+      nome: form.nome.trim() || newCategory.trim(),
       categoria: newCategory.trim(),
-      nivel: nivelMap[form.nivel],
+      nivel: NIVEL_TO_API[form.nivel],
       objetivo: form.objetivo.trim(),
       instrucao:
         conteudosValidos[0]?.instrucao ||
@@ -162,10 +188,7 @@ export function AddExercise() {
         nome: "",
         objetivo: "",
         nivel: "Médio",
-        instrucoesGuia: `Guia de texto para cada palavra:
-                        - Diga a palavra
-                        - Repita devagar
-                        - Use a dica visual quando necessário`,
+        instrucoesGuia: DEFAULT_INSTRUCTIONS,
         ativo: true,
       });
 
@@ -176,59 +199,64 @@ export function AddExercise() {
     }
   };
 
-  const handleGenerateWithAI = () => {
-    const prompt = aiPrompt.trim();
+  const handleGenerateWithAI = async (categoriaOverride?: string) => {
+    if (isGeneratingAi) return;
 
-    if (!prompt) return;
+    const categoria = (categoriaOverride || aiPrompt || newCategory).trim();
 
-    const generatedItems: ContentItem[] = [
-      {
-        id: Date.now(),
-        texto: "A",
-        instrucao: `Diga a vogal!
+    if (!categoria) {
+      setAiFeedback({
+        type: "error",
+        message: "Informe uma categoria para gerar a sugestão.",
+      });
+      return;
+    }
 
-A
+    setIsGeneratingAi(true);
+    setAiFeedback(null);
+    setAiSuggestionText("");
 
-💡 Como em ABACATE`,
-      },
-      {
-        id: Date.now() + 1,
-        texto: "E",
-        instrucao: `Diga a vogal!
+    try {
+      const suggestion = await sugerirExercicioComIA({
+        categoria,
+        nivel: form.nivel,
+        objetivo: form.objetivo.trim() || undefined,
+      });
 
-E
+      setAiSuggestionText(suggestion.sugestao);
+      setAiFeedback({
+        type: "success",
+        message: "Sugestão gerada com sucesso.",
+      });
+    } catch (e) {
+      console.error("Erro ao gerar sugestão com IA:", e);
+      setAiFeedback({
+        type: "error",
+        message:
+          e instanceof Error
+            ? e.message
+            : "Não foi possível gerar a sugestão agora.",
+      });
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
 
-💡 Como em ELEFANTE`,
-      },
-      {
-        id: Date.now() + 2,
-        texto: "I",
-        instrucao: `Diga a vogal!
+  const handleCopyAiSuggestion = async () => {
+    if (!aiSuggestionText) return;
 
-I
-
-💡 Como em IGREJA`,
-      },
-    ];
-
-    setNewCategory((prev) => prev || "Fonemas");
-    setForm((prev) => ({
-      ...prev,
-      nome: prev.nome || "Exercício gerado com IA",
-      categoria: "Fonemas",
-      objetivo:
-        prev.objetivo || `Exercício montado com base na solicitação: ${prompt}`,
-      nivel: prev.nivel || "Médio",
-      instrucoesGuia: `Guia de texto para cada palavra:
-                      - Leia a palavra para a criança
-                      - Peça para repetir com clareza
-                      - Use a dica visual abaixo de cada item
-                      - Faça reforço positivo após cada acerto`,
-    }));
-
-    setConteudos(generatedItems);
-    setShowAiBox(false);
-    setAiPrompt("");
+    try {
+      await navigator.clipboard.writeText(aiSuggestionText);
+      setAiFeedback({
+        type: "success",
+        message: "Sugestão copiada.",
+      });
+    } catch {
+      setAiFeedback({
+        type: "error",
+        message: "Não foi possível copiar a sugestão.",
+      });
+    }
   };
 
   return (
@@ -531,7 +559,7 @@ I
                           color: "#1A2B5F",
                         }}
                       >
-                        Cadastrar Exercício
+                        Cadastrar um exercício para: {patientName}
                       </h2>
                       <p
                         style={{
@@ -540,44 +568,48 @@ I
                           marginTop: 8,
                         }}
                       >
-                        Preencha os dados ou use a IA para montar tudo
-                        automaticamente
+                        Preencha os dados manualmente ou consulte uma sugestão
+                        de apoio
                       </p>
                     </div>
 
                     <button
-                      onClick={() => setShowAiBox((prev) => !prev)}
+                      onClick={openAiBox}
+                      disabled={isGeneratingAi}
                       className="shrink-0 rounded-2xl px-5 py-4 flex items-center gap-2 transition-all hover:opacity-90"
                       style={{
                         background: "#EEF4FF",
                         color: "#0052CC",
                         border: "1.5px solid #CFE0FF",
-                        cursor: "pointer",
+                        cursor: isGeneratingAi ? "not-allowed" : "pointer",
+                        opacity: isGeneratingAi ? 0.72 : 1,
                         fontSize: 15,
                         fontWeight: 700,
                       }}
                     >
                       <Wand2 size={18} />
-                      Ajuda da IA
+                      {isGeneratingAi ? "Gerando..." : "Ajuda da IA"}
                     </button>
                   </div>
 
                   {/* Ação tablet/mobile */}
                   <div className="xl:hidden -mt-4 sm:-mt-6 md:-mt-8 mb-4 sm:mb-5 py-4">
                     <button
-                      onClick={() => setShowAiBox((prev) => !prev)}
+                      onClick={openAiBox}
+                      disabled={isGeneratingAi}
                       className="w-full sm:w-auto rounded-2xl px-5 py-4 flex items-center justify-center gap-2"
                       style={{
                         background: "#EEF4FF",
                         color: "#0052CC",
                         border: "1.5px solid #CFE0FF",
-                        cursor: "pointer",
+                        cursor: isGeneratingAi ? "not-allowed" : "pointer",
+                        opacity: isGeneratingAi ? 0.72 : 1,
                         fontSize: 14,
                         fontWeight: 700,
                       }}
                     >
                       <Wand2 size={18} />
-                      Ajuda da IA
+                      {isGeneratingAi ? "Gerando..." : "Ajuda da IA"}
                     </button>
                   </div>
 
@@ -599,7 +631,7 @@ I
                               color: "#1A2B5F",
                             }}
                           >
-                            Como o exercício deve ser feito?
+                            Sugestão da IA
                           </h3>
                           <p
                             style={{
@@ -609,8 +641,8 @@ I
                               lineHeight: 1.5,
                             }}
                           >
-                            Escreva para a IA como o fono quer montar o
-                            exercício
+                            Use como referência. Nenhum campo será preenchido
+                            automaticamente.
                           </p>
                         </div>
 
@@ -627,37 +659,122 @@ I
                         </button>
                       </div>
 
-                      <textarea
+                      <input
                         value={aiPrompt}
                         onChange={(e) => setAiPrompt(e.target.value)}
-                        rows={4}
-                        placeholder="Ex: Criar um exercício com vogais, nível fácil, com palavras curtas e dica visual para cada item."
+                        placeholder="Ex: frutas"
                         className="w-full resize-none"
                         style={{
                           ...inputStyle,
-                          height: "auto",
-                          paddingTop: 14,
                         }}
                       />
 
-                      <div className="mt-4 flex justify-end">
+                      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <button
-                          onClick={handleGenerateWithAI}
+                          onClick={() => handleGenerateWithAI()}
+                          disabled={isGeneratingAi}
                           className="w-full sm:w-auto rounded-2xl px-5 py-3 flex items-center justify-center gap-2"
                           style={{
                             background: "#0052CC",
                             color: "#fff",
                             border: "none",
-                            cursor: "pointer",
+                            cursor: isGeneratingAi ? "not-allowed" : "pointer",
+                            opacity: isGeneratingAi ? 0.72 : 1,
                             fontSize: 14,
                             fontWeight: 700,
                           }}
                         >
                           <Wand2 size={16} />
-                          Gerar exercício
+                          {isGeneratingAi
+                            ? "Gerando..."
+                            : aiSuggestionText
+                              ? "Gerar novamente"
+                              : "Gerar sugestão"}
                         </button>
+
+                        <div className="flex flex-col gap-3 sm:flex-row">
+                          <button
+                            onClick={handleCopyAiSuggestion}
+                            disabled={!aiSuggestionText || isGeneratingAi}
+                            className="w-full sm:w-auto rounded-2xl px-5 py-3"
+                            style={{
+                              background: "#EEF4FF",
+                              color: "#0052CC",
+                              border: "1.5px solid #CFE0FF",
+                              cursor:
+                                !aiSuggestionText || isGeneratingAi
+                                  ? "not-allowed"
+                                  : "pointer",
+                              opacity:
+                                !aiSuggestionText || isGeneratingAi ? 0.65 : 1,
+                              fontSize: 14,
+                              fontWeight: 700,
+                            }}
+                          >
+                            Copiar sugestão
+                          </button>
+
+                          <button
+                            onClick={() => setShowAiBox(false)}
+                            className="w-full sm:w-auto rounded-2xl px-5 py-3"
+                            style={{
+                              background: "#fff",
+                              color: "#4C5B7C",
+                              border: "1.5px solid #DBEAFE",
+                              cursor: "pointer",
+                              fontSize: 14,
+                              fontWeight: 700,
+                            }}
+                          >
+                            Fechar
+                          </button>
+                        </div>
+                      </div>
+
+                      <div
+                        className="mt-4 rounded-2xl p-4"
+                        style={{
+                          background: "#F8FBFF",
+                          border: "1.5px solid #E3EEFF",
+                          minHeight: 180,
+                        }}
+                      >
+                        <p
+                          style={{
+                            fontSize: 14,
+                            color: "#4C5B7C",
+                            lineHeight: 1.7,
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {isGeneratingAi
+                            ? "Gerando sugestão..."
+                            : aiSuggestionText ||
+                              "Informe uma categoria e clique em Gerar novamente."}
+                        </p>
                       </div>
                     </section>
+                  )}
+
+                  {aiFeedback && (
+                    <div
+                      className="mb-5 rounded-2xl px-4 py-3"
+                      style={{
+                        background:
+                          aiFeedback.type === "success" ? "#F0FDF4" : "#FEF2F2",
+                        border:
+                          aiFeedback.type === "success"
+                            ? "1.5px solid #BBF7D0"
+                            : "1.5px solid #FECACA",
+                        color:
+                          aiFeedback.type === "success" ? "#166534" : "#B91C1C",
+                        fontSize: 14,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {aiFeedback.message}
+                    </div>
                   )}
 
                   {/* Layout principal responsivo */}
@@ -673,6 +790,23 @@ I
                         }}
                       >
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                          <div className="md:col-span-2">
+                            <Field
+                              label="Nome do exercício"
+                              icon={<FileText size={16} color="#0052CC" />}
+                            >
+                              <input
+                                value={form.nome}
+                                onChange={(e) =>
+                                  updateField("nome", e.target.value)
+                                }
+                                placeholder="Ex: Treino de pronúncia com frutas"
+                                className="w-full"
+                                style={inputStyle}
+                              />
+                            </Field>
+                          </div>
+
                           <Field
                             label="Categoria"
                             icon={<Sparkles size={16} color="#0052CC" />}
@@ -693,35 +827,31 @@ I
                             icon={<CheckCircle2 size={16} color="#0052CC" />}
                           >
                             <div className="grid grid-cols-1 xs:grid-cols-3 sm:grid-cols-3 gap-2">
-                              {(["Fácil", "Médio", "Dificíl"] as Level[]).map(
-                                (nivel) => {
-                                  const isActive = form.nivel === nivel;
-                                  return (
-                                    <button
-                                      key={nivel}
-                                      type="button"
-                                      onClick={() =>
-                                        updateField("nivel", nivel)
-                                      }
-                                      className="min-h-[48px] rounded-2xl px-3 py-3 transition-all"
-                                      style={{
-                                        border: isActive
-                                          ? "2px solid #0052CC"
-                                          : "1.5px solid #DBEAFE",
-                                        background: isActive
-                                          ? "#EBF3FF"
-                                          : "#F8FBFF",
-                                        color: isActive ? "#0052CC" : "#6B7A99",
-                                        fontSize: 13,
-                                        fontWeight: 700,
-                                        cursor: "pointer",
-                                      }}
-                                    >
-                                      {nivel}
-                                    </button>
-                                  );
-                                },
-                              )}
+                              {LEVEL_OPTIONS.map((nivel) => {
+                                const isActive = form.nivel === nivel;
+                                return (
+                                  <button
+                                    key={nivel}
+                                    type="button"
+                                    onClick={() => updateField("nivel", nivel)}
+                                    className="min-h-[48px] rounded-2xl px-3 py-3 transition-all"
+                                    style={{
+                                      border: isActive
+                                        ? "2px solid #0052CC"
+                                        : "1.5px solid #DBEAFE",
+                                      background: isActive
+                                        ? "#EBF3FF"
+                                        : "#F8FBFF",
+                                      color: isActive ? "#0052CC" : "#6B7A99",
+                                      fontSize: 13,
+                                      fontWeight: 700,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    {nivel}
+                                  </button>
+                                );
+                              })}
                             </div>
                           </Field>
 

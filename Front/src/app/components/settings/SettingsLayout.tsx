@@ -118,7 +118,7 @@ export function SettingsLayout({
                   />
                 </svg>
               </div>
-              <div>
+              <div onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
                 <h2
                   style={{
                     fontSize: 20,
