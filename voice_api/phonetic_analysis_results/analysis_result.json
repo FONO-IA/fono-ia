@@ -1,0 +1,101 @@
+{
+  "analysis_metadata": {
+    "version": "5.0",
+    "sample_rate_hz": 22050,
+    "reference_file": "bomdia_paulo.wav",
+    "test_file": "bom_diah.wav"
+  },
+  "final_score": 59.8,
+  "quality_classification": "Boa",
+  "phonetic_analysis": {
+    "phonetic_score": 67.1,
+    "mfcc_score": 98.3,
+    "formant_score": 20.3,
+    "dtw_distance": 0.0087,
+    "formant_details": {
+      "F1": {
+        "similarity_percent": 15.0,
+        "distance_hz": 993.6,
+        "mean_reference_hz": 2476.4,
+        "mean_test_hz": 1482.8,
+        "has_overlap": true
+      },
+      "F2": {
+        "similarity_percent": 0.0,
+        "distance_hz": 1086.0,
+        "mean_reference_hz": 2948.0,
+        "mean_test_hz": 1862.1,
+        "has_overlap": false
+      },
+      "F3": {
+        "similarity_percent": 71.7,
+        "distance_hz": 84.9,
+        "mean_reference_hz": 3252.9,
+        "mean_test_hz": 3168.0,
+        "has_overlap": true
+      }
+    }
+  },
+  "prosody_analysis": {
+    "prosody_score": 48.8,
+    "pitch_score": 51.8,
+    "pitch_correlation": -0.0965,
+    "pitch_average_reference_hz": 1.4,
+    "pitch_average_test_hz": 0.7,
+    "rhythm_score": 23.3,
+    "rhythm_deviation": 0.1458,
+    "energy_score": 70.2,
+    "tonic_syllable_match": false,
+    "tonic_position_reference": 0.303,
+    "tonic_position_test": 0.646
+  },
+  "duration_analysis": {
+    "reference_duration_seconds": 1.52,
+    "test_duration_seconds": 1.11,
+    "duration_ratio": 0.73
+  },
+  "diagnostic_alerts": [
+    {
+      "type": "OMISSÃO",
+      "title": "Possível Omissão de Som/Sílaba",
+      "severity": "ALTA",
+      "message": "⚠️ ALERTA DE OMISSÃO: Ritmo severamente comprometido. Ritmo DTW: 23.3% | Desvio: 0.146. O paciente pode ter omitido um fonema, alongando vogais para compensar o tempo (duração total: 73%).",
+      "details": {
+        "rhythm_score": "23.3%",
+        "dtw_deviation": "0.146",
+        "duration_ratio": "73%",
+        "duration_ref": "1.52s",
+        "duration_test": "1.11s"
+      },
+      "recommendation": "💡 Sugestão: Solicitar repetição mais pausada, marcando cada sílaba com palmas. Verificar se o paciente está omitindo consoantes mediais (como /d/ em 'bom dia') ou encontros consonantais.",
+      "icon": "🗣️💨"
+    },
+    {
+      "type": "ARTICULAÇÃO",
+      "title": "Possível Troca ou Suavização de Consoante",
+      "severity": "ALTA",
+      "message": "⚠️ ALERTA DE ARTICULAÇÃO: Som base (vogais) preservado (MFCC: 98.3%), mas posição da língua incorreta (F2: 0.0%). Detectado desvio significativo na posição da língua. Possível troca ou suavização de consoante (ex: /d/→/∅/, /t/→/∅/, /b/→/v/).",
+      "details": {
+        "mfcc_score": "98.3%",
+        "f2_similarity": "0.0%",
+        "f3_similarity": "71.7%",
+        "interpretation": "MFCC > 85% + F2 < 75% = Vogais corretas, mas língua não atingiu ponto de articulação esperado. Assinatura acústica de consoante omitida ou substituída."
+      },
+      "recommendation": "💡 Sugestão: Focar em exercícios de ponto articulatório para consoantes alveolares (/t/, /d/, /n/, /l/) e bilabiais (/p/, /b/, /m/). Usar pistas visuais (espelho) para mostrar posição correta da língua.",
+      "icon": "👅📍"
+    },
+    {
+      "type": "COMBINADO",
+      "title": "Diagnóstico Combinado: Omissão de Consoante",
+      "severity": "ALTA",
+      "message": "🔴 DIAGNÓSTICO COMBINADO: Foram detectados simultaneamente indícios de omissão de som E imprecisão na articulação da língua. Quadro compatível com omissão de consoante medial (como o /d/ em 'bom dia' → 'bom ia').",
+      "details": {
+        "rhythm_score": "23.3%",
+        "f2_similarity": "0.0%",
+        "mfcc_score": "98.3%"
+      },
+      "recommendation": "💡 Recomendação: Priorizar exercícios de conscientização do ponto articulatório. Usar técnica de 'som alvo': prolongar a consoante alvo (/d/) antes da vogal seguinte. Ex: 'bom dddd....ia'.",
+      "icon": "🔴"
+    }
+  ]
+}
