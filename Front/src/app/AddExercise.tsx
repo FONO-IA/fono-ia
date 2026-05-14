@@ -368,7 +368,7 @@ export function AddExercise() {
             >
               <div className="sticky top-0 flex min-h-screen flex-col p-8">
                 <button
-                id="btn-voltar"
+                  id="btn-voltar"
                   onClick={() => navigate(-1)}
                   className="mb-8 flex items-center gap-2 transition-all hover:opacity-80"
                   style={{
@@ -576,6 +576,7 @@ export function AddExercise() {
                     </div>
 
                     <button
+                      id="btn-ajuda-ia"
                       onClick={openAiBox}
                       disabled={isGeneratingAi}
                       className="shrink-0 rounded-2xl px-5 py-4 flex items-center gap-2 transition-all hover:opacity-90"
@@ -662,9 +663,10 @@ export function AddExercise() {
                       </div>
 
                       <input
+                        id="sugestao-categoria"
                         value={aiPrompt}
                         onChange={(e) => setAiPrompt(e.target.value)}
-                        placeholder="Ex: frutas"
+                        placeholder="Sugira uma Categoria"
                         className="w-full resize-none"
                         style={{
                           ...inputStyle,
@@ -673,6 +675,7 @@ export function AddExercise() {
 
                       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <button
+                          id="btn-gerar-sugestao"
                           onClick={() => handleGenerateWithAI()}
                           disabled={isGeneratingAi}
                           className="w-full sm:w-auto rounded-2xl px-5 py-3 flex items-center justify-center gap-2"

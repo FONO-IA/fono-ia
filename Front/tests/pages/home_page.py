@@ -125,3 +125,22 @@ class HomePage:
             )
         )
         botao.click()
+
+    def clicar_ajuda_ia(self):
+        botao = self.wait.until(
+            EC.element_to_be_clickable(
+                (By.ID, "btn-ajuda-ia")
+            )
+        )
+        botao.click()
+
+    def sugestao_categoria(self, sugestao):
+        self.driver.find_element(By.ID, "sugestao-categoria").send_keys(sugestao)
+
+    def clicar_gerar_segestao(self):
+        botao = self.wait.until(
+            EC.element_to_be_clickable(
+                (By.ID, "btn-gerar-sugestao")
+            )
+        )
+        botao.click()
