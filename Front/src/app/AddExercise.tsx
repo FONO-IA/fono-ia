@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useLocation, useNavigate, useParams  } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
 import { criarExercicio, sugerirExercicioComIA } from "../services/exercicios";
 import {
@@ -270,10 +270,11 @@ export function AddExercise() {
             <p className="text-sm text-gray-600 mb-4">Salvo com sucesso!</p>
 
             <button
+              id="btn-ok"
               onClick={() => {
                 setShowSuccessModal(false);
               }}
-              className="px-4 py-2 rounded-xl text-white"
+              className="px-4 py-2 rounded-xl text-white cursor-pointer"
               style={{
                 background: "linear-gradient(135deg, #0052CC, #0065FF)",
               }}
@@ -367,6 +368,7 @@ export function AddExercise() {
             >
               <div className="sticky top-0 flex min-h-screen flex-col p-8">
                 <button
+                id="btn-voltar"
                   onClick={() => navigate(-1)}
                   className="mb-8 flex items-center gap-2 transition-all hover:opacity-80"
                   style={{
@@ -796,6 +798,7 @@ export function AddExercise() {
                               icon={<FileText size={16} color="#0052CC" />}
                             >
                               <input
+                                id="nome-exercicio"
                                 value={form.nome}
                                 onChange={(e) =>
                                   updateField("nome", e.target.value)
@@ -813,6 +816,7 @@ export function AddExercise() {
                           >
                             <div className="space-y-3">
                               <input
+                                id="categoria"
                                 value={newCategory}
                                 onChange={(e) => setNewCategory(e.target.value)}
                                 placeholder="Digite a nova categoria"
@@ -861,6 +865,7 @@ export function AddExercise() {
                               icon={<Target size={16} color="#0052CC" />}
                             >
                               <input
+                                id="objetivo"
                                 value={form.objetivo}
                                 onChange={(e) =>
                                   updateField("objetivo", e.target.value)
@@ -894,6 +899,7 @@ export function AddExercise() {
                               Conteúdo do exercício
                             </h3>
                             <input
+                              id="conteudo"
                               value={conteudo}
                               onChange={(e) => setConteudo(e.target.value)}
                               placeholder="Digite a nova palavra, sílaba ou conteúdo"
@@ -908,6 +914,7 @@ export function AddExercise() {
                             icon={<FileText size={16} color="#0052CC" />}
                           >
                             <textarea
+                              id="instrucoes"
                               rows={5}
                               placeholder="Guia de texto para cada palavra"
                               className="w-full resize-none"
@@ -1006,6 +1013,7 @@ export function AddExercise() {
                           </button>
 
                           <button
+                            id="btn-salvar-exercicio"
                             onClick={handleSave}
                             className="w-full sm:w-auto rounded-2xl px-6 py-4 flex items-center justify-center gap-2"
                             style={{

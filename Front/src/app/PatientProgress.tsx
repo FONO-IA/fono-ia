@@ -547,6 +547,7 @@ export function PatientProgress() {
                   </button>
 
                   <button
+                    id="btn-criar-exercicio"
                     onClick={() =>
                       navigate(`/add-exercise/${patient.id}`, {
                         state: {
@@ -879,6 +880,7 @@ export function PatientProgress() {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {exercicios.map((exercicio) => (
                       <button
+                        id="btn-card-exercicio-cadastrado"
                         key={exercicio.id}
                         type="button"
                         onClick={() => handleOpenExercise(String(exercicio.id))}
