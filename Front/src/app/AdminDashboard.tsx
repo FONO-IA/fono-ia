@@ -540,6 +540,7 @@ export function AdminDashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-6">
                 {filtered.map((patient) => (
                   <button
+                    id="btn-card-paciente"
                     key={patient.id}
                     onClick={() => navigate(`/patient/${patient.id}`)}
                     className="text-left rounded-3xl p-5 flex items-center gap-4 transition-all hover:shadow-lg"

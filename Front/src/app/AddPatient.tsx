@@ -319,9 +319,8 @@ export function AddPatient() {
   }, [form.dataNascimento]);
 
   const responsaveisFiltrados = useMemo(() => {
-    const query = onlyDigits(responsaveisSearch) || responsaveisSearch
-      .trim()
-      .toLowerCase();
+    const query =
+      onlyDigits(responsaveisSearch) || responsaveisSearch.trim().toLowerCase();
 
     if (!query) return responsaveis;
 
@@ -650,6 +649,7 @@ export function AddPatient() {
                               icon={<UserRound size={16} color="#0052CC" />}
                             >
                               <input
+                                id="nome-responsavel"
                                 value={form.nomeResponsavel}
                                 disabled={!!responsavelCadastrado}
                                 onChange={(e) =>
@@ -675,6 +675,7 @@ export function AddPatient() {
                             icon={<Shield size={16} color="#0052CC" />}
                           >
                             <input
+                              id="cpf"
                               value={form.cpfResponsavel}
                               disabled={!!responsavelCadastrado}
                               onChange={(e) =>
@@ -704,6 +705,7 @@ export function AddPatient() {
                             icon={<Phone size={16} color="#0052CC" />}
                           >
                             <input
+                              id="telefone"
                               value={form.telefoneResponsavel}
                               disabled={!!responsavelCadastrado}
                               onChange={(e) =>
@@ -734,6 +736,7 @@ export function AddPatient() {
                               icon={<Mail size={16} color="#0052CC" />}
                             >
                               <input
+                                id="email"
                                 value={form.emailResponsavel}
                                 disabled={!!responsavelCadastrado}
                                 onChange={(e) =>
@@ -765,6 +768,7 @@ export function AddPatient() {
                             icon={<Lock size={16} color="#0052CC" />}
                           >
                             <input
+                              id="senha-responsavel"
                               type="password"
                               value={form.senhaResponsavel}
                               disabled={!!responsavelCadastrado}
@@ -790,6 +794,7 @@ export function AddPatient() {
                             icon={<ShieldCheck size={16} color="#0052CC" />}
                           >
                             <input
+                              id="confirmar-senha-responsavel"
                               type="password"
                               value={form.confirmarSenhaResponsavel}
                               disabled={!!responsavelCadastrado}
@@ -841,6 +846,7 @@ export function AddPatient() {
                               icon={<UserRound size={16} color="#0052CC" />}
                             >
                               <input
+                                id="nome-paciente"
                                 value={form.nomePaciente}
                                 onChange={(e) =>
                                   updateField("nomePaciente", e.target.value)
@@ -862,6 +868,7 @@ export function AddPatient() {
                             icon={<Calendar size={16} color="#0052CC" />}
                           >
                             <input
+                              id="data-nascimento"
                               type="date"
                               value={form.dataNascimento}
                               onChange={(e) =>
@@ -902,6 +909,7 @@ export function AddPatient() {
                               icon={<FileText size={16} color="#0052CC" />}
                             >
                               <textarea
+                                id="observacoes"
                                 value={form.observacoes}
                                 onChange={(e) =>
                                   updateField("observacoes", e.target.value)
@@ -923,6 +931,7 @@ export function AddPatient() {
 
                       <div className="flex justify-end">
                         <button
+                          id="btn-cadastrar-responsavel"
                           type="submit"
                           disabled={loading}
                           className="w-full sm:w-auto rounded-2xl px-6 py-4 flex items-center justify-center gap-2"
@@ -1114,7 +1123,8 @@ export function AddPatient() {
                     Responsaveis cadastrados
                   </h3>
                   <p style={{ fontSize: 14, color: "#6B7A99", marginTop: 6 }}>
-                    Selecione um responsavel existente para vincular ao paciente.
+                    Selecione um responsavel existente para vincular ao
+                    paciente.
                   </p>
                 </div>
                 <button
@@ -1157,7 +1167,11 @@ export function AddPatient() {
               <div className="min-h-0 flex-1 overflow-y-auto px-5 sm:px-6 pb-6">
                 {responsaveisLoading && (
                   <div className="flex items-center justify-center gap-3 rounded-3xl p-8">
-                    <Loader2 className="animate-spin" size={24} color="#0052CC" />
+                    <Loader2
+                      className="animate-spin"
+                      size={24}
+                      color="#0052CC"
+                    />
                     <span style={{ color: "#1A2B5F", fontWeight: 700 }}>
                       Carregando responsaveis...
                     </span>
@@ -1167,9 +1181,18 @@ export function AddPatient() {
                 {!responsaveisLoading && responsaveisError && (
                   <div
                     className="rounded-3xl p-5"
-                    style={{ background: "#FFF0EC", border: "1.5px solid #FECDC3" }}
+                    style={{
+                      background: "#FFF0EC",
+                      border: "1.5px solid #FECDC3",
+                    }}
                   >
-                    <p style={{ color: "#9A3412", fontSize: 14, fontWeight: 700 }}>
+                    <p
+                      style={{
+                        color: "#9A3412",
+                        fontSize: 14,
+                        fontWeight: 700,
+                      }}
+                    >
                       {responsaveisError}
                     </p>
                     <button
@@ -1199,7 +1222,11 @@ export function AddPatient() {
                         border: "1.5px dashed #CFE0FF",
                       }}
                     >
-                      <UsersRound className="mx-auto mb-3" size={32} color="#0052CC" />
+                      <UsersRound
+                        className="mx-auto mb-3"
+                        size={32}
+                        color="#0052CC"
+                      />
                       <p
                         style={{
                           color: "#1A2B5F",
@@ -1209,8 +1236,11 @@ export function AddPatient() {
                       >
                         Nenhum responsavel encontrado.
                       </p>
-                      <p style={{ color: "#6B7A99", fontSize: 14, marginTop: 8 }}>
-                        Cadastre um novo responsavel preenchendo os campos do formulario.
+                      <p
+                        style={{ color: "#6B7A99", fontSize: 14, marginTop: 8 }}
+                      >
+                        Cadastre um novo responsavel preenchendo os campos do
+                        formulario.
                       </p>
                     </div>
                   )}
@@ -1243,20 +1273,36 @@ export function AddPatient() {
                               >
                                 {responsavel.nome}
                               </p>
-                              <p style={{ color: "#6B7A99", fontSize: 13, marginTop: 4 }}>
+                              <p
+                                style={{
+                                  color: "#6B7A99",
+                                  fontSize: 13,
+                                  marginTop: 4,
+                                }}
+                              >
                                 {responsavel.email || "Email nao informado"}
                               </p>
                             </div>
                             <div className="flex flex-wrap gap-2">
                               <span
                                 className="rounded-full px-3 py-1"
-                                style={{ background: "#EBF3FF", color: "#0052CC", fontSize: 12, fontWeight: 800 }}
+                                style={{
+                                  background: "#EBF3FF",
+                                  color: "#0052CC",
+                                  fontSize: 12,
+                                  fontWeight: 800,
+                                }}
                               >
                                 {formatCPF(responsavel.cpf || "")}
                               </span>
                               <span
                                 className="rounded-full px-3 py-1"
-                                style={{ background: "#F1F5F9", color: "#64748B", fontSize: 12, fontWeight: 800 }}
+                                style={{
+                                  background: "#F1F5F9",
+                                  color: "#64748B",
+                                  fontSize: 12,
+                                  fontWeight: 800,
+                                }}
                               >
                                 {formatPhone(responsavel.telefone || "")}
                               </span>
@@ -1297,6 +1343,7 @@ export function AddPatient() {
               }}
             >
               <button
+                id="btn-cancelar"
                 onClick={() => setShowSuccessModal(false)}
                 style={{
                   position: "absolute",
@@ -1350,6 +1397,7 @@ export function AddPatient() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
+                  id="btn-add-outro"
                   onClick={handleContinueRegistering}
                   style={{
                     minHeight: 48,
@@ -1366,6 +1414,7 @@ export function AddPatient() {
                 </button>
 
                 <button
+                  id="btn-encerrar"
                   onClick={handleFinishRegistering}
                   style={{
                     minHeight: 48,
