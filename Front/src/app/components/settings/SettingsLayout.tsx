@@ -1,5 +1,6 @@
-import React from "react";
-import { useNavigate, useLocation } from "react-router";
+import React, {useState} from "react";
+import { useNavigate, useLocation, } from "react-router";
+import { logout } from "../../../services/auth";
 import {
   ArrowLeft,
   User,
@@ -8,7 +9,6 @@ import {
   CreditCard,
   HelpCircle,
   LogOut,
-  Crown,
 } from "lucide-react";
 import { MobileWrapper } from "../../MobileWrapper";
 
@@ -75,8 +75,59 @@ export function SettingsLayout({
   const navigate = useNavigate();
   const location = useLocation();
 
+  const mainSettingsMenu = settingsMenu.filter(
+    (item) => item.path !== "/settings/sair",
+  );
+
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
   return (
     <MobileWrapper bgColor="#EBF3FF" desktopMode="full">
+            {showLogoutModal && (
+              <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+                <div className="bg-white rounded-3xl p-6 w-[90%] max-w-sm shadow-2xl text-center">
+      
+                  <h2 className="text-xl font-bold mb-2" style={{ color: "#1A2B5F" }}>
+                    Confirmar saída
+                  </h2>
+      
+                  <p className="text-sm text-gray-600 mb-6">
+                    Deseja realmente sair da sua conta?
+                  </p>
+      
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowLogoutModal(false)}
+                      className="flex-1 py-3 rounded-2xl font-medium transition-all"
+                      style={{
+                        background: "#EEF2FF",
+                        color: "#1A2B5F",
+                        border: "none",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Cancelar
+                    </button>
+      
+                    <button
+                      id="btn-confirmar-logout"
+                      onClick={() => {
+                        logout();
+                        navigate("/", { replace: true });
+                      }}
+                      className="flex-1 py-3 rounded-2xl text-white font-medium transition-all"
+                      style={{
+                        background: "linear-gradient(135deg, #FF5630, #FF7452)",
+                        border: "none",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Sair
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
       <div
         className="flex min-h-screen"
         style={{
@@ -159,7 +210,7 @@ export function SettingsLayout({
                 Configurações
               </p>
               <nav className="space-y-1">
-                {settingsMenu.map((item) => {
+                {mainSettingsMenu.map((item) => {
                   const Icon = item.icon;
                   const isActive = location.pathname === item.path;
                   return (
@@ -202,31 +253,57 @@ export function SettingsLayout({
                   );
                 })}
               </nav>
+              <button
+                onClick={() => navigate("/admin")}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all"
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                <ArrowLeft size={20} color="rgba(255,255,255,0.6)" />
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 400,
+                    color: "rgba(255,255,255,0.7)",
+                  }}
+                >
+                  Voltar ao Dashboard
+                </span>
+              </button>
             </div>
           </div>
 
           {/* Bottom actions */}
           <div className="p-4 border-t border-white/10 space-y-2">
-            <button
-              onClick={() => navigate("/admin")}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all"
-              style={{
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              <ArrowLeft size={20} color="rgba(255,255,255,0.6)" />
-              <span
+              <button
+                onClick={() => setShowLogoutModal(true)}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200"
                 style={{
-                  fontSize: 14,
-                  fontWeight: 400,
-                  color: "rgba(255,255,255,0.7)",
+                  background: "rgba(255,255,255,0.08)",
+                  border: "none",
+                  cursor: "pointer",
                 }}
               >
-                Voltar ao Dashboard
-              </span>
-            </button>
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center"
+                  style={{ background: "rgba(255,255,255,0.12)" }}
+                >
+                  <LogOut size={16} color="#fff" strokeWidth={2.2} />
+                </div>
+
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: "#fff",
+                  }}
+                >
+                  Sair da conta
+                </span>
+              </button>
           </div>
         </div>
 

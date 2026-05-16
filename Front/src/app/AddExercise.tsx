@@ -1,7 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
-import { criarExercicio, sugerirExercicioComIA } from "../services/exercicios";
+import {
+  criarExercicio,
+  sugerirExercicioComIA,
+  editarExercicio,
+} from "../services/exercicios";
 import {
   ArrowLeft,
   Dumbbell,
@@ -71,6 +75,45 @@ export function AddExercise() {
   const location = useLocation();
   const pacienteId = location.state?.pacienteId || id;
   const patientName = location.state?.patientName || "Paciente";
+  const exercicioEdicao = location.state?.exercicio;
+  const modoEdicao = location.state?.modo === "edicao";
+
+  useEffect(() => {
+    if (!modoEdicao || !exercicioEdicao) return;
+
+    setNewCategory(exercicioEdicao.categoria || "");
+
+    setForm({
+      nome: exercicioEdicao.nome || "",
+      objetivo: exercicioEdicao.objetivo || "",
+      nivel:
+        exercicioEdicao.nivel === "FAC"
+          ? "Fácil"
+          : exercicioEdicao.nivel === "DIF"
+            ? "Difícil"
+            : "Médio",
+      instrucoesGuia: exercicioEdicao.instrucao || DEFAULT_INSTRUCTIONS,
+      ativo: true,
+    });
+
+    if (exercicioEdicao.conteudos?.length) {
+      setConteudos(
+        exercicioEdicao.conteudos.map((item: any, index: number) => ({
+          id: index + 1,
+          texto: item.texto,
+          instrucao: item.instrucao,
+        })),
+      );
+    } else if (exercicioEdicao.palavras?.length) {
+      setConteudos(
+        exercicioEdicao.palavras.map((palavra: string, index: number) => ({
+          id: index + 1,
+          texto: palavra,
+          instrucao: exercicioEdicao.instrucao || `Pratique: ${palavra}`,
+        })),
+      );
+    }
+  }, [modoEdicao, exercicioEdicao]);
 
   const getConteudosForPayload = () => {
     const items = [...conteudos];
@@ -178,7 +221,11 @@ export function AddExercise() {
     };
 
     try {
-      await criarExercicio(payload);
+      if (modoEdicao) {
+        await editarExercicio(exercicioEdicao.id, payload);
+      } else {
+        await criarExercicio(payload);
+      }
 
       setNewCategory("");
       setConteudo("");
@@ -404,7 +451,7 @@ export function AddExercise() {
                       lineHeight: 1.15,
                     }}
                   >
-                    Novo Exercício
+                    {modoEdicao ? "Editar Exercício" : "Novo Exercício"}
                   </h1>
 
                   <p
@@ -499,7 +546,7 @@ export function AddExercise() {
                         lineHeight: 1.2,
                       }}
                     >
-                      Adicionar Exercício
+                      {modoEdicao ? "Editar Exercício" : "Adicionar Exercício"}
                     </h1>
                     <p
                       style={{
@@ -932,6 +979,26 @@ export function AddExercise() {
                             />
                           </Field>
                         </div>
+
+                        <div className="py-2 flex justify-end">
+                          <button
+                            onClick={handleAddWord}
+                            className="w-full sm:w-auto rounded-2xl px-6 py-4 flex items-center justify-center gap-2"
+                            style={{
+                              background: "#EBF3FF",
+                              color: "#0052CC",
+                              border: "1.5px solid #93C5FD",
+                              cursor: "pointer",
+                              fontSize: 15,
+                              fontWeight: 800,
+                              minWidth: 220,
+                              maxWidth: "100%",
+                            }}
+                          >
+                            <Plus size={18} />
+                            Adicionar Palavra
+                          </button>
+                        </div>
                         {conteudos.length > 0 && (
                           <div className="mt-5 grid gap-3">
                             {conteudos.map((item, index) => (
@@ -996,25 +1063,7 @@ export function AddExercise() {
                           </div>
                         )}
 
-                        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <button
-                            onClick={handleAddWord}
-                            className="w-full sm:w-auto rounded-2xl px-6 py-4 flex items-center justify-center gap-2"
-                            style={{
-                              background: "#EBF3FF",
-                              color: "#0052CC",
-                              border: "1.5px solid #93C5FD",
-                              cursor: "pointer",
-                              fontSize: 15,
-                              fontWeight: 800,
-                              minWidth: 220,
-                              maxWidth: "100%",
-                            }}
-                          >
-                            <Plus size={18} />
-                            Adicionar Palavra
-                          </button>
-
+                        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
                           <button
                             id="btn-salvar-exercicio"
                             onClick={handleSave}
@@ -1032,7 +1081,9 @@ export function AddExercise() {
                             }}
                           >
                             <Save size={18} />
-                            Salvar Exercício
+                            {modoEdicao
+                              ? "Salvar Alterações"
+                              : "Salvar Exercício"}
                           </button>
                         </div>
                       </section>

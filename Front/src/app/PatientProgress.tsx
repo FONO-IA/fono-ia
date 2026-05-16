@@ -12,6 +12,8 @@ import {
   Plus,
   ClipboardList,
   UserRound,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import {
   XAxis,
@@ -30,7 +32,8 @@ import {
   type ProgressoPaciente,
   type ResultadoResumo as ApiAtendimento,
 } from "../services/pacientes";
-import type { Exercicio } from "../services/exercicios";
+import type { Exercicio, } from "../services/exercicios";
+import {excluirExercicio, } from "../services/exercicios";  
 
 type ChartPoint = {
   week: string;
@@ -879,19 +882,87 @@ export function PatientProgress() {
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {exercicios.map((exercicio) => (
-                      <button
+                      <div
                         id="btn-card-exercicio-cadastrado"
-                        key={exercicio.id}
-                        type="button"
                         onClick={() => handleOpenExercise(String(exercicio.id))}
-                        className="rounded-3xl p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
+                        key={exercicio.id}
+                        className="rounded-3xl p-5 transition-all hover:-translate-y-0.5 hover:shadow-md"
                         style={{
                           background: "#ffffff",
                           border: "1.5px solid #DBEAFE",
                           boxShadow: "0 2px 8px rgba(0,82,204,0.05)",
-                          cursor: "pointer",
+                          cursor:"pointer",
                         }}
-                      >
+                        >
+                        <div className="flex items-center justify-between mb-4">
+                          <div
+                            className="px-3 py-1 rounded-full"
+                            style={{
+                              background: "#EBF3FF",
+                              fontSize: 11,
+                              fontWeight: 700,
+                              color: "#0052CC",
+                            }}
+                          >
+                            Exercício
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+
+                                navigate(`/add-exercise/${patient.id}`, {
+                                  state: {
+                                    modo: "edicao",
+                                    exercicio,
+                                  },
+                                });
+                              }}
+                              className="w-12 h-12 rounded-xl flex items-center justify-center transition-all hover:scale-105"
+                              style={{
+                                background: "#FFF7E6",
+                                border: "none",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <Pencil size={20} color="#FFAB00" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+
+                                const confirmar = window.confirm(
+                                  "Deseja realmente excluir este exercício?"
+                                );
+
+                                  if (!confirmar) return;
+
+                                  try {
+                                    await excluirExercicio(String(exercicio.id));
+
+                                    setExercicios((prev) =>
+                                      prev.filter((item) => item.id !== exercicio.id)
+                                    );
+                                  } catch (error) {
+                                    console.error(error);
+                                    alert("Erro ao excluir exercício");
+                                  }
+                              }}
+                              className="w-12 h-12 rounded-xl flex items-center justify-center transition-all hover:scale-105"
+                              style={{
+                                background: "#FFEDEC",
+                                border: "none",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <Trash2 size={20} color="#FF5630" />
+                            </button>
+                          </div>
+                        </div>
                         <p
                           style={{
                             fontSize: 16,
@@ -945,7 +1016,7 @@ export function PatientProgress() {
                           <Mic size={16} />
                           Abrir exercício
                         </div>
-                      </button>
+                      </div>
                     ))}
                   </div>
                 )}
