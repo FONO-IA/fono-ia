@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
 import {
@@ -17,6 +17,7 @@ import {
   Wand2,
   Plus,
   X,
+  Mic,
 } from "lucide-react";
 
 type Level = "Fácil" | "Médio" | "Difícil";
@@ -43,7 +44,10 @@ type ContentItem = {
   id: number;
   texto: string;
   instrucao: string;
+  audioReferencia?: string;
 };
+
+type MicStatus = "unsupported" | "idle" | "recording" | "recorded" | "error";
 
 export function AddExercise() {
   const navigate = useNavigate();
@@ -67,6 +71,11 @@ export function AddExercise() {
   });
 
   const [conteudos, setConteudos] = useState<ContentItem[]>([]);
+  const [micStatus, setMicStatus] = useState<MicStatus>("idle");
+  const [recordingItemId, setRecordingItemId] = useState<number | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   const updateField = (field: string, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -102,6 +111,8 @@ export function AddExercise() {
           id: index + 1,
           texto: item.texto,
           instrucao: item.instrucao,
+          audioReferencia:
+            item.audioReferencia || item.referencia_url || undefined,
         })),
       );
     } else if (exercicioEdicao.palavras?.length) {
@@ -114,6 +125,168 @@ export function AddExercise() {
       );
     }
   }, [modoEdicao, exercicioEdicao]);
+
+  useEffect(() => {
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      setMicStatus("unsupported");
+    }
+
+    return () => {
+      if (recorderRef.current?.state === "recording") {
+        recorderRef.current.stop();
+      }
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
+
+  async function convertBlobToWav(blob: Blob): Promise<Blob> {
+    const AudioContextConstructor =
+      window.AudioContext || (window as any).webkitAudioContext;
+    const audioContext = new AudioContextConstructor();
+    const arrayBuffer = await blob.arrayBuffer();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    const wavArrayBuffer = encodeWAV(audioBuffer);
+    await audioContext.close();
+    return new Blob([wavArrayBuffer], { type: "audio/wav" });
+  }
+
+  function encodeWAV(audioBuffer: AudioBuffer): ArrayBuffer {
+    const numChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const format = 1; // PCM
+    const bitDepth = 16;
+    const samples = audioBuffer.length;
+    const blockAlign = numChannels * (bitDepth / 8);
+    const byteRate = sampleRate * blockAlign;
+    const dataSize = samples * blockAlign;
+    const buffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buffer);
+
+    function writeString(offset: number, str: string) {
+      for (let i = 0; i < str.length; i += 1) {
+        view.setUint8(offset + i, str.charCodeAt(i));
+      }
+    }
+
+    let offset = 0;
+    writeString(offset, "RIFF");
+    offset += 4;
+    view.setUint32(offset, 36 + dataSize, true);
+    offset += 4;
+    writeString(offset, "WAVE");
+    offset += 4;
+    writeString(offset, "fmt ");
+    offset += 4;
+    view.setUint32(offset, 16, true);
+    offset += 4;
+    view.setUint16(offset, format, true);
+    offset += 2;
+    view.setUint16(offset, numChannels, true);
+    offset += 2;
+    view.setUint32(offset, sampleRate, true);
+    offset += 4;
+    view.setUint32(offset, byteRate, true);
+    offset += 4;
+    view.setUint16(offset, blockAlign, true);
+    offset += 2;
+    view.setUint16(offset, bitDepth, true);
+    offset += 2;
+    writeString(offset, "data");
+    offset += 4;
+    view.setUint32(offset, dataSize, true);
+    offset += 4;
+
+    const interleaved = interleaveAudio(audioBuffer);
+    let index = 44;
+
+    for (let i = 0; i < interleaved.length; i += 1) {
+      const sample = Math.max(-1, Math.min(1, interleaved[i]));
+      view.setInt16(
+        index,
+        sample < 0 ? sample * 0x8000 : sample * 0x7fff,
+        true,
+      );
+      index += 2;
+    }
+
+    return buffer;
+  }
+
+  function interleaveAudio(audioBuffer: AudioBuffer): Float32Array {
+    const channels = [];
+    const length = audioBuffer.length;
+    const numChannels = audioBuffer.numberOfChannels;
+
+    for (let i = 0; i < numChannels; i += 1) {
+      channels.push(audioBuffer.getChannelData(i));
+    }
+
+    if (numChannels === 1) {
+      return channels[0];
+    }
+
+    const result = new Float32Array(length * numChannels);
+    let offset = 0;
+
+    for (let i = 0; i < length; i += 1) {
+      for (let channel = 0; channel < numChannels; channel += 1) {
+        result[offset] = channels[channel][i];
+        offset += 1;
+      }
+    }
+
+    return result;
+  }
+
+  async function startRecordingForItem(itemId: number) {
+    if (micStatus === "unsupported" || micStatus === "recording") return;
+
+    try {
+      chunksRef.current = [];
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      const recorder = new MediaRecorder(stream);
+      recorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        const rawBlob = new Blob(chunksRef.current, {
+          type: recorder.mimeType || "audio/webm",
+        });
+        const wavBlob = await convertBlobToWav(rawBlob);
+        const url = URL.createObjectURL(wavBlob);
+
+        stream.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+
+        setConteudos((prev) =>
+          prev.map((item) =>
+            item.id === itemId ? { ...item, audioReferencia: url } : item,
+          ),
+        );
+        setRecordingItemId(null);
+        setMicStatus("recorded");
+      };
+
+      recorder.start();
+      setRecordingItemId(itemId);
+      setMicStatus("recording");
+    } catch {
+      setMicStatus("error");
+    }
+  }
+
+  function stopRecording() {
+    if (recorderRef.current?.state === "recording") {
+      recorderRef.current.stop();
+    }
+  }
 
   const getConteudosForPayload = () => {
     const items = [...conteudos];
@@ -1043,6 +1216,59 @@ export function AddExercise() {
                                   >
                                     {item.instrucao}
                                   </p>
+
+                                  {item.audioReferencia && (
+                                    <div className="mt-3">
+                                      <audio
+                                        controls
+                                        src={item.audioReferencia}
+                                        className="w-full rounded-2xl"
+                                      />
+                                    </div>
+                                  )}
+
+                                  {/* Botão para gravar áudio de referência */}
+                                  <button
+                                    id={`btn-audio-referencia-${item.id}`}
+                                    onClick={() => {
+                                      if (
+                                        recordingItemId === item.id &&
+                                        micStatus === "recording"
+                                      ) {
+                                        stopRecording();
+                                      } else {
+                                        void startRecordingForItem(item.id);
+                                      }
+                                    }}
+                                    disabled={micStatus === "unsupported"}
+                                    className="mt-3 flex items-center gap-2 rounded-2xl px-4 py-3"
+                                    style={{
+                                      background:
+                                        micStatus === "unsupported"
+                                          ? "#CBD5E1"
+                                          : recordingItemId === item.id &&
+                                              micStatus === "recording"
+                                            ? "#FF5630"
+                                            : "#0052CC",
+                                      color: "#fff",
+                                      border: "none",
+                                      cursor:
+                                        micStatus === "unsupported"
+                                          ? "not-allowed"
+                                          : "pointer",
+                                      fontSize: 14,
+                                      fontWeight: 700,
+                                      width: "fit-content",
+                                    }}
+                                  >
+                                    <Mic size={16} />
+                                    {recordingItemId === item.id &&
+                                    micStatus === "recording"
+                                      ? "Parar gravação"
+                                      : item.audioReferencia
+                                        ? "Regravar áudio de referência"
+                                        : "Gravar áudio de referência"}
+                                  </button>
                                 </div>
                                 <button
                                   onClick={() => handleRemoveWord(item.id)}

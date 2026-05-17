@@ -717,6 +717,7 @@ export function ChildExercise() {
                   </button>
                 ) : (
                   <button
+                  id="btn-iniciar-gravacao"
                     onClick={startRecording}
                     disabled={micStatus === "unsupported" || submitting}
                     className="flex items-center justify-center gap-2 rounded-3xl px-6 py-4"
