@@ -6,6 +6,7 @@ from rest_framework.response import Response
 
 from apps.exercicio.api.v1.serializer import ExercicioSerializer
 from apps.exercicio.models import Exercicio
+from apps.exercicio.models import ConteudoExercicio
 from apps.exercicio.services.ai_suggestion import generate_exercise_suggestion
 from apps.fonoaudiologo.models import Fonoaudiologo
 from apps.responsavel.models import Responsavel
@@ -241,3 +242,22 @@ class ExercicioViewSet(viewsets.ModelViewSet):
         )
 
         return Response(suggestion, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path=r"conteudos/(?P<conteudo_id>[^/.]+)/referencia")
+    def upload_conteudo_referencia(self, request, pk=None, conteudo_id=None):
+        exercicio = self.get_object()
+        conteudo = ConteudoExercicio.objects.filter(exercicio=exercicio, id=conteudo_id).first()
+
+        if not conteudo:
+            return Response({"detail": "Conteudo nao encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+        file = request.FILES.get("audio") or request.FILES.get("file")
+
+        if not file:
+            return Response({"detail": "Envie um arquivo de audio."}, status=status.HTTP_400_BAD_REQUEST)
+
+        conteudo.audio_referencia = file
+        conteudo.save()
+
+        serializer = self.get_serializer(exercicio)
+        return Response(serializer.data, status=status.HTTP_200_OK)

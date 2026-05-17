@@ -106,6 +106,20 @@ export async function enviarRespostaExercicio(
   );
 }
 
+export async function uploadConteudoAudioReferencia(
+  exercicioId: string,
+  conteudoId: string | number,
+  audioBlob: Blob,
+) {
+  const formData = new FormData();
+  formData.append("audio", audioBlob, `referencia-${conteudoId}.wav`);
+
+  return api.postForm<Exercicio>(
+    `/exercicios/${exercicioId}/conteudos/${conteudoId}/referencia/`,
+    formData,
+  );
+}
+
 export async function editarExercicio(
   id: string,
   payload: CreateExercicioPayload,

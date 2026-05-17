@@ -5,6 +5,7 @@ import {
   criarExercicio,
   sugerirExercicioComIA,
   editarExercicio,
+  uploadConteudoAudioReferencia,
 } from "../services/exercicios";
 import {
   ArrowLeft,
@@ -41,10 +42,11 @@ const NIVEL_TO_API: Record<Level, string> = {
 };
 
 type ContentItem = {
-  id: number;
+  id: string | number;
   texto: string;
   instrucao: string;
   audioReferencia?: string;
+  audioReferenciaBlob?: Blob;
 };
 
 type MicStatus = "unsupported" | "idle" | "recording" | "recorded" | "error";
@@ -72,7 +74,9 @@ export function AddExercise() {
 
   const [conteudos, setConteudos] = useState<ContentItem[]>([]);
   const [micStatus, setMicStatus] = useState<MicStatus>("idle");
-  const [recordingItemId, setRecordingItemId] = useState<number | null>(null);
+  const [recordingItemId, setRecordingItemId] = useState<
+    string | number | null
+  >(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -107,12 +111,15 @@ export function AddExercise() {
 
     if (exercicioEdicao.conteudos?.length) {
       setConteudos(
-        exercicioEdicao.conteudos.map((item: any, index: number) => ({
-          id: index + 1,
+        exercicioEdicao.conteudos.map((item: any) => ({
+          id: item.id,
           texto: item.texto,
           instrucao: item.instrucao,
           audioReferencia:
-            item.audioReferencia || item.referencia_url || undefined,
+            item.audio_referencia ||
+            item.audioReferencia ||
+            item.referencia_url ||
+            undefined,
         })),
       );
     } else if (exercicioEdicao.palavras?.length) {
@@ -238,7 +245,7 @@ export function AddExercise() {
     return result;
   }
 
-  async function startRecordingForItem(itemId: number) {
+  async function startRecordingForItem(itemId: string | number) {
     if (micStatus === "unsupported" || micStatus === "recording") return;
 
     try {
@@ -267,7 +274,13 @@ export function AddExercise() {
 
         setConteudos((prev) =>
           prev.map((item) =>
-            item.id === itemId ? { ...item, audioReferencia: url } : item,
+            item.id === itemId
+              ? {
+                  ...item,
+                  audioReferencia: url,
+                  audioReferenciaBlob: wavBlob,
+                }
+              : item,
           ),
         );
         setRecordingItemId(null);
@@ -286,6 +299,37 @@ export function AddExercise() {
     if (recorderRef.current?.state === "recording") {
       recorderRef.current.stop();
     }
+  }
+
+  async function uploadAudioReferences(
+    exercicioId: string,
+    savedConteudos: Array<{ id: string | number }>,
+  ) {
+    const uploads = conteudos
+      .map((item, index) => {
+        if (!item.audioReferenciaBlob) {
+          return null;
+        }
+
+        const serverConteudoId = savedConteudos[index]?.id;
+
+        if (!serverConteudoId) {
+          return null;
+        }
+
+        return uploadConteudoAudioReferencia(
+          exercicioId,
+          serverConteudoId,
+          item.audioReferenciaBlob,
+        );
+      })
+      .filter(Boolean) as Promise<unknown>[];
+
+    if (uploads.length === 0) {
+      return;
+    }
+
+    await Promise.all(uploads);
   }
 
   const getConteudosForPayload = () => {
@@ -358,7 +402,7 @@ export function AddExercise() {
     setInstrucaoItem("");
   };
 
-  const handleRemoveWord = (id: number) => {
+  const handleRemoveWord = (id: string | number) => {
     setConteudos((prev) => prev.filter((item) => item.id !== id));
   };
 
@@ -394,11 +438,14 @@ export function AddExercise() {
     };
 
     try {
-      if (modoEdicao) {
-        await editarExercicio(exercicioEdicao.id, payload);
-      } else {
-        await criarExercicio(payload);
-      }
+      const savedExercise = modoEdicao
+        ? await editarExercicio(exercicioEdicao.id, payload)
+        : await criarExercicio(payload);
+
+      await uploadAudioReferences(
+        savedExercise.id,
+        savedExercise.conteudos || [],
+      );
 
       setNewCategory("");
       setConteudo("");

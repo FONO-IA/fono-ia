@@ -8,6 +8,8 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+from django.conf import settings
+from django.conf.urls.static import static
 
 
 schema_view = get_schema_view(
@@ -66,3 +68,6 @@ urlpatterns = [
     path('api-redoc/', RedirectView.as_view(url='/redoc/', permanent=True)),
     # ========================================================================
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
