@@ -391,7 +391,7 @@ export function SettingsPerfil() {
 
           <button
             onClick={handleAlterarSenha}
-            className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 mt-2"
+            className="w-42 py-4 rounded-2xl flex items-center justify-center gap-2 mt-2"
             style={{
               background: "#1A2B5F",
               color: "#fff",

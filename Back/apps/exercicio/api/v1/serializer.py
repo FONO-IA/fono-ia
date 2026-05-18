@@ -3,9 +3,23 @@ from apps.exercicio.models import Exercicio, ConteudoExercicio
 
 
 class ConteudoExercicioSerializer(serializers.ModelSerializer):
+    audio_referencia = serializers.SerializerMethodField()
+
     class Meta:
         model = ConteudoExercicio
-        fields = ["id", "texto", "instrucao"]
+        fields = ["id", "texto", "instrucao", "audio_referencia"]
+
+    def get_audio_referencia(self, obj):
+        if not obj.audio_referencia:
+            return None
+        request = self.context.get("request")
+        try:
+            url = obj.audio_referencia.url
+        except Exception:
+            return None
+        if request:
+            return request.build_absolute_uri(url)
+        return url
 
 
 class ExercicioSerializer(serializers.ModelSerializer):

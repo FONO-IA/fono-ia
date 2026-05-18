@@ -46,6 +46,12 @@ class ConteudoExercicio(models.Model):
     )
     texto = models.CharField(max_length=255)
     instrucao = models.TextField()
+    audio_referencia = models.FileField(
+        upload_to="exercicios/referencias/",
+        null=True,
+        blank=True,
+        verbose_name="Áudio de referência"
+    )
 
     def __str__(self):
         return self.texto

@@ -1,7 +1,12 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { MobileWrapper } from "./MobileWrapper";
-import { criarExercicio, sugerirExercicioComIA } from "../services/exercicios";
+import {
+  criarExercicio,
+  sugerirExercicioComIA,
+  editarExercicio,
+  uploadConteudoAudioReferencia,
+} from "../services/exercicios";
 import {
   ArrowLeft,
   Dumbbell,
@@ -13,6 +18,7 @@ import {
   Wand2,
   Plus,
   X,
+  Mic,
 } from "lucide-react";
 
 type Level = "Fácil" | "Médio" | "Difícil";
@@ -36,10 +42,14 @@ const NIVEL_TO_API: Record<Level, string> = {
 };
 
 type ContentItem = {
-  id: number;
+  id: string | number;
   texto: string;
   instrucao: string;
+  audioReferencia?: string;
+  audioReferenciaBlob?: Blob;
 };
+
+type MicStatus = "unsupported" | "idle" | "recording" | "recorded" | "error";
 
 export function AddExercise() {
   const navigate = useNavigate();
@@ -63,6 +73,13 @@ export function AddExercise() {
   });
 
   const [conteudos, setConteudos] = useState<ContentItem[]>([]);
+  const [micStatus, setMicStatus] = useState<MicStatus>("idle");
+  const [recordingItemId, setRecordingItemId] = useState<
+    string | number | null
+  >(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   const updateField = (field: string, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -71,6 +88,249 @@ export function AddExercise() {
   const location = useLocation();
   const pacienteId = location.state?.pacienteId || id;
   const patientName = location.state?.patientName || "Paciente";
+  const exercicioEdicao = location.state?.exercicio;
+  const modoEdicao = location.state?.modo === "edicao";
+
+  useEffect(() => {
+    if (!modoEdicao || !exercicioEdicao) return;
+
+    setNewCategory(exercicioEdicao.categoria || "");
+
+    setForm({
+      nome: exercicioEdicao.nome || "",
+      objetivo: exercicioEdicao.objetivo || "",
+      nivel:
+        exercicioEdicao.nivel === "FAC"
+          ? "Fácil"
+          : exercicioEdicao.nivel === "DIF"
+            ? "Difícil"
+            : "Médio",
+      instrucoesGuia: exercicioEdicao.instrucao || DEFAULT_INSTRUCTIONS,
+      ativo: true,
+    });
+
+    if (exercicioEdicao.conteudos?.length) {
+      setConteudos(
+        exercicioEdicao.conteudos.map((item: any) => ({
+          id: item.id,
+          texto: item.texto,
+          instrucao: item.instrucao,
+          audioReferencia:
+            item.audio_referencia ||
+            item.audioReferencia ||
+            item.referencia_url ||
+            undefined,
+        })),
+      );
+    } else if (exercicioEdicao.palavras?.length) {
+      setConteudos(
+        exercicioEdicao.palavras.map((palavra: string, index: number) => ({
+          id: index + 1,
+          texto: palavra,
+          instrucao: exercicioEdicao.instrucao || `Pratique: ${palavra}`,
+        })),
+      );
+    }
+  }, [modoEdicao, exercicioEdicao]);
+
+  useEffect(() => {
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      setMicStatus("unsupported");
+    }
+
+    return () => {
+      if (recorderRef.current?.state === "recording") {
+        recorderRef.current.stop();
+      }
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
+
+  async function convertBlobToWav(blob: Blob): Promise<Blob> {
+    const AudioContextConstructor =
+      window.AudioContext || (window as any).webkitAudioContext;
+    const audioContext = new AudioContextConstructor();
+    const arrayBuffer = await blob.arrayBuffer();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    const wavArrayBuffer = encodeWAV(audioBuffer);
+    await audioContext.close();
+    return new Blob([wavArrayBuffer], { type: "audio/wav" });
+  }
+
+  function encodeWAV(audioBuffer: AudioBuffer): ArrayBuffer {
+    const numChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const format = 1; // PCM
+    const bitDepth = 16;
+    const samples = audioBuffer.length;
+    const blockAlign = numChannels * (bitDepth / 8);
+    const byteRate = sampleRate * blockAlign;
+    const dataSize = samples * blockAlign;
+    const buffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buffer);
+
+    function writeString(offset: number, str: string) {
+      for (let i = 0; i < str.length; i += 1) {
+        view.setUint8(offset + i, str.charCodeAt(i));
+      }
+    }
+
+    let offset = 0;
+    writeString(offset, "RIFF");
+    offset += 4;
+    view.setUint32(offset, 36 + dataSize, true);
+    offset += 4;
+    writeString(offset, "WAVE");
+    offset += 4;
+    writeString(offset, "fmt ");
+    offset += 4;
+    view.setUint32(offset, 16, true);
+    offset += 4;
+    view.setUint16(offset, format, true);
+    offset += 2;
+    view.setUint16(offset, numChannels, true);
+    offset += 2;
+    view.setUint32(offset, sampleRate, true);
+    offset += 4;
+    view.setUint32(offset, byteRate, true);
+    offset += 4;
+    view.setUint16(offset, blockAlign, true);
+    offset += 2;
+    view.setUint16(offset, bitDepth, true);
+    offset += 2;
+    writeString(offset, "data");
+    offset += 4;
+    view.setUint32(offset, dataSize, true);
+    offset += 4;
+
+    const interleaved = interleaveAudio(audioBuffer);
+    let index = 44;
+
+    for (let i = 0; i < interleaved.length; i += 1) {
+      const sample = Math.max(-1, Math.min(1, interleaved[i]));
+      view.setInt16(
+        index,
+        sample < 0 ? sample * 0x8000 : sample * 0x7fff,
+        true,
+      );
+      index += 2;
+    }
+
+    return buffer;
+  }
+
+  function interleaveAudio(audioBuffer: AudioBuffer): Float32Array {
+    const channels = [];
+    const length = audioBuffer.length;
+    const numChannels = audioBuffer.numberOfChannels;
+
+    for (let i = 0; i < numChannels; i += 1) {
+      channels.push(audioBuffer.getChannelData(i));
+    }
+
+    if (numChannels === 1) {
+      return channels[0];
+    }
+
+    const result = new Float32Array(length * numChannels);
+    let offset = 0;
+
+    for (let i = 0; i < length; i += 1) {
+      for (let channel = 0; channel < numChannels; channel += 1) {
+        result[offset] = channels[channel][i];
+        offset += 1;
+      }
+    }
+
+    return result;
+  }
+
+  async function startRecordingForItem(itemId: string | number) {
+    if (micStatus === "unsupported" || micStatus === "recording") return;
+
+    try {
+      chunksRef.current = [];
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      const recorder = new MediaRecorder(stream);
+      recorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        const rawBlob = new Blob(chunksRef.current, {
+          type: recorder.mimeType || "audio/webm",
+        });
+        const wavBlob = await convertBlobToWav(rawBlob);
+        const url = URL.createObjectURL(wavBlob);
+
+        stream.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+
+        setConteudos((prev) =>
+          prev.map((item) =>
+            item.id === itemId
+              ? {
+                  ...item,
+                  audioReferencia: url,
+                  audioReferenciaBlob: wavBlob,
+                }
+              : item,
+          ),
+        );
+        setRecordingItemId(null);
+        setMicStatus("recorded");
+      };
+
+      recorder.start();
+      setRecordingItemId(itemId);
+      setMicStatus("recording");
+    } catch {
+      setMicStatus("error");
+    }
+  }
+
+  function stopRecording() {
+    if (recorderRef.current?.state === "recording") {
+      recorderRef.current.stop();
+    }
+  }
+
+  async function uploadAudioReferences(
+    exercicioId: string,
+    savedConteudos: Array<{ id: string | number }>,
+  ) {
+    const uploads = conteudos
+      .map((item, index) => {
+        if (!item.audioReferenciaBlob) {
+          return null;
+        }
+
+        const serverConteudoId = savedConteudos[index]?.id;
+
+        if (!serverConteudoId) {
+          return null;
+        }
+
+        return uploadConteudoAudioReferencia(
+          exercicioId,
+          serverConteudoId,
+          item.audioReferenciaBlob,
+        );
+      })
+      .filter(Boolean) as Promise<unknown>[];
+
+    if (uploads.length === 0) {
+      return;
+    }
+
+    await Promise.all(uploads);
+  }
 
   const getConteudosForPayload = () => {
     const items = [...conteudos];
@@ -142,7 +402,7 @@ export function AddExercise() {
     setInstrucaoItem("");
   };
 
-  const handleRemoveWord = (id: number) => {
+  const handleRemoveWord = (id: string | number) => {
     setConteudos((prev) => prev.filter((item) => item.id !== id));
   };
 
@@ -178,7 +438,14 @@ export function AddExercise() {
     };
 
     try {
-      await criarExercicio(payload);
+      const savedExercise = modoEdicao
+        ? await editarExercicio(exercicioEdicao.id, payload)
+        : await criarExercicio(payload);
+
+      await uploadAudioReferences(
+        savedExercise.id,
+        savedExercise.conteudos || [],
+      );
 
       setNewCategory("");
       setConteudo("");
@@ -404,7 +671,7 @@ export function AddExercise() {
                       lineHeight: 1.15,
                     }}
                   >
-                    Novo Exercício
+                    {modoEdicao ? "Editar Exercício" : "Novo Exercício"}
                   </h1>
 
                   <p
@@ -499,7 +766,7 @@ export function AddExercise() {
                         lineHeight: 1.2,
                       }}
                     >
-                      Adicionar Exercício
+                      {modoEdicao ? "Editar Exercício" : "Adicionar Exercício"}
                     </h1>
                     <p
                       style={{
@@ -932,6 +1199,26 @@ export function AddExercise() {
                             />
                           </Field>
                         </div>
+
+                        <div className="py-2 flex justify-end">
+                          <button
+                            onClick={handleAddWord}
+                            className="w-full sm:w-auto rounded-2xl px-6 py-4 flex items-center justify-center gap-2"
+                            style={{
+                              background: "#EBF3FF",
+                              color: "#0052CC",
+                              border: "1.5px solid #93C5FD",
+                              cursor: "pointer",
+                              fontSize: 15,
+                              fontWeight: 800,
+                              minWidth: 220,
+                              maxWidth: "100%",
+                            }}
+                          >
+                            <Plus size={18} />
+                            Adicionar Palavra
+                          </button>
+                        </div>
                         {conteudos.length > 0 && (
                           <div className="mt-5 grid gap-3">
                             {conteudos.map((item, index) => (
@@ -976,6 +1263,59 @@ export function AddExercise() {
                                   >
                                     {item.instrucao}
                                   </p>
+
+                                  {item.audioReferencia && (
+                                    <div className="mt-3">
+                                      <audio
+                                        controls
+                                        src={item.audioReferencia}
+                                        className="w-full rounded-2xl"
+                                      />
+                                    </div>
+                                  )}
+
+                                  {/* Botão para gravar áudio de referência */}
+                                  <button
+                                    id={`btn-audio-referencia-${item.id}`}
+                                    onClick={() => {
+                                      if (
+                                        recordingItemId === item.id &&
+                                        micStatus === "recording"
+                                      ) {
+                                        stopRecording();
+                                      } else {
+                                        void startRecordingForItem(item.id);
+                                      }
+                                    }}
+                                    disabled={micStatus === "unsupported"}
+                                    className="mt-3 flex items-center gap-2 rounded-2xl px-4 py-3"
+                                    style={{
+                                      background:
+                                        micStatus === "unsupported"
+                                          ? "#CBD5E1"
+                                          : recordingItemId === item.id &&
+                                              micStatus === "recording"
+                                            ? "#FF5630"
+                                            : "#0052CC",
+                                      color: "#fff",
+                                      border: "none",
+                                      cursor:
+                                        micStatus === "unsupported"
+                                          ? "not-allowed"
+                                          : "pointer",
+                                      fontSize: 14,
+                                      fontWeight: 700,
+                                      width: "fit-content",
+                                    }}
+                                  >
+                                    <Mic size={16} />
+                                    {recordingItemId === item.id &&
+                                    micStatus === "recording"
+                                      ? "Parar gravação"
+                                      : item.audioReferencia
+                                        ? "Regravar áudio de referência"
+                                        : "Gravar áudio de referência"}
+                                  </button>
                                 </div>
                                 <button
                                   onClick={() => handleRemoveWord(item.id)}
@@ -996,25 +1336,7 @@ export function AddExercise() {
                           </div>
                         )}
 
-                        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <button
-                            onClick={handleAddWord}
-                            className="w-full sm:w-auto rounded-2xl px-6 py-4 flex items-center justify-center gap-2"
-                            style={{
-                              background: "#EBF3FF",
-                              color: "#0052CC",
-                              border: "1.5px solid #93C5FD",
-                              cursor: "pointer",
-                              fontSize: 15,
-                              fontWeight: 800,
-                              minWidth: 220,
-                              maxWidth: "100%",
-                            }}
-                          >
-                            <Plus size={18} />
-                            Adicionar Palavra
-                          </button>
-
+                        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
                           <button
                             id="btn-salvar-exercicio"
                             onClick={handleSave}
@@ -1032,7 +1354,9 @@ export function AddExercise() {
                             }}
                           >
                             <Save size={18} />
-                            Salvar Exercício
+                            {modoEdicao
+                              ? "Salvar Alterações"
+                              : "Salvar Exercício"}
                           </button>
                         </div>
                       </section>

@@ -151,6 +151,7 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [exercicios, setExercicios] = useState<Exercicio[]>([]);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const [fono, setFono] = useState<DashboardFono>({
     nome: "Fonoaudiólogo",
@@ -219,6 +220,51 @@ export function AdminDashboard() {
 
   return (
     <MobileWrapper bgColor="#EBF3FF" desktopMode="full">
+      {showLogoutModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+          <div className="bg-white rounded-3xl p-6 w-[90%] max-w-sm shadow-2xl text-center">
+
+            <h2 className="text-xl font-bold mb-2" style={{ color: "#1A2B5F" }}>
+              Confirmar saída
+            </h2>
+
+            <p className="text-sm text-gray-600 mb-6">
+              Deseja realmente sair da sua conta?
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 py-3 rounded-2xl font-medium transition-all"
+                style={{
+                  background: "#EEF2FF",
+                  color: "#1A2B5F",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                Cancelar
+              </button>
+
+              <button
+                id="btn-confirmar-logout"
+                onClick={() => {
+                  logout();
+                  navigate("/", { replace: true });
+                }}
+                className="flex-1 py-3 rounded-2xl text-white font-medium transition-all"
+                style={{
+                  background: "linear-gradient(135deg, #FF5630, #FF7452)",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                Sair
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div
         className="flex min-h-screen"
         style={{
@@ -227,7 +273,7 @@ export function AdminDashboard() {
         }}
       >
         <div
-          className="hidden md:flex md:flex-col md:w-72 lg:w-80 min-h-screen"
+          className="hidden md:flex md:flex-col md:w-72 lg:w-80 h-screen"
           style={{
             background:
               "linear-gradient(180deg, #003884 0%, #0052CC 50%, #0065FF 100%)",
@@ -305,45 +351,46 @@ export function AdminDashboard() {
             </div>
           </div>
 
-          <div className="p-4 border-t border-white/10 space-y-2">
-            <button
-              onClick={() => navigate("/settings/perfil")}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all"
-              style={{
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              <Settings size={20} color="rgba(255,255,255,0.6)" />
-              <span
+          <div className="flex flex-col flex-1">
+            <div className="p-4">
+              <button
+                onClick={() => navigate("/settings/perfil")}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all"
                 style={{
-                  fontSize: 14,
-                  fontWeight: 400,
-                  color: "rgba(255,255,255,0.7)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
                 }}
               >
-                Configurações
-              </span>
-            </button>
-            <div className="flex-1 p-3" />
-            <button
-              onClick={() => {
-                logout();
-                navigate("/", { replace: true });
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all"
-              style={{
-                background: "rgba(255,86,48,0.15)",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              <LogOut size={20} color="#FF9580" />
-              <span style={{ fontSize: 14, fontWeight: 500, color: "#FFB4A6" }}>
-                Sair
-              </span>
-            </button>
+                <Settings size={20} color="rgba(255,255,255,0.6)" />
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 400,
+                    color: "rgba(255,255,255,0.7)",
+                  }}
+                >
+                  Configurações
+                </span>
+              </button>
+            </div>
+
+            <div className="mt-auto p-4 border-t border-white/10">
+              <button
+              onClick={() => setShowLogoutModal(true)}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all"
+                style={{
+                  background: "rgba(255,86,48,0.15)",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                <LogOut size={20} color="#fff" />
+                <span style={{ fontSize: 14, fontWeight: 500, color: "#fff" }}>
+                  Sair
+                </span>
+              </button>
+            </div>
           </div>
         </div>
 
