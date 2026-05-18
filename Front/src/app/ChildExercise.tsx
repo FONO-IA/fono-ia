@@ -239,15 +239,16 @@ async function analyzeAudios(
 
   // Envia pro backend
   const form = new FormData();
-  // substituir nomes
-  form.append("audio", refWav, "audioreferencia.wav");
-  form.append("audio", patientBlobWav, "audioresposta.wav");
+
+  form.append("reference_audio", refWav, "audioreferencia.wav");
+
+  form.append("test_audio", patientBlobWav, "audioresposta.wav");
 
   for (const [k, v] of form.entries()) {
     console.log(k, v);
   }
 
-  const resp = await fetch("http://localhost:8050/analyze", {
+  const resp = await fetch("http://localhost:8050/api/v1/analyze", {
     method: "POST",
     body: form,
   });
