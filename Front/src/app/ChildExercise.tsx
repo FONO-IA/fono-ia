@@ -29,6 +29,7 @@ type PracticeItem = {
   id: string;
   text: string;
   instruction: string;
+  referenceAudioUrl?: string;
 };
 
 function getExerciseTitle(exercise: Exercicio) {
@@ -46,10 +47,16 @@ function getExerciseDescription(exercise: Exercicio) {
 
 function buildPracticeItems(exercise: Exercicio): PracticeItem[] {
   if (exercise.conteudos?.length) {
-    return exercise.conteudos.map((item) => ({
+    return exercise.conteudos.map((item: any) => ({
       id: String(item.id),
       text: item.texto,
       instruction: item.instrucao || exercise.instrucao,
+      referenceAudioUrl:
+        item.audio_referencia ||
+        item.audioReferencia ||
+        item.referencia_url ||
+        item.audio_url ||
+        undefined,
     }));
   }
 
@@ -58,6 +65,10 @@ function buildPracticeItems(exercise: Exercicio): PracticeItem[] {
       id: String(exercise.id),
       text: exercise.conteudo || getExerciseTitle(exercise),
       instruction: exercise.instrucao || "Leia e grave sua resposta.",
+      referenceAudioUrl:
+        (exercise as any).audio_url ||
+        (exercise as any).referencia_url ||
+        undefined,
     },
   ];
 }
@@ -172,6 +183,92 @@ function interleaveAudio(audioBuffer: AudioBuffer): Float32Array {
   return result;
 }
 
+// Envio de áudio de para comparação
+async function fetchAudioUrlAsBlob(url: string): Promise<Blob> {
+  const resp = await fetch(url);
+  if (!resp.ok)
+    throw new Error("Nao foi possivel baixar o audio de referencia.");
+  return await resp.blob();
+}
+
+function guessApproved(payload: any): boolean {
+  // Tenta ser compatível com vários formatos de resposta
+  if (!payload) return false;
+  if (typeof payload === "boolean") return payload;
+
+  const direct =
+    payload.approved ??
+    payload.aprovado ??
+    payload.success ??
+    payload.ok ??
+    payload.isApproved;
+
+  if (typeof direct === "boolean") return direct;
+
+  // Ex.: { result: "approved" } / { status: "approved" }
+  const text = (payload.result ?? payload.status ?? payload.message ?? "")
+    .toString()
+    .toLowerCase();
+
+  if (
+    text.includes("approved") ||
+    text.includes("aprov") ||
+    text.includes("pass")
+  )
+    return true;
+  return false;
+}
+
+async function analyzeAudios(
+  referenceUrl: string,
+  patientWav: Blob,
+): Promise<boolean> {
+  // Baixa referência
+  const refBlobRaw = await fetchAudioUrlAsBlob(referenceUrl);
+
+  // Garante WAV nos dois lados (se seu backend aceitar outros formatos, pode remover isso)
+  const refWav =
+    refBlobRaw.type === "audio/wav"
+      ? refBlobRaw
+      : await convertBlobToWav(refBlobRaw);
+
+  const patientBlobWav =
+    patientWav.type === "audio/wav"
+      ? patientWav
+      : await convertBlobToWav(patientWav);
+
+  // Envia pro backend
+  const form = new FormData();
+  // substituir nomes
+  form.append("audio", refWav, "audioreferencia.wav");
+  form.append("audio", patientBlobWav, "audioresposta.wav");
+
+  for (const [k, v] of form.entries()) {
+    console.log(k, v);
+  }
+
+  const resp = await fetch("http://localhost:8050/analyze", {
+    method: "POST",
+    body: form,
+  });
+
+  if (!resp.ok) {
+    throw new Error("Falha ao analisar os audios.");
+  }
+
+  // pode ser JSON ou texto
+  const contentType = resp.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    const data = await resp.json();
+    return guessApproved(data);
+  }
+
+  const text = (await resp.text()).toLowerCase();
+  return (
+    text.includes("approved") || text.includes("aprov") || text.includes("pass")
+  );
+}
+
 export function ChildExercise() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -203,8 +300,9 @@ export function ChildExercise() {
     () => (exercise ? buildPracticeItems(exercise) : []),
     [exercise],
   );
+
   const currentItem = items[currentIndex];
-  const referenceAudio = exercise?.audio_url || exercise?.referencia_url;
+  const referenceAudio = currentItem?.referenceAudioUrl;
 
   useEffect(() => {
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
@@ -327,12 +425,33 @@ export function ChildExercise() {
       return;
     }
 
+    // precisa ter áudio de referência
+    if (!referenceAudio) {
+      setSubmitError("Este item nao possui audio de referencia.");
+      return;
+    }
+
     try {
       setSubmitting(true);
       setSubmitError("");
+
+      // 1) Analisa no localhost:8050/analyze com os 2 áudios
+      const approved = await analyzeAudios(referenceAudio, audioBlob);
+
+      if (!approved) {
+        // não aprovado → NÃO conclui, mostra “Tente novamente”
+        setCompleted(false);
+        setSubmitError("Tente novamente");
+        return;
+      }
+
+      // aprovado → registra sua resposta no seu backend (opcional, mas recomendado)
       await enviarRespostaExercicio(exerciseId, audioBlob, pacienteId);
+
+      // conclui
       setCompleted(true);
     } catch (err) {
+      setCompleted(false);
       setSubmitError(
         err instanceof Error
           ? err.message
@@ -361,6 +480,7 @@ export function ChildExercise() {
     setCurrentIndex(nextIndex);
     clearRecording();
     setSubmitError("");
+    setCompleted(false);
   }
 
   if (loading) {
@@ -717,7 +837,7 @@ export function ChildExercise() {
                   </button>
                 ) : (
                   <button
-                  id="btn-iniciar-gravacao"
+                    id="btn-iniciar-gravacao"
                     onClick={startRecording}
                     disabled={micStatus === "unsupported" || submitting}
                     className="flex items-center justify-center gap-2 rounded-3xl px-6 py-4"
