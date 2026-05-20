@@ -62,40 +62,40 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
 
         fonoaudiologo = serializer.save(user=user)
 
-        send_mail(
-            subject="Bem-vindo(a) ao Fono IA - Dados de acesso",
-            message=f"""
-        Olá, {fonoaudiologo.nome}!
+        # send_mail(
+        #     subject="Bem-vindo(a) ao Fono IA - Dados de acesso",
+        #     message=f"""
+        # Olá, {fonoaudiologo.nome}!
 
-        Seja bem-vindo(a) ao FONO-IA.
+        # Seja bem-vindo(a) ao FONO-IA.
 
-        Seu cadastro foi realizado com sucesso.
-        Abaixo estão seus dados de acesso:
+        # Seu cadastro foi realizado com sucesso.
+        # Abaixo estão seus dados de acesso:
 
-        Usuário: {username}
-        Senha: {password}
+        # Usuário: {username}
+        # Senha: {password}
 
-        Acesse o sistema e faça login com essas informações.
+        # Acesse o sistema e faça login com essas informações.
 
-        Por segurança, recomendamos alterar sua senha após o primeiro acesso.
+        # Por segurança, recomendamos alterar sua senha após o primeiro acesso.
 
-        Atenciosamente,
-        Equipe FONO-IA
-        """,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[fonoaudiologo.email],
-            fail_silently=False,
-        )
+        # Atenciosamente,
+        # Equipe FONO-IA
+        # """,
+        #     from_email=settings.DEFAULT_FROM_EMAIL,
+        #     recipient_list=[fonoaudiologo.email],
+        #     fail_silently=False,
+        # )
 
-        print(f"""
-               ========================================
-               EMAIL ENVIADO COM SUCESSO
+        # print(f"""
+        #        ========================================
+        #        EMAIL ENVIADO COM SUCESSO
    
-               Destinatário: {fonoaudiologo.email}
-               Usuário: {username}
-               Senha: {password}
-               ========================================
-            """)
+        #        Destinatário: {fonoaudiologo.email}
+        #        Usuário: {username}
+        #        Senha: {password}
+        #        ========================================
+        #     """)
 
     def create(self, request, *args, **kwargs):
 

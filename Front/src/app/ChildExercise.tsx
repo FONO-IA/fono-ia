@@ -19,6 +19,7 @@ import { MobileWrapper } from "./MobileWrapper";
 import {
   buscarExercicioPorId,
   enviarRespostaExercicio,
+  criarResultadoExercicio,
   type Exercicio,
 } from "../services/exercicios";
 import { getValidAuthSession } from "../services/session";
@@ -191,42 +192,14 @@ async function fetchAudioUrlAsBlob(url: string): Promise<Blob> {
   return await resp.blob();
 }
 
-function guessApproved(payload: any): boolean {
-  // Tenta ser compatível com vários formatos de resposta
-  if (!payload) return false;
-  if (typeof payload === "boolean") return payload;
-
-  const direct =
-    payload.approved ??
-    payload.aprovado ??
-    payload.success ??
-    payload.ok ??
-    payload.isApproved;
-
-  if (typeof direct === "boolean") return direct;
-
-  // Ex.: { result: "approved" } / { status: "approved" }
-  const text = (payload.result ?? payload.status ?? payload.message ?? "")
-    .toString()
-    .toLowerCase();
-
-  if (
-    text.includes("approved") ||
-    text.includes("aprov") ||
-    text.includes("pass")
-  )
-    return true;
-  return false;
-}
-
 async function analyzeAudios(
   referenceUrl: string,
   patientWav: Blob,
-): Promise<boolean> {
+): Promise<any> {
   // Baixa referência
   const refBlobRaw = await fetchAudioUrlAsBlob(referenceUrl);
 
-  // Garante WAV nos dois lados (se seu backend aceitar outros formatos, pode remover isso)
+  // Garante WAV nos dois lados
   const refWav =
     refBlobRaw.type === "audio/wav"
       ? refBlobRaw
@@ -239,14 +212,8 @@ async function analyzeAudios(
 
   // Envia pro backend
   const form = new FormData();
-
   form.append("reference_audio", refWav, "audioreferencia.wav");
-
   form.append("test_audio", patientBlobWav, "audioresposta.wav");
-
-  for (const [k, v] of form.entries()) {
-    console.log(k, v);
-  }
 
   const resp = await fetch("http://localhost:8050/api/v1/analyze", {
     method: "POST",
@@ -256,18 +223,17 @@ async function analyzeAudios(
   if (!resp.ok) {
     throw new Error("Falha ao analisar os audios.");
   }
-
-  // pode ser JSON ou texto
-  const contentType = resp.headers.get("content-type") || "";
-  if (contentType.includes("application/json")) {
-    const data = await resp.json();
-    return guessApproved(data);
+  
+  // Tenta fazer o parse como JSON, se falhar retorna o texto puro
+  const textResponse = await resp.text();
+  try {
+    const jsonResponse = JSON.parse(textResponse);
+    console.log("Análise recebida (JSON):", jsonResponse);
+    return jsonResponse;
+  } catch {
+    console.log("Resposta não é JSON, retornando como texto:", textResponse);
+    return { resultado: textResponse, raw: true };
   }
-
-  const text = (await resp.text()).toLowerCase();
-  return (
-    text.includes("approved") || text.includes("aprov") || text.includes("pass")
-  );
 }
 
 export function ChildExercise() {
@@ -292,6 +258,12 @@ export function ChildExercise() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [completed, setCompleted] = useState(false);
+  
+  // Novos estados para feedback visual
+  const [feedbackStatus, setFeedbackStatus] = useState<"success" | "error" | null>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -434,30 +406,56 @@ export function ChildExercise() {
 
     try {
       setSubmitting(true);
+      setAnalyzing(true);
       setSubmitError("");
+      setShowFeedback(false);
 
-      // 1) Analisa no localhost:8050/analyze com os 2 áudios
-      const approved = await analyzeAudios(referenceAudio, audioBlob);
+      // 1) Analisa e obtém o JSON completo da análise
+      const analiseIA = await analyzeAudios(referenceAudio, audioBlob);
+      console.log("Dados da análise que serão salvos no feedback:", analiseIA);
+      setAnalyzing(false);
 
-      if (!approved) {
-        // não aprovado → NÃO conclui, mostra “Tente novamente”
+      // 2) Verifica o final_score para feedback visual
+      const finalScore = analiseIA?.final_score ?? 0;
+      const isApproved = finalScore >= 60;
+      
+      if (isApproved) {
+        setFeedbackStatus("success");
+        setFeedbackMessage(`Ótimo trabalho! Pontuação: ${finalScore}%`);
+      } else {
+        setFeedbackStatus("error");
+        setFeedbackMessage(`Que tal tentar novamente? Pontuação: ${finalScore}%`);
+      }
+      setShowFeedback(true);
+
+      // 3) Envia a resposta (áudio) para o backend
+      const respostaAudio = await enviarRespostaExercicio(exerciseId, audioBlob, pacienteId);
+      console.log("Resposta do áudio enviada:", respostaAudio);
+
+      // 4) Cria o registro de resultado com o feedback da análise
+      const resultado = await criarResultadoExercicio(exerciseId, analiseIA);
+      console.log("Resultado criado com feedback:", resultado);
+
+      // 5) Só conclui se aprovado (opcional - descomente se quiser bloquear)
+      if (!isApproved) {
+        setSubmitError(`Pontuação ${finalScore}%. Tente novamente para concluir o exercício.`);
         setCompleted(false);
-        setSubmitError("Tente novamente");
         return;
       }
-
-      // aprovado → registra sua resposta no seu backend (opcional, mas recomendado)
-      await enviarRespostaExercicio(exerciseId, audioBlob, pacienteId);
 
       // conclui
       setCompleted(true);
     } catch (err) {
+      setAnalyzing(false);
       setCompleted(false);
       setSubmitError(
         err instanceof Error
           ? err.message
           : "Nao foi possivel enviar a resposta.",
       );
+      setFeedbackStatus("error");
+      setFeedbackMessage("Erro ao analisar sua resposta. Tente novamente.");
+      setShowFeedback(true);
     } finally {
       setSubmitting(false);
     }
@@ -482,6 +480,8 @@ export function ChildExercise() {
     clearRecording();
     setSubmitError("");
     setCompleted(false);
+    setShowFeedback(false);
+    setFeedbackStatus(null);
   }
 
   if (loading) {
@@ -840,7 +840,7 @@ export function ChildExercise() {
                   <button
                     id="btn-iniciar-gravacao"
                     onClick={startRecording}
-                    disabled={micStatus === "unsupported" || submitting}
+                    disabled={micStatus === "unsupported" || submitting || analyzing}
                     className="flex items-center justify-center gap-2 rounded-3xl px-6 py-4"
                     style={{
                       background:
@@ -848,7 +848,7 @@ export function ChildExercise() {
                       color: "#fff",
                       border: "none",
                       cursor:
-                        micStatus === "unsupported" || submitting
+                        micStatus === "unsupported" || submitting || analyzing
                           ? "not-allowed"
                           : "pointer",
                       fontSize: 15,
@@ -860,32 +860,111 @@ export function ChildExercise() {
                   </button>
                 )}
 
-                <button
-                  onClick={submitAnswer}
-                  disabled={!audioBlob || submitting}
-                  className="flex items-center justify-center gap-2 rounded-3xl px-6 py-4"
+                {analyzing ? (
+                  <button
+                    disabled
+                    className="flex items-center justify-center gap-2 rounded-3xl px-6 py-4"
+                    style={{
+                      background: "#CBD5E1",
+                      color: "#fff",
+                      border: "none",
+                      fontSize: 15,
+                      fontWeight: 800,
+                      cursor: "not-allowed",
+                    }}
+                  >
+                    <Loader2 className="animate-spin" size={18} />
+                    Analisando sua resposta...
+                  </button>
+                ) : (
+                  <button
+                    onClick={submitAnswer}
+                    disabled={!audioBlob || submitting}
+                    className="flex items-center justify-center gap-2 rounded-3xl px-6 py-4"
+                    style={{
+                      background: !audioBlob ? "#DBEAFE" : "#0A8F3D",
+                      color: !audioBlob ? "#6B7A99" : "#fff",
+                      border: "none",
+                      cursor:
+                        !audioBlob || submitting ? "not-allowed" : "pointer",
+                      fontSize: 15,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {submitting ? (
+                      <Loader2 className="animate-spin" size={18} />
+                    ) : (
+                      <Send size={18} />
+                    )}
+                    {submitting
+                      ? "Enviando..."
+                      : isProfessional
+                        ? "Finalizar teste"
+                        : "Enviar resposta"}
+                  </button>
+                )}
+              </div>
+
+              {/* Feedback Visual Baseado na Análise */}
+              {showFeedback && feedbackStatus && !analyzing && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-5 rounded-3xl p-5"
                   style={{
-                    background: !audioBlob ? "#DBEAFE" : "#0A8F3D",
-                    color: !audioBlob ? "#6B7A99" : "#fff",
-                    border: "none",
-                    cursor:
-                      !audioBlob || submitting ? "not-allowed" : "pointer",
-                    fontSize: 15,
-                    fontWeight: 800,
+                    background: feedbackStatus === "success" ? "#ECFDF5" : "#FFF0EC",
+                    border: feedbackStatus === "success" ? "1.5px solid #BBF7D0" : "1.5px solid #FECDC3",
                   }}
                 >
-                  {submitting ? (
-                    <Loader2 className="animate-spin" size={18} />
-                  ) : (
-                    <Send size={18} />
+                  <div className="flex items-center gap-3">
+                    {feedbackStatus === "success" ? (
+                      <CheckCircle2 size={26} color="#1F8A5B" />
+                    ) : (
+                      <AlertCircle size={26} color="#FF5630" />
+                    )}
+                    <div>
+                      <p
+                        style={{
+                          color: feedbackStatus === "success" ? "#1F8A5B" : "#9A3412",
+                          fontSize: 17,
+                          fontWeight: 900,
+                        }}
+                      >
+                        {feedbackStatus === "success" ? "Muito bem!" : "Que pena!"}
+                      </p>
+                      <p
+                        style={{
+                          color: feedbackStatus === "success" ? "#357A5B" : "#9A3412",
+                          fontSize: 13,
+                          marginTop: 3,
+                        }}
+                      >
+                        {feedbackMessage}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {feedbackStatus === "error" && !completed && (
+                    <button
+                      onClick={() => {
+                        setShowFeedback(false);
+                        clearRecording();
+                      }}
+                      className="mt-4 flex items-center gap-2 rounded-2xl px-5 py-3"
+                      style={{
+                        background: "#fff",
+                        color: "#9A3412",
+                        border: "1.5px solid #FECDC3",
+                        cursor: "pointer",
+                        fontWeight: 800,
+                      }}
+                    >
+                      <Mic size={17} />
+                      Tentar novamente
+                    </button>
                   )}
-                  {submitting
-                    ? "Enviando..."
-                    : isProfessional
-                      ? "Finalizar teste"
-                      : "Enviar resposta"}
-                </button>
-              </div>
+                </motion.div>
+              )}
 
               {isProfessional && (
                 <div

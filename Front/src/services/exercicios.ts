@@ -59,7 +59,7 @@ export type RespostaExercicio = {
   id: string;
   detail: string;
   concluido: boolean;
-  feedback: Record<string, unknown>;
+  feedback: string;
 };
 
 export async function criarExercicio(payload: CreateExercicioPayload) {
@@ -87,6 +87,29 @@ export async function listarExercicios(params?: { paciente?: string }) {
 export async function buscarExercicioPorId(id: string) {
   return api.get<Exercicio>(`/exercicios/${id}/`);
 }
+
+export async function criarResultadoExercicio(
+  exercicioId: string,
+  feedback: any,
+) {
+  const feedbackJson = typeof feedback === 'object' 
+    ? JSON.stringify(feedback) 
+    : feedback;
+    
+  return api.post<Resultado>("/resultados/", {
+    exercicio: exercicioId,
+    feedback: JSON.parse(feedbackJson)
+  });
+}
+
+// Tipo para o retorno do resultado
+export type Resultado = {
+  id: string;
+  exercicio: string;
+  feedback: any;
+//  created_at: string;
+//  updated_at: string;
+};
 
 export async function enviarRespostaExercicio(
   exercicioId: string,

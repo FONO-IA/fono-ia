@@ -130,6 +130,7 @@ export function CadastroFonoPage() {
       setError("");
 
       const password = generateRandomString(8);
+      console.log(password);
 
       await criarFonoaudiologo({
         nome: form.nome.trim(),
