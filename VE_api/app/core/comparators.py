@@ -14,65 +14,48 @@ class FeatureComparators:
         pass
 
     def compute_cosine_dtw(self, seq_x, seq_y, window_size=None):
-        """
-        Dynamic Time Warping com distância cosseno.
-
-        Alinha duas sequências temporais encontrando o caminho ótimo
-        que minimiza a distância acumulada.
-
-        Args:
-            seq_x: Primeira sequência
-            seq_y: Segunda sequência
-            window_size: Tamanho da janela Sakoe-Chiba
-
-        Returns:
-            tuple: (distancia, caminho, x_norm, y_norm)
-        """
         len_x, len_y = len(seq_x), len(seq_y)
-
         if len_x == 0 or len_y == 0:
             return 0, [], seq_x, seq_y
 
-        # Normaliza sequências
-        x_norm = (seq_x - np.mean(seq_x, axis=0)) / (
-            np.std(seq_x, axis=0) + 1e-10
-        )
-        y_norm = (seq_y - np.mean(seq_y, axis=0)) / (
-            np.std(seq_y, axis=0) + 1e-10
-        )
-
-        # Matriz de custo acumulado
-        cost = np.full((len_x + 1, len_y + 1), np.inf)
-        cost[0, 0] = 0
+        # Normalização
+        x_norm = (seq_x - np.mean(seq_x, axis=0)) / (np.std(seq_x, axis=0) + 1e-10)
+        y_norm = (seq_y - np.mean(seq_y, axis=0)) / (np.std(seq_y, axis=0) + 1e-10)
 
         if window_size is None:
             window_size = int(max(len_x, len_y) * 0.25)
 
-        # Preenche matriz de custo
-        for i in range(len_x):
-            for j in range(len_y):
-                dot = np.dot(x_norm[i], y_norm[j])
-                norm = np.linalg.norm(x_norm[i]) * np.linalg.norm(y_norm[j])
-                if norm > 1e-10:
-                    sim = np.clip(dot / norm, -1, 1)
-                    cost[i + 1, j + 1] = 1 - sim
-                else:
-                    cost[i + 1, j + 1] = 1
+        # Matriz de custo preenchida com infinito (fora da banda não será usada)
+        cost = np.full((len_x + 1, len_y + 1), np.inf)
+        cost[0, 0] = 0
 
-        # Propaga custos com janela
+        # Preenche apenas dentro da banda, calculando o custo local e acumulando
         for i in range(1, len_x + 1):
             j_start = max(1, i - window_size)
             j_end = min(len_y + 1, i + window_size + 1)
             for j in range(j_start, j_end):
-                cost[i, j] += min(
-                    cost[i - 1, j],
-                    cost[i, j - 1],
-                    cost[i - 1, j - 1]
+                # Custo local (distância cosseno)
+                dot = np.dot(x_norm[i - 1], y_norm[j - 1])
+                norm = np.linalg.norm(x_norm[i - 1]) * np.linalg.norm(y_norm[j - 1])
+                if norm > 1e-10:
+                    sim = np.clip(dot / norm, -1, 1)
+                    local_cost = 1.0 - sim
+                else:
+                    local_cost = 1.0
+
+                cost[i, j] = local_cost + min(
+                    cost[i - 1, j],      # inserção
+                    cost[i, j - 1],      # deleção
+                    cost[i - 1, j - 1]   # match
                 )
 
-        # Backtracking
+        # Backtracking (apenas se existir caminho)
         path = []
         i, j = len_x, len_y
+        if np.isinf(cost[i, j]):
+            # Caso extremo: sem caminho válido (sequências muito diferentes)
+            return 2.0, [], x_norm, y_norm
+
         while i > 0 and j > 0:
             path.append((i - 1, j - 1))
             if i == 1:
@@ -80,11 +63,7 @@ class FeatureComparators:
             elif j == 1:
                 i -= 1
             else:
-                directions = [
-                    cost[i - 1, j],
-                    cost[i, j - 1],
-                    cost[i - 1, j - 1]
-                ]
+                directions = [cost[i - 1, j], cost[i, j - 1], cost[i - 1, j - 1]]
                 min_dir = np.argmin(directions)
                 if min_dir == 0:
                     i -= 1
@@ -95,8 +74,7 @@ class FeatureComparators:
                     j -= 1
 
         path.reverse()
-        distance = cost[len_x, len_y] / len(path) if len(path) > 0 else 0
-
+        distance = cost[len_x, len_y] / len(path) if len(path) > 0 else 2.0
         return distance, path, x_norm, y_norm
 
     def compute_rhythm_penalty(self, ref_features, test_features):
