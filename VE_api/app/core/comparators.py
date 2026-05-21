@@ -110,8 +110,8 @@ class FeatureComparators:
             )
             mean_dev = np.mean(deviations)
 
-            diag_len = np.sqrt(n_ref ** 2 + n_test ** 2)
-            dev_norm = mean_dev / (diag_len + 1e-10)
+            norm_len = min(n_ref, n_test)          # comprimento da sequência mais curta
+            dev_norm = mean_dev / (norm_len + 1e-10)
 
             rhythm_score = max(0, 100 * np.exp(-dev_norm * 10))
         else:
@@ -363,7 +363,7 @@ class FeatureComparators:
         Returns:
             tuple: (score_fonetico, score_mfcc, score_formante)
         """
-        mfcc_score = max(0, 100 * np.exp(-mfcc_distance / 0.5))
+        mfcc_score = max(0, 100 * np.exp(-mfcc_distance / 0.4))
 
         if formant_comparison:
             total_weight = sum(

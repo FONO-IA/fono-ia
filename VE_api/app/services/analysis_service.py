@@ -121,6 +121,19 @@ class AnalysisService:
         # Score final
         final_score = 0.6 * phonetic_score + 0.4 * prosody_score
 
+        # Penalidade gradual por diferença de duração (mais suave)
+        dur_ratio = test_dur / ref_dur if ref_dur > 0 else 999
+        if dur_ratio < 0.5 or dur_ratio > 2.0:
+            duration_penalty = 0.4          # caso extremo → multiplica por 0.4
+        elif dur_ratio < 0.7 or dur_ratio > 1.6:
+            duration_penalty = 0.6
+        elif dur_ratio < 0.8 or dur_ratio > 1.3:
+            duration_penalty = 0.8
+        else:
+            duration_penalty = 1.0          # sem penalidade
+
+        final_score *= duration_penalty
+
         # Classificação
         if final_score >= 75:
             quality = "Excelente"
