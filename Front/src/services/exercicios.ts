@@ -59,7 +59,7 @@ export type RespostaExercicio = {
   id: string;
   detail: string;
   concluido: boolean;
-  feedback: string;
+  feedback: any;
 };
 
 export async function criarExercicio(payload: CreateExercicioPayload) {
@@ -115,12 +115,22 @@ export async function enviarRespostaExercicio(
   exercicioId: string,
   audioBlob: Blob,
   pacienteId?: string,
+  status?: string,
+  feedback?: unknown,
 ) {
   const formData = new FormData();
   formData.append("audio", audioBlob, `resposta-${exercicioId}.wav`);
 
   if (pacienteId) {
     formData.append("paciente_id", pacienteId);
+  }
+
+  if (status) {
+    formData.append("status", status);
+  }
+
+  if (feedback !== undefined) {
+    formData.append("feedback", JSON.stringify(feedback));
   }
 
   return api.postForm<RespostaExercicio>(
