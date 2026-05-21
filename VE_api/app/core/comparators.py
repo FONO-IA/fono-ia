@@ -23,7 +23,11 @@ class FeatureComparators:
         y_norm = (seq_y - np.mean(seq_y, axis=0)) / (np.std(seq_y, axis=0) + 1e-10)
 
         if window_size is None:
-            window_size = int(max(len_x, len_y) * 0.25)
+            max_len = max(len_x, len_y)
+            if max_len < 50:          # ~0,5 s (considerando hop_length=512, sr=22050 → ~23 ms/frame)
+                window_size = max(1, int(max_len * 0.05))
+            else:
+                window_size = int(max_len * 0.10)
 
         # Matriz de custo preenchida com infinito (fora da banda não será usada)
         cost = np.full((len_x + 1, len_y + 1), np.inf)
@@ -377,6 +381,6 @@ class FeatureComparators:
             formant_score = 50.0
 
         formant_score = max(0.0, formant_score)
-        phonetic_score = 0.6 * mfcc_score + 0.4 * formant_score
+        phonetic_score = 0.75 * mfcc_score + 0.25 * formant_score
 
         return phonetic_score, mfcc_score, formant_score
