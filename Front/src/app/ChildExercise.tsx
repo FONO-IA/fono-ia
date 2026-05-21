@@ -19,12 +19,12 @@ import { MobileWrapper } from "./MobileWrapper";
 import {
   buscarExercicioPorId,
   enviarRespostaExercicio,
-  criarResultadoExercicio,
   type Exercicio,
 } from "../services/exercicios";
 import { getValidAuthSession } from "../services/session";
 
 type MicStatus = "unsupported" | "idle" | "recording" | "recorded" | "error";
+type FeedbackStatus = "success" | "error" | "warning";
 
 type PracticeItem = {
   id: string;
@@ -87,6 +87,42 @@ function getMicMessage(status: MicStatus) {
     default:
       return "Microfone disponivel. Clique para iniciar a gravacao.";
   }
+}
+
+function getFeedbackVisual(status: FeedbackStatus) {
+  if (status === "success") {
+    return {
+      bg: "linear-gradient(135deg, #ECFDF5 0%, #F0FFF8 100%)",
+      border: "#86EFAC",
+      accent: "#16A34A",
+      soft: "#DCFCE7",
+      title: "#14532D",
+      text: "#166534",
+      label: "Correto",
+    };
+  }
+
+  if (status === "error") {
+    return {
+      bg: "linear-gradient(135deg, #FFF7ED 0%, #FFF1F2 100%)",
+      border: "#FDBA74",
+      accent: "#EA580C",
+      soft: "#FFEDD5",
+      title: "#7C2D12",
+      text: "#9A3412",
+      label: "Revisar",
+    };
+  }
+
+  return {
+    bg: "linear-gradient(135deg, #FFFBEB 0%, #F8FAFC 100%)",
+    border: "#FDE68A",
+    accent: "#B45309",
+    soft: "#FEF3C7",
+    title: "#78350F",
+    text: "#92400E",
+    label: "Analise pendente",
+  };
 }
 
 async function convertBlobToWav(blob: Blob): Promise<Blob> {
@@ -211,29 +247,48 @@ async function analyzeAudios(
       : await convertBlobToWav(patientWav);
 
   // Envia pro backend
-  const form = new FormData();
-  form.append("reference_audio", refWav, "audioreferencia.wav");
-  form.append("test_audio", patientBlobWav, "audioresposta.wav");
+  const configuredUrl = (import.meta as any).env?.VITE_ANALYSIS_API_URL;
+  const endpoints = [
+    configuredUrl,
+    "http://127.0.0.1:8050/api/v1/analyze",
+    "http://localhost:8050/api/v1/analyze",
+  ].filter(Boolean) as string[];
 
-  const resp = await fetch("http://localhost:8050/api/v1/analyze", {
-    method: "POST",
-    body: form,
-  });
+  let lastError: unknown = null;
 
-  if (!resp.ok) {
-    throw new Error("Falha ao analisar os audios.");
+  for (const endpoint of endpoints) {
+    try {
+      const form = new FormData();
+      form.append("reference_audio", refWav, "audioreferencia.wav");
+      form.append("test_audio", patientBlobWav, "audioresposta.wav");
+
+      const resp = await fetch(endpoint, {
+        method: "POST",
+        body: form,
+      });
+
+      if (!resp.ok) {
+        const detail = await resp.text().catch(() => "");
+        throw new Error(detail || "Falha ao analisar os audios.");
+      }
+
+      const textResponse = await resp.text();
+      try {
+        const jsonResponse = JSON.parse(textResponse);
+        console.log("Analise recebida (JSON):", jsonResponse);
+        return jsonResponse;
+      } catch {
+        console.log("Resposta nao e JSON, retornando como texto:", textResponse);
+        return { resultado: textResponse, raw: true };
+      }
+    } catch (err) {
+      lastError = err;
+    }
   }
-  
-  // Tenta fazer o parse como JSON, se falhar retorna o texto puro
-  const textResponse = await resp.text();
-  try {
-    const jsonResponse = JSON.parse(textResponse);
-    console.log("Análise recebida (JSON):", jsonResponse);
-    return jsonResponse;
-  } catch {
-    console.log("Resposta não é JSON, retornando como texto:", textResponse);
-    return { resultado: textResponse, raw: true };
-  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Nao foi possivel conectar a API de analise.");
 }
 
 export function ChildExercise() {
@@ -260,8 +315,10 @@ export function ChildExercise() {
   const [completed, setCompleted] = useState(false);
   
   // Novos estados para feedback visual
-  const [feedbackStatus, setFeedbackStatus] = useState<"success" | "error" | null>(null);
+  const [feedbackStatus, setFeedbackStatus] = useState<FeedbackStatus | null>(null);
+  const [feedbackTitle, setFeedbackTitle] = useState("");
   const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackScore, setFeedbackScore] = useState<number | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
 
@@ -276,6 +333,9 @@ export function ChildExercise() {
 
   const currentItem = items[currentIndex];
   const referenceAudio = currentItem?.referenceAudioUrl;
+  const feedbackVisual = feedbackStatus
+    ? getFeedbackVisual(feedbackStatus)
+    : null;
 
   useEffect(() => {
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
@@ -346,6 +406,8 @@ export function ChildExercise() {
     try {
       setMicError("");
       setSubmitError("");
+      setShowFeedback(false);
+      setFeedbackStatus(null);
       clearRecording();
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -410,40 +472,78 @@ export function ChildExercise() {
       setSubmitError("");
       setShowFeedback(false);
 
-      // 1) Analisa e obtém o JSON completo da análise
-      const analiseIA = await analyzeAudios(referenceAudio, audioBlob);
-      console.log("Dados da análise que serão salvos no feedback:", analiseIA);
+      let analiseIA: any;
+
+      try {
+        analiseIA = await analyzeAudios(referenceAudio, audioBlob);
+        console.log("Dados da analise que serao salvos no feedback:", analiseIA);
+      } catch (analysisError) {
+        setAnalyzing(false);
+
+        const message =
+          analysisError instanceof Error
+            ? analysisError.message
+            : "Nao foi possivel analisar sua resposta.";
+
+        await enviarRespostaExercicio(
+          exerciseId,
+          audioBlob,
+          pacienteId,
+          "erro_analise",
+          {
+            status: "erro_analise",
+            erro: message,
+            item: currentItem?.text,
+          },
+        );
+
+        setCompleted(false);
+        setFeedbackStatus("warning");
+        setFeedbackTitle("Resposta recebida");
+        setFeedbackScore(null);
+        setFeedbackMessage(
+          "Sua gravacao foi salva, mas a API de analise nao respondeu agora. Verifique se a VE_api esta rodando na porta 8050 e tente novamente.",
+        );
+        setShowFeedback(true);
+        return;
+      }
+
       setAnalyzing(false);
 
-      // 2) Verifica o final_score para feedback visual
-      const finalScore = analiseIA?.final_score ?? 0;
+      const finalScore = Number(analiseIA?.final_score ?? 0);
       const isApproved = finalScore >= 60;
-      
-      if (isApproved) {
-        setFeedbackStatus("success");
-        setFeedbackMessage(`Ótimo trabalho! Pontuação: ${finalScore}%`);
-      } else {
-        setFeedbackStatus("error");
-        setFeedbackMessage(`Que tal tentar novamente? Pontuação: ${finalScore}%`);
-      }
+      const statusResposta = isApproved ? "concluido" : "tentativa";
+      const feedbackPayload = {
+        ...analiseIA,
+        status: statusResposta,
+        aprovado: isApproved,
+        item: currentItem?.text,
+      };
+
+      const respostaAudio = await enviarRespostaExercicio(
+        exerciseId,
+        audioBlob,
+        pacienteId,
+        statusResposta,
+        feedbackPayload,
+      );
+      console.log("Resposta do audio enviada:", respostaAudio);
+
+      setFeedbackStatus(isApproved ? "success" : "error");
+      setFeedbackTitle(isApproved ? "Resposta correta" : "Vamos tentar de novo");
+      setFeedbackScore(finalScore);
+      setFeedbackMessage(
+        isApproved
+          ? "Boa! A pronuncia ficou dentro do esperado para este exercicio."
+          : "A comparacao ficou abaixo do esperado. Grave novamente com calma e use o audio de referencia como guia.",
+      );
       setShowFeedback(true);
 
-      // 3) Envia a resposta (áudio) para o backend
-      const respostaAudio = await enviarRespostaExercicio(exerciseId, audioBlob, pacienteId);
-      console.log("Resposta do áudio enviada:", respostaAudio);
-
-      // 4) Cria o registro de resultado com o feedback da análise
-      const resultado = await criarResultadoExercicio(exerciseId, analiseIA);
-      console.log("Resultado criado com feedback:", resultado);
-
-      // 5) Só conclui se aprovado (opcional - descomente se quiser bloquear)
       if (!isApproved) {
-        setSubmitError(`Pontuação ${finalScore}%. Tente novamente para concluir o exercício.`);
         setCompleted(false);
         return;
       }
 
-      // conclui
       setCompleted(true);
     } catch (err) {
       setAnalyzing(false);
@@ -453,8 +553,10 @@ export function ChildExercise() {
           ? err.message
           : "Nao foi possivel enviar a resposta.",
       );
-      setFeedbackStatus("error");
-      setFeedbackMessage("Erro ao analisar sua resposta. Tente novamente.");
+      setFeedbackStatus("warning");
+      setFeedbackTitle("Nao foi possivel registrar");
+      setFeedbackScore(null);
+      setFeedbackMessage("A gravacao foi feita, mas o envio para o servidor falhou. Tente novamente.");
       setShowFeedback(true);
     } finally {
       setSubmitting(false);
@@ -482,6 +584,8 @@ export function ChildExercise() {
     setCompleted(false);
     setShowFeedback(false);
     setFeedbackStatus(null);
+    setFeedbackTitle("");
+    setFeedbackScore(null);
   }
 
   if (loading) {
@@ -906,37 +1010,82 @@ export function ChildExercise() {
               </div>
 
               {/* Feedback Visual Baseado na Análise */}
-              {showFeedback && feedbackStatus && !analyzing && (
+              {showFeedback && feedbackStatus && feedbackVisual && !analyzing && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-5 rounded-3xl p-5"
+                  className="mt-5 overflow-hidden rounded-3xl"
                   style={{
-                    background: feedbackStatus === "success" ? "#ECFDF5" : "#FFF0EC",
-                    border: feedbackStatus === "success" ? "1.5px solid #BBF7D0" : "1.5px solid #FECDC3",
+                    background: feedbackVisual.bg,
+                    border: `1.5px solid ${feedbackVisual.border}`,
+                    boxShadow: `0 16px 36px ${feedbackVisual.accent}18`,
                   }}
                 >
-                  <div className="flex items-center gap-3">
+                  <div
+                    style={{
+                      height: 7,
+                      background: feedbackVisual.accent,
+                    }}
+                  />
+                  <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+                    <div className="flex min-w-0 items-start gap-4">
+                      <div
+                        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
+                        style={{ background: feedbackVisual.soft }}
+                      >
                     {feedbackStatus === "success" ? (
-                      <CheckCircle2 size={26} color="#1F8A5B" />
+                          <CheckCircle2 size={30} color={feedbackVisual.accent} />
                     ) : (
-                      <AlertCircle size={26} color="#FF5630" />
+                          <AlertCircle size={30} color={feedbackVisual.accent} />
                     )}
-                    <div>
+                      </div>
+                    <div className="min-w-0">
+                        <div className="mb-2 flex flex-wrap gap-2">
+                          <span
+                            className="rounded-full px-3 py-1"
+                            style={{
+                              background: feedbackVisual.soft,
+                              color: feedbackVisual.accent,
+                              fontSize: 12,
+                              fontWeight: 900,
+                            }}
+                          >
+                            {feedbackVisual.label}
+                          </span>
+                          {feedbackScore !== null && (
+                            <span
+                              className="rounded-full px-3 py-1"
+                              style={{
+                                background: "#fff",
+                                color: feedbackVisual.title,
+                                border: `1px solid ${feedbackVisual.border}`,
+                                fontSize: 12,
+                                fontWeight: 900,
+                              }}
+                            >
+                              {feedbackScore}% de semelhanca
+                            </span>
+                          )}
+                        </div>
                       <p
                         style={{
-                          color: feedbackStatus === "success" ? "#1F8A5B" : "#9A3412",
-                          fontSize: 17,
+                            color: feedbackVisual.title,
+                          fontSize: 20,
                           fontWeight: 900,
+                            lineHeight: 1.2,
                         }}
                       >
-                        {feedbackStatus === "success" ? "Muito bem!" : "Que pena!"}
+                          {feedbackTitle ||
+                            (feedbackStatus === "success"
+                              ? "Resposta correta"
+                              : "Vamos tentar de novo")}
                       </p>
                       <p
                         style={{
-                          color: feedbackStatus === "success" ? "#357A5B" : "#9A3412",
-                          fontSize: 13,
-                          marginTop: 3,
+                            color: feedbackVisual.text,
+                          fontSize: 14,
+                            lineHeight: 1.6,
+                          marginTop: 6,
                         }}
                       >
                         {feedbackMessage}
@@ -944,19 +1093,34 @@ export function ChildExercise() {
                     </div>
                   </div>
                   
-                  {feedbackStatus === "error" && !completed && (
+                    {feedbackScore !== null && (
+                      <div
+                        className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-2xl sm:flex"
+                        style={{
+                          background: feedbackVisual.soft,
+                          color: feedbackVisual.accent,
+                          fontSize: 18,
+                          fontWeight: 900,
+                        }}
+                      >
+                        {feedbackScore}%
+                      </div>
+                    )}
+                  </div>
+                  
+                  {feedbackStatus !== "success" && !completed && (
                     <button
                       onClick={() => {
                         setShowFeedback(false);
                         clearRecording();
                       }}
-                      className="mt-4 flex items-center gap-2 rounded-2xl px-5 py-3"
+                      className="mx-5 mb-5 flex items-center gap-2 rounded-2xl px-5 py-3 sm:mx-6"
                       style={{
                         background: "#fff",
-                        color: "#9A3412",
-                        border: "1.5px solid #FECDC3",
+                        color: feedbackVisual.accent,
+                        border: `1.5px solid ${feedbackVisual.border}`,
                         cursor: "pointer",
-                        fontWeight: 800,
+                        fontWeight: 900,
                       }}
                     >
                       <Mic size={17} />

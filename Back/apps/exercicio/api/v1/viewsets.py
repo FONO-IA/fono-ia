@@ -1,3 +1,5 @@
+import json
+
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -174,6 +176,8 @@ class ExercicioViewSet(viewsets.ModelViewSet):
         responsavel = self.get_responsavel()
         audio = request.FILES.get("audio")
         paciente_id = request.data.get("paciente_id")
+        status_resposta = request.data.get("status") or "concluido"
+        feedback_extra = request.data.get("feedback")
 
         if not responsavel and not self.is_staff_user():
             raise PermissionDenied(
@@ -191,9 +195,17 @@ class ExercicioViewSet(viewsets.ModelViewSet):
                 "Este exercicio nao pertence ao paciente informado."
             )
 
+        feedback_extra_data = {}
+
+        if feedback_extra:
+            try:
+                feedback_extra_data = json.loads(feedback_extra)
+            except (TypeError, ValueError):
+                feedback_extra_data = {"raw_feedback": str(feedback_extra)}
+
         feedback = {
             "tipo": "audio",
-            "status": "concluido",
+            "status": status_resposta,
             "paciente_id": str(paciente_id) if paciente_id else None,
             "audio_recebido": True,
             "audio_nome": audio.name,
@@ -202,12 +214,18 @@ class ExercicioViewSet(viewsets.ModelViewSet):
             # TODO: Persistir o arquivo de audio quando o model tiver FileField.
         }
 
+        if isinstance(feedback_extra_data, dict):
+            feedback.update(feedback_extra_data)
+            feedback["status"] = status_resposta
+
         resultado = Resultado.objects.create(
             exercicio=exercicio,
             feedback=feedback,
         )
 
-        if not exercicio.concluido:
+        deve_concluir = status_resposta == "concluido"
+
+        if deve_concluir and not exercicio.concluido:
             exercicio.concluido = True
             exercicio.save(update_fields=["concluido", "updated_at"])
 
@@ -215,7 +233,7 @@ class ExercicioViewSet(viewsets.ModelViewSet):
             {
                 "id": resultado.id,
                 "detail": "Resposta registrada com sucesso.",
-                "concluido": True,
+                "concluido": deve_concluir,
                 "feedback": resultado.feedback,
             },
             status=status.HTTP_201_CREATED,

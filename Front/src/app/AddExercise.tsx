@@ -623,21 +623,21 @@ export function AddExercise() {
         className="min-h-screen"
         style={{ fontFamily: "'Poppins', sans-serif", background: "#F4F7FF" }}
       >
-        <div className="mx-auto w-full max-w-[1600px]">
-          <div className="xl:grid xl:min-h-screen xl:grid-cols-[340px_minmax(0,1fr)]">
+        <div className="w-full overflow-x-hidden">
+          <div className="xl:grid xl:min-h-screen xl:grid-cols-[320px_minmax(0,1fr)] 2xl:grid-cols-[340px_minmax(0,1fr)]">
             {/* Sidebar desktop grande */}
             <aside
-              className="hidden xl:block"
+              className="hidden min-w-0 xl:block"
               style={{
                 background:
                   "linear-gradient(180deg, #003884 0%, #0052CC 60%, #0065FF 100%)",
               }}
             >
-              <div className="sticky top-0 flex min-h-screen flex-col p-8">
+              <div className="sticky top-0 flex h-screen flex-col overflow-y-auto p-5 2xl:p-8">
                 <button
                   id="btn-voltar"
                   onClick={() => navigate(-1)}
-                  className="mb-8 flex items-center gap-2 transition-all hover:opacity-80"
+                  className="mb-6 flex items-center gap-2 transition-all hover:opacity-80"
                   style={{
                     background: "none",
                     border: "none",
@@ -653,11 +653,11 @@ export function AddExercise() {
                 </button>
 
                 <div
-                  className="rounded-[28px] p-6"
+                  className="rounded-[24px] p-5 2xl:rounded-[28px] 2xl:p-6"
                   style={{ background: "rgba(255,255,255,0.14)" }}
                 >
                   <div
-                    className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl"
+                    className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl 2xl:mb-5 2xl:h-16 2xl:w-16"
                     style={{ background: "rgba(255,255,255,0.18)" }}
                   >
                     <Dumbbell size={28} color="#fff" />
@@ -665,10 +665,11 @@ export function AddExercise() {
 
                   <h1
                     style={{
-                      fontSize: 28,
+                      fontSize: "clamp(22px, 2vw, 28px)",
                       fontWeight: 700,
                       color: "#fff",
                       lineHeight: 1.15,
+                      wordBreak: "break-word",
                     }}
                   >
                     {modoEdicao ? "Editar Exercício" : "Novo Exercício"}
@@ -694,7 +695,7 @@ export function AddExercise() {
                     ].map((item) => (
                       <div
                         key={item.label}
-                        className="rounded-2xl p-4"
+                        className="rounded-2xl p-3 2xl:p-4"
                         style={{ background: "rgba(255,255,255,0.12)" }}
                       >
                         <p
@@ -707,10 +708,11 @@ export function AddExercise() {
                         </p>
                         <p
                           style={{
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: 700,
                             color: "#fff",
                             marginTop: 2,
+                            wordBreak: "break-word",
                           }}
                         >
                           {item.value}
@@ -723,7 +725,7 @@ export function AddExercise() {
             </aside>
 
             {/* Conteúdo principal */}
-            <main className="min-w-0">
+            <main className="min-w-0 overflow-x-hidden">
               {/* Header mobile/tablet */}
               <div
                 className="xl:hidden px-4 sm:px-6 md:px-8 pt-10 sm:pt-12 pb-8"
@@ -816,7 +818,7 @@ export function AddExercise() {
                 </div>
               </div>
 
-              <div className="px-4 sm:px-6 md:px-8 xl:px-10 2xl:px-12 pb-8 xl:py-10">
+              <div className="px-4 sm:px-6 md:px-8 xl:px-6 2xl:px-8 pb-8 xl:py-8 2xl:py-10">
                 <div className="mx-auto max-w-7xl">
                   {/* Cabeçalho desktop/tablet */}
                   <div className="hidden xl:flex items-center justify-between mb-8 gap-6">
