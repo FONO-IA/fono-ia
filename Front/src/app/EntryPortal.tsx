@@ -189,7 +189,11 @@ export function EntryPortal() {
               style={{ background: "#EBF3FF" }}
             >
               <button
-                onClick={() => setActivePortal("pro")}
+                onClick={() => {
+                  setActivePortal("pro");
+                  setEmail("");
+                  setPassword("");
+                }}
                 className="flex-1 py-3 md:py-4 rounded-xl transition-all duration-200"
                 style={{
                   fontFamily: "'Poppins', sans-serif",
@@ -211,7 +215,12 @@ export function EntryPortal() {
               </button>
 
               <button
-                onClick={() => setActivePortal("patient")}
+                id="btn-portal-paciente"
+                onClick={() => {
+                  setActivePortal("patient");
+                  setEmail("");
+                  setPassword("");
+                }}
                 className="flex-1 py-3 md:py-4 rounded-xl transition-all duration-200"
                 style={{
                   fontFamily: "'Poppins', sans-serif",

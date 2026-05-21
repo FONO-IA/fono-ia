@@ -561,6 +561,7 @@ export function ChildExerciseList() {
 
                         return (
                           <motion.button
+                            id={`card-exercicio-${exercicio.id}`}
                             key={exercicio.id}
                             whileTap={{ scale: 0.98 }}
                             onClick={() =>
