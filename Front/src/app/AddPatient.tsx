@@ -376,16 +376,16 @@ export function AddPatient() {
         className="min-h-screen"
         style={{ fontFamily: "'Poppins', sans-serif", background: "#F4F7FF" }}
       >
-        <div className="mx-auto w-full max-w-[1600px]">
-          <div className="xl:grid xl:min-h-screen xl:grid-cols-[340px_minmax(0,1fr)]">
+        <div className="w-full overflow-x-hidden">
+          <div className="xl:grid xl:min-h-screen xl:grid-cols-[320px_minmax(0,1fr)] 2xl:grid-cols-[340px_minmax(0,1fr)]">
             <aside
-              className="hidden xl:block"
+              className="hidden min-w-0 xl:block"
               style={{
                 background:
                   "linear-gradient(180deg, #003884 0%, #0052CC 60%, #0065FF 100%)",
               }}
             >
-              <div className="sticky top-0 flex min-h-screen flex-col p-8">
+              <div className="sticky top-0 flex min-h-screen flex-col p-6 2xl:p-8">
                 <button
                   onClick={() => navigate(-1)}
                   className="mb-8 flex items-center gap-2 transition-all hover:opacity-80"
@@ -404,7 +404,7 @@ export function AddPatient() {
                 </button>
 
                 <div
-                  className="rounded-[28px] p-6"
+                  className="rounded-[28px] p-5 2xl:p-6"
                   style={{ background: "rgba(255,255,255,0.14)" }}
                 >
                   <div
@@ -483,7 +483,7 @@ export function AddPatient() {
               </div>
             </aside>
 
-            <main className="min-w-0">
+            <main className="min-w-0 overflow-x-hidden">
               <div
                 className="xl:hidden px-4 sm:px-6 md:px-8 pt-10 sm:pt-12 pb-8"
                 style={{
@@ -541,8 +541,8 @@ export function AddPatient() {
                 </div>
               </div>
 
-              <div className="px-4 sm:px-6 md:px-8 xl:px-10 2xl:px-12 pb-8 xl:py-10">
-                <div className="mx-auto max-w-7xl">
+              <div className="px-4 sm:px-6 md:px-8 xl:px-6 2xl:px-8 pb-8 xl:py-8 2xl:py-10">
+                <div className="mx-auto max-w-7xl xl:mx-0">
                   {generalError && (
                     <div
                       className="mb-5 rounded-[24px] p-4 flex items-start gap-3"

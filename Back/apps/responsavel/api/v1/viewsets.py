@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.mail import send_mail
 from django.conf import settings
+from apps.core.notifications import imprimir_credenciais_acesso
 from apps.responsavel.models import Responsavel
 from apps.responsavel.api.v1.serializer import ResponsavelSerializer
 from apps.paciente.models import Paciente
@@ -74,6 +75,7 @@ class ResponsavelViewSet(viewsets.ModelViewSet):
         
         # Salva o responsável com o usuário associado
         responsavel = serializer.save(user=user)
+        email_enviado = False
         
         # Envia o email de boas-vindas
         try:
@@ -105,9 +107,19 @@ class ResponsavelViewSet(viewsets.ModelViewSet):
                 recipient_list=[responsavel.email],
                 fail_silently=False,  # Mude para False para depurar erros de email
             )
+            email_enviado = True
         except Exception as e:
             # Log do erro mas não impede o cadastro
             print(f"Erro ao enviar email para responsável: {e}")
+
+        imprimir_credenciais_acesso(
+            nome=responsavel.nome,
+            email=responsavel.email,
+            usuario=user.username,
+            senha=password,
+            perfil="Responsavel",
+            email_status="sim" if email_enviado else "nao",
+        )
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

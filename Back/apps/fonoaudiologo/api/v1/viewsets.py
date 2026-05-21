@@ -4,10 +4,12 @@ from rest_framework.response import Response
 from apps.fonoaudiologo.models import Fonoaudiologo
 from apps.fonoaudiologo.api.v1.serializer import FonoaudiologoSerializer
 from apps.core.permissions import IsFonoaudiologo
+from apps.core.notifications import enviar_credenciais_acesso
 from rest_framework.decorators import action
 from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth.models import Group
+from django.db import transaction
 
 
 class FonoaudiologoViewSet(viewsets.ModelViewSet):
@@ -36,6 +38,7 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    @transaction.atomic
     def perform_create(self, serializer):
         # Extrai username e password do request.data
         username = self.request.data.get('username')
@@ -57,7 +60,9 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
         )
 
         # Adicionando o fono criado ao grupo de fonoaudiólogos
-        fono_group = Group.objects.get(name='Fonoaudiologo')
+        fono_group, _created = Group.objects.get_or_create(
+            name='Fonoaudiologo'
+        )
         user.groups.add(fono_group)
 
         fonoaudiologo = serializer.save(user=user)
@@ -96,6 +101,14 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
         #        Senha: {password}
         #        ========================================
         #     """)
+
+        enviar_credenciais_acesso(
+            nome=fonoaudiologo.nome,
+            email=fonoaudiologo.email,
+            usuario=user.username,
+            senha=password,
+            perfil="Fonoaudiologo",
+        )
 
     def create(self, request, *args, **kwargs):
 

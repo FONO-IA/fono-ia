@@ -6,7 +6,7 @@ import {
   type AuthRole,
 } from "./session";
 
-const AUTH_URL = "http://127.0.0.1:8001/api/token/";
+const AUTH_URL = "http://127.0.0.1:8000/api/token/";
 
 type LoginResponse = {
   access: string;
@@ -89,12 +89,7 @@ export async function loginProfessional(username: string, password: string) {
 }
 
 export async function loginResponsible(username: string, password: string) {
-  return loginWithRole(
-    username,
-    password,
-    "responsavel",
-    "/responsaveis/me/",
-  );
+  return loginWithRole(username, password, "responsavel", "/responsaveis/me/");
 }
 
 export async function login(username: string, password: string) {
