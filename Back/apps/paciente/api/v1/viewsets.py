@@ -140,13 +140,18 @@ class PacienteViewSet(viewsets.ModelViewSet):
         ).distinct()
 
         total_exercicios = exercicios.count()
-        exercicios_com_resultado = set(
-            resultados.values_list("exercicio_id", flat=True)
-        )
+        exercicios_com_resultado_concluido = {
+            resultado.exercicio_id
+            for resultado in resultados
+            if resultado.feedback.get("status") == "concluido"
+        }
         concluidos = sum(
             1
             for exercicio in exercicios
-            if exercicio.concluido or exercicio.id in exercicios_com_resultado
+            if (
+                exercicio.concluido
+                or exercicio.id in exercicios_com_resultado_concluido
+            )
         )
         pendentes = max(total_exercicios - concluidos, 0)
         progresso = (

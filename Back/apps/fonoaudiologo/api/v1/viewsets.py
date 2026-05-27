@@ -4,10 +4,12 @@ from rest_framework.response import Response
 from apps.fonoaudiologo.models import Fonoaudiologo
 from apps.fonoaudiologo.api.v1.serializer import FonoaudiologoSerializer
 from apps.core.permissions import IsFonoaudiologo
+from apps.core.notifications import enviar_credenciais_acesso
 from rest_framework.decorators import action
 from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth.models import Group
+from django.db import transaction
 
 
 class FonoaudiologoViewSet(viewsets.ModelViewSet):
@@ -36,6 +38,7 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    @transaction.atomic
     def perform_create(self, serializer):
         # Extrai username e password do request.data
         username = self.request.data.get('username')
@@ -57,45 +60,55 @@ class FonoaudiologoViewSet(viewsets.ModelViewSet):
         )
 
         # Adicionando o fono criado ao grupo de fonoaudiólogos
-        fono_group = Group.objects.get(name='Fonoaudiologo')
+        fono_group, _created = Group.objects.get_or_create(
+            name='Fonoaudiologo'
+        )
         user.groups.add(fono_group)
 
         fonoaudiologo = serializer.save(user=user)
 
-        send_mail(
-            subject="Bem-vindo(a) ao Fono IA - Dados de acesso",
-            message=f"""
-        Olá, {fonoaudiologo.nome}!
+        # send_mail(
+        #     subject="Bem-vindo(a) ao Fono IA - Dados de acesso",
+        #     message=f"""
+        # Olá, {fonoaudiologo.nome}!
 
-        Seja bem-vindo(a) ao FONO-IA.
+        # Seja bem-vindo(a) ao FONO-IA.
 
-        Seu cadastro foi realizado com sucesso.
-        Abaixo estão seus dados de acesso:
+        # Seu cadastro foi realizado com sucesso.
+        # Abaixo estão seus dados de acesso:
 
-        Usuário: {username}
-        Senha: {password}
+        # Usuário: {username}
+        # Senha: {password}
 
-        Acesse o sistema e faça login com essas informações.
+        # Acesse o sistema e faça login com essas informações.
 
-        Por segurança, recomendamos alterar sua senha após o primeiro acesso.
+        # Por segurança, recomendamos alterar sua senha após o primeiro acesso.
 
-        Atenciosamente,
-        Equipe FONO-IA
-        """,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[fonoaudiologo.email],
-            fail_silently=False,
-        )
+        # Atenciosamente,
+        # Equipe FONO-IA
+        # """,
+        #     from_email=settings.DEFAULT_FROM_EMAIL,
+        #     recipient_list=[fonoaudiologo.email],
+        #     fail_silently=False,
+        # )
 
-        print(f"""
-               ========================================
-               EMAIL ENVIADO COM SUCESSO
+        # print(f"""
+        #        ========================================
+        #        EMAIL ENVIADO COM SUCESSO
    
-               Destinatário: {fonoaudiologo.email}
-               Usuário: {username}
-               Senha: {password}
-               ========================================
-            """)
+        #        Destinatário: {fonoaudiologo.email}
+        #        Usuário: {username}
+        #        Senha: {password}
+        #        ========================================
+        #     """)
+
+        enviar_credenciais_acesso(
+            nome=fonoaudiologo.nome,
+            email=fonoaudiologo.email,
+            usuario=user.username,
+            senha=password,
+            perfil="Fonoaudiologo",
+        )
 
     def create(self, request, *args, **kwargs):
 

@@ -2,25 +2,57 @@
 Main analysis service
 """
 
-import numpy as np
-
 from app.core import (
     AlertGenerator,
     FeatureComparators,
     FeatureExtractor,
-    PhoneticAnalyzer
+    PhoneticAnalyzer,
 )
 
 
 class AnalysisService:
-    """Serviço principal de análise fonética"""
+    """Serviço principal de análise fonética."""
+
+    # ---------------------------------------------------------------
+    # Penalidades de duração
+    # ---------------------------------------------------------------
+    DURATION_RATIO_EXTREME_LOW = 0.5
+    DURATION_RATIO_EXTREME_HIGH = 2.0
+    DURATION_RATIO_HIGH_LOW = 0.7
+    DURATION_RATIO_HIGH_HIGH = 1.6
+    DURATION_RATIO_MODERATE_LOW = 0.8
+    DURATION_RATIO_MODERATE_HIGH = 1.3
+
+    DURATION_PENALTY_EXTREME = 0.4
+    DURATION_PENALTY_HIGH = 0.6
+    DURATION_PENALTY_MODERATE = 0.8
+    DURATION_PENALTY_NONE = 1.0
+
+    # ---------------------------------------------------------------
+    # Limiares de classificação
+    # ---------------------------------------------------------------
+    QUALITY_EXCELENTE_THRESHOLD = 75
+    QUALITY_MUITO_BOA_THRESHOLD = 60
+    QUALITY_BOA_THRESHOLD = 45
+    QUALITY_REGULAR_THRESHOLD = 30
+
+    # ---------------------------------------------------------------
+    # Pesos dos scores parciais
+    # ---------------------------------------------------------------
+    PHONETIC_WEIGHT = 0.6          # peso do score fonético no final
+    PROSODY_WEIGHT = 0.4           # peso do score prosódico no final
+
+    # Pesos internos da prosódia
+    PITCH_WEIGHT_IN_PROSODY = 0.4
+    RHYTHM_WEIGHT_IN_PROSODY = 0.25
+    ENERGY_WEIGHT_IN_PROSODY = 0.35
 
     def __init__(self, sample_rate=22050):
         """
         Inicializa o serviço de análise.
 
         Args:
-            sample_rate: Taxa de amostragem para processamento
+            sample_rate: Taxa de amostragem para processamento.
         """
         self.sample_rate = sample_rate
         self.analyzer = PhoneticAnalyzer(sample_rate=sample_rate)
@@ -32,22 +64,27 @@ class AnalysisService:
         self.analyzer.set_dependencies(
             feature_extractor=self.feature_extractor,
             comparators=self.comparators,
-            alert_generator=self.alert_generator
+            alert_generator=self.alert_generator,
         )
 
-    def analyze_pronunciation(self, ref_signal, test_signal,
-                              reference_filename=None, test_filename=None):
+    def analyze_pronunciation(
+        self,
+        ref_signal,
+        test_signal,
+        reference_filename=None,
+        test_filename=None,
+    ):
         """
-        Realiza análise completa de pronúncia entre áudio de referência e teste.
+        Realiza análise completa de pronúncia.
 
         Args:
-            ref_signal: Sinal de áudio de referência
-            test_signal: Sinal de áudio de teste
-            reference_filename: Nome do arquivo de referência
-            test_filename: Nome do arquivo de teste
+            ref_signal: Sinal de áudio de referência.
+            test_signal: Sinal de áudio de teste.
+            reference_filename: Nome do arquivo de referência.
+            test_filename: Nome do arquivo de teste.
 
         Returns:
-            dict: Resultado completo da análise
+            dict: Resultado completo da análise.
         """
         sr = self.sample_rate
 
@@ -68,9 +105,14 @@ class AnalysisService:
         )
 
         # DTW com penalidade de ritmo
-        mfcc_dist, _, _, _, rhythm_score, rhythm_dev = (
-            self.comparators.compute_rhythm_penalty(mfcc_ref, mfcc_test)
-        )
+        (
+            mfcc_dist,
+            _,
+            _,
+            _,
+            rhythm_score,
+            rhythm_dev,
+        ) = self.comparators.compute_rhythm_penalty(mfcc_ref, mfcc_test)
 
         # PASSO 3: Extrai Formantes
         formants_ref, _ = self.feature_extractor.extract_formants_robust(
@@ -101,11 +143,11 @@ class AnalysisService:
         )
 
         # PASSO 5: Análise de Energia
-        energy_ref, ref_peaks, _ = self.feature_extractor.extract_energy_envelope(
-            ref_voice, sr
+        energy_ref, ref_peaks, _ = (
+            self.feature_extractor.extract_energy_envelope(ref_voice, sr)
         )
-        energy_test, test_peaks, _ = self.feature_extractor.extract_energy_envelope(
-            test_voice, sr
+        energy_test, test_peaks, _ = (
+            self.feature_extractor.extract_energy_envelope(test_voice, sr)
         )
         energy_comp = self.comparators.compare_energy_patterns(
             energy_ref, energy_test, ref_peaks, test_peaks
@@ -113,27 +155,52 @@ class AnalysisService:
 
         # Score prosódico
         prosody_score = (
-            0.4 * pitch_comp['pitch_score']
-            + 0.3 * rhythm_score
-            + 0.3 * energy_comp['energy_score']
+            self.PITCH_WEIGHT_IN_PROSODY * pitch_comp['pitch_score']
+            + self.RHYTHM_WEIGHT_IN_PROSODY * rhythm_score
+            + self.ENERGY_WEIGHT_IN_PROSODY * energy_comp['energy_score']
         )
 
         # Score final
-        final_score = 0.6 * phonetic_score + 0.4 * prosody_score
+        final_score = (
+            self.PHONETIC_WEIGHT * phonetic_score
+            + self.PROSODY_WEIGHT * prosody_score
+        )
+
+        # Penalidade gradual por diferença de duração
+        dur_ratio = test_dur / ref_dur if ref_dur > 0 else 999
+        if (
+            dur_ratio < self.DURATION_RATIO_EXTREME_LOW
+            or dur_ratio > self.DURATION_RATIO_EXTREME_HIGH
+        ):
+            duration_penalty = self.DURATION_PENALTY_EXTREME
+        elif (
+            dur_ratio < self.DURATION_RATIO_HIGH_LOW
+            or dur_ratio > self.DURATION_RATIO_HIGH_HIGH
+        ):
+            duration_penalty = self.DURATION_PENALTY_HIGH
+        elif (
+            dur_ratio < self.DURATION_RATIO_MODERATE_LOW
+            or dur_ratio > self.DURATION_RATIO_MODERATE_HIGH
+        ):
+            duration_penalty = self.DURATION_PENALTY_MODERATE
+        else:
+            duration_penalty = self.DURATION_PENALTY_NONE
+
+        final_score *= duration_penalty
 
         # Classificação
-        if final_score >= 75:
+        if final_score >= self.QUALITY_EXCELENTE_THRESHOLD:
             quality = "Excelente"
-        elif final_score >= 60:
+        elif final_score >= self.QUALITY_MUITO_BOA_THRESHOLD:
             quality = "Muito Boa"
-        elif final_score >= 45:
+        elif final_score >= self.QUALITY_BOA_THRESHOLD:
             quality = "Boa"
-        elif final_score >= 30:
+        elif final_score >= self.QUALITY_REGULAR_THRESHOLD:
             quality = "Regular"
         else:
             quality = "Diferente"
 
-        # Gera alertas
+        # Métricas para alertas
         metrics = {
             'final_score': final_score,
             'phonetic_score': phonetic_score,
@@ -150,18 +217,40 @@ class AnalysisService:
             'formant_stats': formant_comp,
             'duration_ref': ref_dur,
             'duration_test': test_dur,
-            'dtw_distance': mfcc_dist
+            'dtw_distance': mfcc_dist,
         }
 
         alerts = self.alert_generator.generate_diagnostic_alerts(metrics)
 
         # Monta resultado
+        formant_details = {
+            name: {
+                'similarity_percent': round(stats['similarity'], 1),
+                'distance_hz': round(stats['distance'], 1),
+                'mean_reference_hz': round(stats['mean_ref'], 1),
+                'mean_test_hz': round(stats['mean_test'], 1),
+                'has_overlap': stats['has_overlap'],
+            }
+            for name, stats in formant_comp.items()
+        }
+
+        tonic_ref_pos = (
+            round(energy_comp['peak_ref_pos'], 3)
+            if energy_comp['peak_ref_pos']
+            else None
+        )
+        tonic_test_pos = (
+            round(energy_comp['peak_test_pos'], 3)
+            if energy_comp['peak_test_pos']
+            else None
+        )
+
         result = {
             'analysis_metadata': {
                 'version': '5.0',
                 'sample_rate_hz': sr,
                 'reference_file': reference_filename or 'uploaded_reference',
-                'test_file': test_filename or 'uploaded_test'
+                'test_file': test_filename or 'uploaded_test',
             },
             'final_score': round(final_score, 1),
             'quality_classification': quality,
@@ -170,42 +259,31 @@ class AnalysisService:
                 'mfcc_score': round(mfcc_score, 1),
                 'formant_score': round(formant_score, 1),
                 'dtw_distance': round(mfcc_dist, 4),
-                'formant_details': {
-                    name: {
-                        'similarity_percent': round(stats['similarity'], 1),
-                        'distance_hz': round(stats['distance'], 1),
-                        'mean_reference_hz': round(stats['mean_ref'], 1),
-                        'mean_test_hz': round(stats['mean_test'], 1),
-                        'has_overlap': stats['has_overlap']
-                    }
-                    for name, stats in formant_comp.items()
-                }
+                'formant_details': formant_details,
             },
             'prosody_analysis': {
                 'prosody_score': round(prosody_score, 1),
                 'pitch_score': round(pitch_comp['pitch_score'], 1),
                 'pitch_correlation': round(pitch_comp['correlation'], 4),
-                'pitch_average_reference_hz': round(pitch_comp['f0_mean_ref'], 1),
+                'pitch_average_reference_hz': round(
+                    pitch_comp['f0_mean_ref'], 1
+                ),
                 'pitch_average_test_hz': round(pitch_comp['f0_mean_test'], 1),
                 'rhythm_score': round(rhythm_score, 1),
                 'rhythm_deviation': round(rhythm_dev, 4),
                 'energy_score': round(energy_comp['energy_score'], 1),
                 'tonic_syllable_match': energy_comp['tonic_match'],
-                'tonic_position_reference': (
-                    round(energy_comp['peak_ref_pos'], 3)
-                    if energy_comp['peak_ref_pos'] else None
-                ),
-                'tonic_position_test': (
-                    round(energy_comp['peak_test_pos'], 3)
-                    if energy_comp['peak_test_pos'] else None
-                )
+                'tonic_position_reference': tonic_ref_pos,
+                'tonic_position_test': tonic_test_pos,
             },
             'duration_analysis': {
                 'reference_duration_seconds': round(ref_dur, 2),
                 'test_duration_seconds': round(test_dur, 2),
-                'duration_ratio': round(test_dur / ref_dur, 2) if ref_dur > 0 else 0
+                'duration_ratio': round(test_dur / ref_dur, 2)
+                if ref_dur > 0
+                else 0,
             },
-            'diagnostic_alerts': alerts
+            'diagnostic_alerts': alerts,
         }
 
         return result

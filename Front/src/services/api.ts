@@ -22,12 +22,15 @@ async function request<T>(
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers,
-    body:
-      options.body !== undefined
-        ? isFormData
-          ? options.body
-          : JSON.stringify(options.body)
-        : undefined,
+    body: (
+      options.body === undefined || options.body === null
+        ? undefined
+        : isFormData
+        ? options.body
+        : (typeof options.body === "object" && !Array.isArray(options.body) && Object.keys(options.body).length === 0)
+        ? undefined
+        : JSON.stringify(options.body)
+    ) as BodyInit | null | undefined,
   });
 
   const data = await response.json().catch(() => null);

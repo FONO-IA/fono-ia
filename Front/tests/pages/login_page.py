@@ -13,3 +13,15 @@ class LoginPage:
 
     def clicar_entrar(self):
         self.driver.find_element(By.ID, "btn-login-pro").click()
+
+    def clicar_portal_paciente(self):
+        self.driver.find_element(By.ID, "btn-portal-paciente").click()
+
+    def preencher_email_paciente(self, email):
+        self.driver.find_element(By.ID, "email-paciente").send_keys(email)
+
+    def preencher_senha_paciente(self, senha):
+        self.driver.find_element(By.ID, "senha-paciente").send_keys(senha)
+
+    def clicar_entrar_paciente(self):
+        self.driver.find_element(By.ID, "btn-login-paciente").click()

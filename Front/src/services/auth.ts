@@ -89,12 +89,7 @@ export async function loginProfessional(username: string, password: string) {
 }
 
 export async function loginResponsible(username: string, password: string) {
-  return loginWithRole(
-    username,
-    password,
-    "responsavel",
-    "/responsaveis/me/",
-  );
+  return loginWithRole(username, password, "responsavel", "/responsaveis/me/");
 }
 
 export async function login(username: string, password: string) {
