@@ -1,7 +1,7 @@
 services:
   django_api:
     build:
-      context: ./BACK
+      context: ./Back
       dockerfile: Dockerfile
     container_name: tcc_django_api
     restart: always
