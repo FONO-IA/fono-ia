@@ -45,7 +45,7 @@ GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
 AI_REQUEST_TIMEOUT = int(os.getenv('AI_REQUEST_TIMEOUT', '20'))
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5174',
