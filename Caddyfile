@@ -1,7 +1,7 @@
-django.seudominio.duckdns.org {
+fonoia-django.duckdns.org {
     reverse_proxy django_api:8000
 }
 
-fastapi.seudominio.duckdns.org {
+fonoia-ve.duckdns.org {
     reverse_proxy fastapi_api:8080
 }
