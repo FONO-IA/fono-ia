@@ -16,7 +16,7 @@ services:
 
   fastapi_api:
     build:
-      context: ./VE_API
+      context: ./VE_api
       dockerfile: Dockerfile
     container_name: tcc_fastapi_api
     restart: always
