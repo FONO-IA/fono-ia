@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  django_api:
+    build:
+      context: ./BACK
+      dockerfile: Dockerfile
+    container_name: tcc_django_api
+    restart: always
+    env_file:
+      - ./BACK/.env
+    # Roda as migrações no banco externo e depois sobe o servidor na porta 8000
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    expose:
+      - "8000"
+
+  fastapi_api:
+    build:
+      context: ./VE_API
+      dockerfile: Dockerfile
+    container_name: tcc_fastapi_api
+    restart: always
+    expose:
+      - "8080"
+
+  caddy:
+    image: caddy:latest
+    container_name: tcc_caddy_proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - django_api
+      - fastapi_api
+
+volumes:
+  caddy_data:
+  caddy_config:
