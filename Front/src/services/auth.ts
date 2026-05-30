@@ -6,7 +6,7 @@ import {
   type AuthRole,
 } from "./session";
 
-const AUTH_URL = "http://127.0.0.1:8000/api/token/";
+const AUTH_URL = `${import.meta.env.VITE_PUBLIC_DJANGO_API_URL}/api/token/`;
 
 type LoginResponse = {
   access: string;

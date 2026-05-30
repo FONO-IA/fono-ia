@@ -247,11 +247,8 @@ async function analyzeAudios(
       : await convertBlobToWav(patientWav);
 
   // Envia pro backend
-  const configuredUrl = (import.meta as any).env?.VITE_ANALYSIS_API_URL;
   const endpoints = [
-    configuredUrl,
-    "http://127.0.0.1:8050/api/v1/analyze",
-    "http://localhost:8050/api/v1/analyze",
+    `${import.meta.env.VITE_PUBLIC_FASTAPI_URL}/api/v1/analyze`,
   ].filter(Boolean) as string[];
 
   let lastError: unknown = null;
