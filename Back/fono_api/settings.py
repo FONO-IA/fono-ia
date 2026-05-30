@@ -196,7 +196,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 # Media files (uploads)
-MEDIA_URL = 'https://fonoia-django.duckdns.org/media/'
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
