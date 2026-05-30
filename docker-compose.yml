@@ -7,6 +7,8 @@ services:
     restart: always
     env_file:
       - ./Back/.env
+    volumes:
+      - ./media:/app/media
     # Roda as migrações no banco externo e depois sobe o servidor na porta 8000
     command: >
       sh -c "python manage.py migrate &&
